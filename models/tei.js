@@ -1,0 +1,56 @@
+var mongoose = require('mongoose')
+  , Schema = mongoose.Schema
+  , _ = require('lodash')
+  , extendNodeSchema = require('./extend-node-schema')
+;
+
+
+
+
+// TODO: TEI should not save empty text
+var TEISchema = extendNodeSchema('TEI', {
+  name: String,
+  text: String,
+  isEntity: Boolean,
+  entityName: { type: String, index: true },
+  entityAncestor: { type: String, index: true },
+  community: String,
+  docs: {type: [{type: Schema.Types.ObjectId, ref: 'Doc'}], index: true },
+  entityChildren: {type : [{type: Schema.Types.ObjectId, ref: 'TEI'}], index: true},
+  isTerminal: Boolean,
+  attrs: {type: Schema.Types.Mixed},
+  collateX: String,
+  doNotWrite: Boolean,
+}, {
+  statics: {
+    clean: function(data) {
+      const nodeData = _.defaults(
+        {}, _.pick(data, [
+          '_id', 'name', 'text', 'isEntity', 'entityName', 'entityAncestor', 'ancestors', 'children', 'docs',  'entityChildren', 'attrs', 'isTerminal', 'collateX',
+
+        ]), {
+          ancestors: [],
+          children: [],
+          entityChildren: [],
+        }
+      );
+      this._assignId(nodeData);
+      return nodeData;
+    }
+  }
+});
+
+function createPath(curPath, childEl) {
+  var path="";
+  for (var i=0; i<curPath.length; i++) {
+    var elName=curPath[i].name;
+    if (curPath[i].name=="l") elName="line";
+    if (curPath[i].name=="p") elName="para";
+    if (curPath[i].name=="ab") elName="block";
+    if (curPath[i].attrs.type) elName=curPath[i].attrs.type;
+//    path=
+  }
+}
+
+
+module.exports = mongoose.model('TEI', TEISchema);

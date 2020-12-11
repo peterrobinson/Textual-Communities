@@ -1,0 +1,308 @@
+<tc-splitter class="content" (resize)="onResize($event)" id="TCSplitterTOC" *ngIf="state.community">
+  <tc-pane id='TCsidebar' [ngClass]="{true:'sidebar', false:'nodisplay'}[state.showSide]">
+    <script type="text/javascript">
+      alert("loading")
+      gtag('set', {'user_id': '{{GAid}}'}); // Set the user ID using signed-in user_id.
+    </script>
+    <ul class="nav nav-tabs">
+      <li id="docTabHead" class="center active" (click)="active('Documents')"><a>Documents</a></li>
+      <li id="collationTabHead" class="center" (click)="active('Collation')"><a>Collation</a></li>
+    </ul>
+    <div class="tc-tab" id="docTab">
+      <ul class="nav nav-tabs" style="font-size:90%">
+        <li id="pageTabHead" class="center active" (click)="active('Pages')"><a>By Page</a></li>
+        <li id="itemTabHead" class="center" (click)="active('Items')"><a>By Item</a></li>
+      </ul>
+    </div>
+    <div class="tab-content tc-tab" id="pageTab" style="overflow:auto; width:100%">
+      <ul class="tree">
+        <li *ngFor="#doc of state.community.attrs.documents"
+          [class.collapse-node]="!doc.expand">
+          <div>
+            <span *ngIf="!showAddFirstPage(doc)" class="icon" aria-hidden="true"
+              (click)="toggleDoc(doc)"></span>
+            <a (click)="toggleDoc(doc)">
+              {{doc.attrs.name}}
+            </a>&nbsp;
+            <a *ngIf="role=='LEADER'||role=='CREATOR'" target="_blank" (click)="changeAccess(doc)" data-toggle="tooltip" title="Change who can see images and transcripts of this document">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/lock.png">
+            </a>
+            <a *ngIf="role!='LEADER'&&role!='CREATOR'" target="_blank" (click)="stateImageAccess(doc)" data-toggle="tooltip" title="Change who can see images of this document">
+              <img *ngIf="doc.isDocImageTranscriptLocked" onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/lock.png">
+            </a>
+            <a *ngIf="role=='LEADER'||role=='CREATOR'" target="_blank" (click)="restoreDoc(doc)" data-toggle="tooltip" title="Rebuild this document">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/restore-doc.png">
+            </a>
+            <a *ngIf="role=='LEADER'||role=='CREATOR'" target="_blank" (click)="addIIIFImages(doc)" data-toggle="tooltip" title="Add images from IIIF manifest">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/logo-iiif-34x30.png">
+            </a>
+            <a *ngIf="role=='LEADER'||role=='CREATOR'" target="_blank" (click)="addZipImages(doc)" data-toggle="tooltip" title="Add images in zip file">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/zip-file-load.png">
+            </a>
+            <a *ngIf="(role=='LEADER'||role=='CREATOR') && docLacksImages(doc)" target="_blank" (click)="addBulkImages(doc)" data-toggle="tooltip" title="Add multiple images">
+              <img onmouseover="this.width='24';this.height='36'" onmouseout="this.width='12'; this.height='18'" class="menuimg" height="18" width="12" src="../../images/camera-multiple-missing.png">
+            </a>
+            <a *ngIf="(role=='LEADER'||role=='CREATOR') && !docLacksImages(doc)" target="_blank" (click)="addBulkImages(doc)" data-toggle="tooltip" title="Add multiple images">
+              <img onmouseover="this.width='24';this.height='36'" onmouseout="this.width='12'; this.height='18'" class="menuimg" height="18" width="12" src="../../images/camera-multiple.png">
+            </a>
+            <a target="_blank" *ngIf="role=='LEADER'||role=='CREATOR'" (click)="editTEIHeader(doc)" data-toggle="tooltip" title="Edit TEI header">
+              <img onmouseover="this.width='24';this.height='36'" onmouseout="this.width='12'; this.height='18'" class="menuimg" height="18" width="12" src="../../images/teiheader.png">
+            </a>
+            <a target="_blank" *ngIf="role=='LEADER'||role=='CREATOR'" (click)="reorderDocument(doc)" data-toggle="tooltip" title="Reorder or rename pages">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/reorderdoc.png">
+            </a>
+            <!-- a target="_blank" *ngIf="role=='LEADER'||role=='CREATOR'" data-toggle="tooltip" title="Remove document text"
+              (click)="removeDocumentText(doc)">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/deletedoctext.png">
+            </a-->
+            <a target="_blank" *ngIf="role=='LEADER'||role=='CREATOR'" data-toggle="tooltip" title="Delete document"
+              (click)="deleteDocument(doc)">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/deletedoc.png">
+            </a>
+           <a target="_blank" class="extract-xml" data-toggle="tooltip" title="Get document XML"
+              (click)="extractXML($event, doc)">
+              <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/getdocxml.png">
+            </a>
+            <a target="_blank" data-toggle="tooltip" title="About this document" (click)="getDocInf(doc)">
+                <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" class="glyphicon glyphicon-info-sign"></span>
+            </a>
+            <span *ngIf="(role=='LEADER'||role=='CREATOR') && showAddFirstPage(doc)" (click)="addFirstPage(doc)"
+              class="add-page-after"></span>
+          </div>
+          <ul>
+            <li *ngFor="#page of doc.attrs.children" [ngClass]="{'selected':page.attrs.selected}">
+                <a (click)="selectPage(page)">
+                  {{page.attrs.name}}
+                </a>
+                <a *ngIf="role=='LEADER'||role=='CREATOR'" target="_blank" (click)="changePageAccess(page)" data-toggle="tooltip" title="Change who can see images and transcripts of this document">
+                  <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/lock.png">
+                </a>
+                <a *ngIf="role!='LEADER'&&role!='CREATOR'" target="_blank" (click)="statePageImageAccess(page)" data-toggle="tooltip" title="Change who can see images of this document">
+                  <img *ngIf="page.isPageITlocked" onmouseover="this.width='36';this.height='36'" onmouseout="this.width='18'; this.height='18'" class="menuimg" height="18" width="18" src="../../images/lock.png">
+                </a>
+                <a *ngIf="pageHasImage(page)&&(role=='LEADER'||role=='CREATOR')" target="_blank" data-toggle="tooltip" title="Change Image"
+                  (click)="editPageImage(page)">
+                  <img onmouseover="this.width='22';this.height='19'" onmouseout="this.width='15'; this.height='12'" class="menuimg" height="12" width="15" src="../../images/camera-black.png">
+                </a>
+                <a *ngIf="(role=='LEADER'||role=='CREATOR') && !pageHasImage(page)" target="_blank" data-toggle="tooltip" title="No image present. Add image."
+                  (click)="editPageImage(page)">
+                  <img onmouseover="this.width='22';this.height='19'" onmouseout="this.width='15'; this.height='12'" class="menuimg" height="12" width="15" src="../../images/camera-red.png">
+                </a>
+                <span *ngIf="(role=='LEADER'||role=='CREATOR') && showAddPage(page, doc)" (click)="addPageAfter(page, doc)"
+                  class="add-page-after"></span>
+            </li>
+          </ul>
+        </li>
+      </ul>
+        <span data-toggle="tooltip" *ngIf="role=='LEADER'||role=='CREATOR'" title="Add document" (click)="addDocument()" class="add-document">
+          <img onmouseover="this.width='36';this.height='36'" onmouseout="this.width='24'; this.height='24'" class="menuimg" height="24" width="24" src="../../images/adddocument.png">
+        </span>
+    </div>
+    <div class="tab-content tc-tab" id="itemTab" style="display:none; overflow:auto">
+      <ul class="tree">
+       <li *ngFor="#doc of state.community.attrs.documents"
+          [class.collapse-node]="!doc.expand">
+          <div>
+            <span *ngIf="doc.attrs.entities" class="icon" aria-hidden="true"
+              (click)="toggleDoc(doc)"></span>
+            <a (click)="selectDoc(doc)">
+              {{doc.attrs.name}}
+            </a>
+          </div>
+          <ul>
+            <li *ngFor="#docEntity of doc.attrs.entities"
+              [class.collapse-node]="!docEntity.expand">
+              <div>
+                <span *ngIf="docEntity.entityChildren.length"  class="icon" aria-hidden="true"
+                  (click)="toggleDocEntities(docEntity)"></span>
+                <a (click)="selectDocEntity(doc, docEntity)">
+                  {{docEntity.name}}
+                </a>
+              </div>
+              <ul>
+                <li *ngFor="#subDocEntity of docEntity.entities"
+                  [class.collapse-node]="!subDocEntity.expand">
+                  <div>
+                    <span *ngIf="subDocEntity.hasChild" class="icon" aria-hidden="true"
+                      (click)="toggleDocEntities(subDocEntity)"></span>
+                    <a (click)="selectDocEntity(doc, subDocEntity)">
+                      {{subDocEntity.name}}
+                    </a>
+                  </div>
+                  <ul>
+                    <li *ngFor="#subSubDocEntity of subDocEntity.entities"
+                      [class.collapse-node]="!subSubDocEntity.expand">
+                      <div>
+                        <span *ngIf="subSubDocEntity.hasChild" class="icon" aria-hidden="true"
+                          (click)="toggleDocEntities(subSubDocEntity)"></span>
+                        <a (click)="selectDocEntity(doc, subSubDocEntity)">
+                          {{subSubDocEntity.name}}
+                        </a>
+                      </div>
+                      <ul>
+                        <li *ngFor="#subSubSubDocEntity of subSubDocEntity.entities"
+                          [class.collapse-node]="!subSubSubDocEntity.expand">
+                          <div>
+                            <span *ngIf="subSubSubDocEntity.hasChild" class="icon" aria-hidden="true"
+                              (click)="toggleDocEntities(subSubSubDocEntity)"></span>
+                            <a (click)="selectDocEntity(doc, subSubSubDocEntity)">
+                              {{subSubSubDocEntity.name}}
+                            </a>
+                          </div>
+                          <ul>
+                            <li *ngFor="#subSubSubSubDocEntity of subSubSubDocEntity.entities"
+                              [class.collapse-node]="!subSubSubSubDocEntity.expand">
+                              <div>
+                                <span *ngIf="subSubSubSubDocEntity.hasChild" class="icon" aria-hidden="true"
+                                  (click)="toggleDocEntities(subSubSubSubDocEntity)"></span>
+                                <a (click)="selectDocEntity(doc, subSubSubSubDocEntity)">
+                                  {{subSubSubSubDocEntity.name}}
+                                </a>
+                              </div>
+                              <ul>
+                                <li *ngFor="#subSubSubSubSubDocEntity of subSubSubSubDocEntity.entities"
+                                  [class.collapse-node]="!subSubSubSubSubDocEntity.expand">
+                                  <div>
+                                    <span *ngIf="subSubSubSubSubDocEntity.hasChild" class="icon" aria-hidden="true"
+                                      (click)="toggleDocEntities(subSubSubSubSubDocEntity)"></span>
+                                    <a (click)="selectDocEntity(doc, subSubSubSubSubDocEntity)">
+                                      {{subSubSubSubSubDocEntity.name}}
+                                    </a>
+                                  </div>
+                                </li>
+                              </ul>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div id="collationView" class="tab-content tc-tab" style="display:none; overflow:auto; " >
+      <ul class="tree">
+        <li *ngFor="#entity of state.community.attrs.entities"
+          [class.collapse-node]="!entity.expand">
+          <div>
+            <span *ngIf="!entity.isTerminal" class="icon" aria-hidden="true"
+              (click)="toggleEntities(entity)">
+               <span class="collationMenu">{{entity.attrs.name}}</span>
+            </span>
+            <span *ngIf="entity.isTerminal">
+            <a (click)="selectEntity(entity)">
+              {{entity.attrs.name}}
+            </a></span><span data-toggle="tooltip" title="Collation recorded" style="font-weight: bold; color: red" *ngIf="entity.hasCollation">C</span>
+          </div>
+          <ul>
+            <li *ngFor="#subEntity of entity.entities"
+              [class.collapse-node]="!subEntity.expand">
+              <div>
+                <span *ngIf="!subEntity.isTerminal" class="icon" aria-hidden="true"
+                  (click)="toggleEntities(subEntity)">
+                    <span class="collationMenu">{{subEntity.name}}</span>
+                </span>
+                <span *ngIf="subEntity.isTerminal">
+                <a (click)="selectEntity(subEntity)">
+                  {{subEntity.name}}
+                </a></span><span data-toggle="tooltip" title="Collation recorded" style="font-weight: bold; color: red" *ngIf="subEntity.hasCollation">C</span>
+              </div>
+              <ul>
+                <li *ngFor="#subSubEntity of subEntity.entities"
+                  [class.collapse-node]="!subSubEntity.expand">
+                  <div>
+                    <span *ngIf="!subSubEntity.isTerminal" class="icon" aria-hidden="true"
+                      (click)="toggleEntities(subSubEntity)">
+                      <span class="collationMenu">{{subSubEntity.name}}</span>
+                    </span>
+                    <span *ngIf="subSubEntity.isTerminal">
+                    <a (click)="selectEntity(subSubEntity)">
+                      {{subSubEntity.name}}
+                    </a></span><span data-toggle="tooltip" title="Collation recorded" style="font-weight: bold; color: red" *ngIf="subSubEntity.hasCollation">C</span>
+                  </div>
+                  <ul>
+                    <li *ngFor="#subSubSubEntity of subSubEntity.entities"
+                      [class.collapse-node]="!subSubSubEntity.expand">
+                      <div>
+                        <span *ngIf="!subSubSubEntity.isTerminal" class="icon" aria-hidden="true"
+                          (click)="toggleEntities(subSubSubEntity)">
+                          <span class="collationMenu">{{subSubSubEntity.name}}</span>
+                        </span>
+                        <span *ngIf="subSubSubEntity.isTerminal">
+                        <a (click)="selectEntity(subSubSubEntity)">
+                          {{subSubSubEntity.name}}
+                        </a></span><span data-toggle="tooltip" title="Collation recorded" style="font-weight: bold; color: red" *ngIf="subSubSubEntity.hasCollation">C</span>
+                      </div>
+                      <ul>
+                        <li *ngFor="#subSubSubSubEntity of subSubSubEntity.entities"
+                          [class.collapse-node]="!subSubSubSubEntity.expand">
+                          <div>
+                            <span *ngIf="!subSubSubSubEntity.isTerminal" class="icon" aria-hidden="true"
+                              (click)="toggleEntities(subSubSubSubEntity)">
+                              <span class="collationMenu">{{subSubSubSubEntity.name}}</span>
+                            </span>
+                            <span *ngIf="subSubSubSubEntity.isTerminal">
+                            <a (click)="selectEntity(subSubSubSubEntity)">
+                              {{subSubSubSubEntity.name}}
+                            </a></span><span data-toggle="tooltip" title="Collation recorded" style="font-weight: bold; color: red" *ngIf="subSubSubSubEntity.hasCollation">C</span>
+                          </div>
+                          <ul>
+                            <li *ngFor="#subSubSubSubSubEntity of subSubSubSubEntity.entities"
+                              [class.collapse-node]="!subSubSubSubSubEntity.expand">
+                              <div>
+                                <span *ngIf="!subSubSubSubSubEntity.isTerminal" class="icon" aria-hidden="true"
+                                  (click)="toggleEntities(subSubSubSubSubEntity)">
+                                  <span class="collationMenu">{{subSubSubSubSubEntity.name}}</span>
+                                </span>
+                                <span *ngIf="subSubSubSubSubEntity.isTerminal">
+                                <a (click)="selectEntity(subSubSubSubSubEntity)">
+                                  {{subSubSubSubSubEntity.name}}
+                                </a></span><span data-toggle="tooltip" title="Collation recorded" style="font-weight: bold; color: red" *ngIf="subSubSubSubSubEntity.hasCollation">C</span>
+                              </div>
+                            </li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </tc-pane>
+  <tc-pane class="viewer" style="width:100%; height:100%" id="tcPaneViewer">
+    <tc-viewer *ngIf="state.page"
+        [page]="state.page"
+        [document]="state.document"
+        [community]="state.community"
+        [image]="state.page.attrs.image"></tc-viewer>
+    <div id="tcCollation" style="display:none; width:100%" >
+        <div id="CXcontainer" style="overflow:auto;">
+          <p *ngIf="!state.community.attrs.entities.length">
+            No entities found. Commit pages in the document viewer, using "n" attributes on elements to
+            declare them as entities (e.g. &lt;div n="1" type="book"> for Book 1).
+          </p>
+          <p *ngIf="state.community.attrs.entities.length && !collationEditor">
+            Click on entity elements in the side panel to show the collation of that entity in the documents.
+          </p>
+        </div>
+        <div style="overflow:auto">
+            <iframe id="ce_iframe" width="100%" height="600px"></iframe>
+        </div>
+        <div *ngIf="versions.length" style="overflow:auto" id="tcVersions">
+            <p>Versions of {{state.community.entityName}}</p>
+          <div *ngFor="#version of versions" class="row" style="min-width:600px">
+              <span class="col-sm-1">{{version.sigil}}</span>
+              <span class="col-sm-11">{{version.version}}</span>
+          </div>
+       </div>
+      </div>
+  </tc-pane>
+</tc-splitter>

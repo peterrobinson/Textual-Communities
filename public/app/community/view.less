@@ -1,0 +1,117 @@
+tc-community-view {
+    .flex(1, 1, 0);
+    .flex-row;
+    tc-splitter {
+        .flex(1, 1, 0);
+        .nodisplay {display:none}
+        overflow: hidden;
+        .center {text-align: center}
+        .flex-row;
+        .sidebar {
+            .flex(1, 1, 25%);
+            .flex-column;
+
+            .tab-content {background-color: white; height: 100%}
+
+            .tc-tabs {
+                .flex(1, 1, 0);
+
+                .flex-column;
+
+                >* {
+                    .flex(1, 1, initial);
+                }
+
+                >.nav.nav-tabs {
+                    .flex(0, 0, initial);
+                }
+
+                .tc-tab {
+                    .flex-column;
+                    overflow: auto;
+                }
+            }
+
+/*            ul.tab-heads {
+                font-size: 80%;
+                >li>a {padding: 7px 5px 7px 5px}
+            } */
+
+            ul {
+                list-style: none;
+                padding: 0;
+            }
+
+            .tc-tab ul.tree {
+                overflow: auto;
+
+                li {
+                    padding-left: 16px;
+                    >div>.icon {
+                        .glyphicon;
+                        .glyphicon-triangle-bottom;
+                        cursor: pointer;
+                    }
+                    .add-page-after {
+                        .glyphicon;
+                        .glyphicon-plus;
+                        cursor: pointer;
+                    }
+
+                    >div>.extract-xml {
+                        background: url(../../images/getdocxml.png) no-repeat;
+                        background-size: 14px 18px;
+                        cursor: pointer;
+                        display: inline-block;
+                        height: 18px;
+                        width: 14px;
+                    }
+                    >div>.delete-doc {
+                        background: url(../../images/deletedoc.png) no-repeat;
+                        background-size: 14px 18px;
+                        cursor: pointer;
+                        display: inline-block;
+                        height: 18px;
+                        width: 14px;
+                    }
+                    >div>a>img.menuimg {
+                  /*      background: url(../../images/reorderdoc.png) no-repeat;
+                        background-size: 14px 18px; */
+                        cursor: pointer;
+                        display: inline-block;
+                        position: relative; top: -3px;
+                    }
+                }
+
+                li.collapse-node {
+
+                    >div>.icon {
+                        .glyphicon-triangle-right;
+                    }
+
+                    >ul {
+                        display: none;
+                    }
+                }
+
+            }
+
+        }
+
+        .viewer {
+            .flex(3, 3, 75%);
+            .flex-row;
+
+            @import './viewer.less';
+        }
+    }
+    .add-document {
+      position: relative;
+      left: 30px;
+      cursor: pointer;
+    }
+}
+
+li.selected {
+  background-color: #F2F2F2	;
+}

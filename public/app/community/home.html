@@ -1,0 +1,6 @@
+<div style="margin-right:auto; margin-left:auto; width:700px" class="description">
+<h3 style="text-align: center">{{state.community.attrs.longName}} ({{state.community.attrs.abbr}})</h3>
+<p *ngIf="!state.community.attrs.longName" style="text-align: center">(No long name provided for this community)</p>
+<div [innerHTML]="state.community.attrs.description"></div>
+<p *ngIf="!state.community.attrs.description" style="text-align: center">(No description provided for this community)</p>
+</div>
