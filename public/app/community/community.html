@@ -20,6 +20,12 @@
         <li *ngIf="role=='LEADER'||role=='CREATOR'"><a (click)="navigate('viewers')">Viewers</a></li>
         <li *ngIf="role=='LEADER'||role=='CREATOR'"><a (click)="navigate('edit')">Edit</a></li>
         <li><a (click)="navigate('vbase')">VBase</a></li>
+        <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools<span class="caret"></span></a>
+         	<ul class="dropdown-menu" style="width:100px">
+                <li><a class="dropdown-item" (click)="navigate('search')">Search pages..</a></li>
+                 <li><a class="dropdown-item" (click)="navigate('finduncommitted')">Uncommitted pages..</a></li>
+           </ul>
+        </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li *ngIf="state.community?.attrs.haspicture" style="padding:0; top:-6px; left:15px"><img  height="35px" width="300px" src="{{state.community?.attrs.image}}"/></li>
@@ -35,7 +41,9 @@
   <tc-community-members [community]="state.community" *ngSwitchWhen="'members'"></tc-community-members>
   <tc-community-viewers [community]="state.community" *ngSwitchWhen="'viewers'"></tc-community-viewers>
   <tc-community-vbase [community]="state.community" *ngSwitchWhen="'vbase'"></tc-community-vbase>
-  <tc-edit-community *ngSwitchWhen="'edit'" style="overflow:auto"
+  <tc-community-search [community]="state.community" *ngSwitchWhen="'search'"></tc-community-search>
+  <tc-community-uncommitted [community]="state.community" *ngSwitchWhen="'finduncommitted'"></tc-community-uncommitted>
+ <tc-edit-community *ngSwitchWhen="'edit'" style="overflow:auto"
      id="tc-edit-community" [community]="state.community"></tc-edit-community>
   <tc-community-home *ngSwitchDefault ></tc-community-home>
 </div>

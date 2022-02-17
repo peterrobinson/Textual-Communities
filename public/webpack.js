@@ -8,7 +8,7 @@ var _ = require('lodash')
   , clientRoot = path.resolve(__dirname)
   , bowerRoot = path.resolve(clientRoot, '..', 'bower_components')
   , nodeRoot = path.resolve(clientRoot, '..', 'node_modules')
-  , devtool = '#eval-cheap-module-source-map'
+  , devtool = 'eval-source-map'
   , debug = true
 ;
 
@@ -18,6 +18,8 @@ switch (process.env.NODE_ENV) {
     debug = false;
     break;
   case 'development':
+   	devtool = 'eval-source-map';
+	debug = true;
     break;
 }
 
@@ -30,6 +32,9 @@ var config = {
   output: {
     path: path.join(clientRoot, 'dist'),
     filename: '[name].bundle.js',
+    devtoolModuleFilenameTemplate(info) {
+     return `file:///${info.absoluteResourcePath.replace(/\\/g, '/')}`;
+   },
   },
   externals: {
     jquery: 'jQuery',

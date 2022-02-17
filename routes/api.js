@@ -1617,7 +1617,7 @@ router.post('/getDocumentPage', function(req, res, next){
 
 router.post('/getDocPages', function(req, res, next){
   var myPagesOrder;
-//  console.log("starting search"+req.query.document);
+  console.log("starting search"+req.query.document);
   async.parallel([
     function(cb) {
       Doc.findOne({_id: ObjectId(req.query.document)}, cb);
@@ -2872,6 +2872,16 @@ router.get('/getDocNames', function(req, res, next) {
         res.json(results);
       })
     }
+  });
+});
+
+router.get('/getRevisions', function(req, res, next) {
+  var docid=req.query.page;
+  Revision.find({doc: ObjectId(docid)}, function(err, revisions) {
+	revisions.sort(function compare(a, b) {
+	  return b.created - a.created;
+	});
+  	res.json(revisions);
   });
 });
 

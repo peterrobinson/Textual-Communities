@@ -20,6 +20,8 @@ var CommunityComponent = ng.core.Component({
     require('./members.component'),
     require('./viewers.component'),
     require('./vbase.component'),
+    require('./search.component'),
+    require('./finduncommitted.component'),
   ],
 }).Class({
   constructor: [
