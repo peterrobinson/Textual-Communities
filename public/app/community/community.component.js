@@ -22,6 +22,7 @@ var CommunityComponent = ng.core.Component({
     require('./vbase.component'),
     require('./search.component'),
     require('./finduncommitted.component'),
+    require('./allspellings.component'),
   ],
 }).Class({
   constructor: [

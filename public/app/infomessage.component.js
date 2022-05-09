@@ -14,21 +14,30 @@ var InfoMessageComponent = ng.core.Component({
     $('#manageModal').height("100px");
     }],
   closeModalIMLC: function() {
-    this.message="";
-    $('#MMADdiv').css("margin-top", "30px");
-    $('#MMADbutton').css("margin-top", "20px");
-    $('#manageModal').modal('hide');
+  	setTimeout(function() {
+		this.message="";
+		$('#MMADdiv').css("margin-top", "30px");
+		$('#MMADbutton').css("margin-top", "20px");
+		$('#manageModal').modal('hide');
+	}, 1000);
   },
   ngOnChanges: function() {
-    if (this.source="CollationBase") {
+      if (this.source=="committed") {
+      this.closeModalIMLC();
+      return;
+    }
+    if (this.source=="CollationBase") {
       $('#manageModal').width("400px");
       $('#manageModal').height("150px");
     }
-    if (this.source="accessControl") {
+    if (this.source=="accessControl") {
+      $('#manageModal').width("500px");
+      $('#manageModal').height("320px");
+    } else {
       $('#manageModal').width("500px");
       $('#manageModal').height("320px");
     }
-  },
+},
   doLoginModal: function() {
     $('#manageModal').modal('hide');
   }

@@ -24,7 +24,8 @@
          	<ul class="dropdown-menu" style="width:100px">
                 <li><a class="dropdown-item" (click)="navigate('search')">Search pages..</a></li>
                  <li><a class="dropdown-item" (click)="navigate('finduncommitted')">Uncommitted pages..</a></li>
-           </ul>
+                  <li><a class="dropdown-item" (click)="navigate('allspellings')">Accumulate all spellings..</a></li>
+         </ul>
         </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -42,6 +43,7 @@
   <tc-community-viewers [community]="state.community" *ngSwitchWhen="'viewers'"></tc-community-viewers>
   <tc-community-vbase [community]="state.community" *ngSwitchWhen="'vbase'"></tc-community-vbase>
   <tc-community-search [community]="state.community" *ngSwitchWhen="'search'"></tc-community-search>
+  <tc-community-allspellings  *ngSwitchWhen="'allspellings'"></tc-community-allspellings>
   <tc-community-uncommitted [community]="state.community" *ngSwitchWhen="'finduncommitted'"></tc-community-uncommitted>
  <tc-edit-community *ngSwitchWhen="'edit'" style="overflow:auto"
      id="tc-edit-community" [community]="state.community"></tc-edit-community>

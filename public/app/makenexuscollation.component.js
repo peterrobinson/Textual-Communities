@@ -21,6 +21,7 @@ var makeNexusCollationComponent = ng.core.Component({
     this.success="";
     this.message="";
     this.uiService = uiService;
+    this.skipValidation=false;
     }],
   closeModalCXN: function() {
     this.message=this.success="";
@@ -44,6 +45,15 @@ var makeNexusCollationComponent = ng.core.Component({
         this.message = 'Choose a file';
         $('#manageModal').height("220px");
         return;
+      } else if (this.skipValidation) {
+      	  self.success="Skipped parse of uploaded file. Now converting to NEXUS";
+          $('#manageModal').height("220px");
+          self.message="";
+          var result=DualFunctionService.makeNEXUS(text);
+          result=result.replace(/<br\/>/gi, "\r").replace(/&nbsp;/gi," ");
+          BrowserFunctionService.download(result, self.community.attrs.abbr+"-NEXUS", "text/plain");
+		  self.message="";
+		  self.success="Converted to NEXUS. Check your downloads folder."; 
       } else $.post(config.BACKEND_URL+'validate?'+'id='+this.community.getId(), {
   //      xml: "<TEI><teiHeader><fileDesc><titleStmt><title>dummy</title></titleStmt><publicationStmt><p>dummy</p></publicationStmt><sourceDesc><p>dummy</p></sourceDesc></fileDesc></teiHeader>\r"+text+"</TEI>",
           xml: text,
@@ -59,12 +69,11 @@ var makeNexusCollationComponent = ng.core.Component({
           return;
         } else {
           //convert this text to NEXUS...not asynchronous!
-          self.success="Parsed uploaded file. Now convering to NEXUS";
+          self.success="Parsed uploaded file. Now converting to NEXUS";
           $('#manageModal').height("220px");
           self.message="";
           var result=DualFunctionService.makeNEXUS(text);
           result=result.replace(/<br\/>/gi, "\r").replace(/&nbsp;/gi," ");
-    
           BrowserFunctionService.download(result, self.community.attrs.abbr+"-NEXUS", "text/plain");
 		  self.message="";
 		  self.success="Converted to NEXUS. Check your downloads folder.";

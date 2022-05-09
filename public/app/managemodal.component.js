@@ -1,4 +1,4 @@
-;var $ = require('jquery');
+var $ = require('jquery');
 var URI = require('urijs')
   , UIService = require('./services/ui')
   , CommunityService = require('./services/community')
@@ -55,7 +55,8 @@ var ManageModalComponent = ng.core.Component({
     require('./makevarmaps.component'),
     require('./editvmap.component'),
     require('./editvmaps.component'),
-    require('./testcollationconversion.component')
+    require('./testcollationconversion.component'),
+    require('./writecommentary.component')
  ]
 }).Class({
   constructor: [CommunityService, UIService, RESTService, function(communityService, uiService, restService) {
@@ -302,7 +303,9 @@ var ManageModalComponent = ng.core.Component({
       } else if (event.type ==='test-collate-conversion') {
       	self.choice=event.type;
       	self.community=event.community;
-      }
+      } else if (event.type ==='write-commentary'){
+        self.community=event.community;
+       } 
       $('#manageModal').modal('show');
     });
   },

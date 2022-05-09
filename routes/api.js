@@ -24,6 +24,7 @@ var _ = require('lodash')
   , VBase = models.VBase
   , VMap = models.VMap
   , Revision = models.Revision
+  , Commentary = models.Commentary
   , TEI = models.TEI
   , RESTError = require('./resterror')
   , ObjectId = mongoose.Types.ObjectId
@@ -34,6 +35,7 @@ var _ = require('lodash')
 
 if (config.localDevel) TCMailer = require('../TCMailer');
 
+//res.set or res.header? trying header now .. see https://medium.com/@dtkatz/3-ways-to-fix-the-cors-error-and-how-access-control-allow-origin-works-d97d55946d9
 
 router.use(function(req, res, next) {
   res.set({
@@ -146,6 +148,116 @@ router.post('/community/:id/fixMembers/', function(req, res, next) {
 var vMapResource = new Resource(VMap, {id: 'vmap'});
 vMapResource.serve(router, 'vmaps');
 
+var commentaryResource = new Resource(Commentary, {id: 'commentary'});
+commentaryResource.serve(router, 'commentaries');
+
+router.post('/approveCommentary', function(req, res, next) {
+	var revisionID= req.query.revision;
+	Revision.collection.update({_id: ObjectId(revisionID)}, {$set: {status:"APPROVED", committed: new Date()}}, function(err, result){
+		if (!err) {
+			console.log("done for "+revisionID);
+			res.json({success: 1});
+		} else {
+			console.log("not done");
+			res.json({success: 0});
+		}
+	});
+});
+
+
+router.post('/writeCommentary', function(req, res, next) {
+	var commentary=req.body; 
+	var communityID= req.query.community;
+	var userID=commentary.user;
+	var newID=ObjectId();
+	Revision.collection.update({_id: newID}, {$set: {community:communityID, name: commentary.entity, text:commentary.commentary, user:ObjectId(userID), created: new Date(), status:"IN_PROGRESS"}}, {upsert: true}, function(err, result){
+		Commentary.collection.update({entity:commentary.entity, entityto: commentary.entityto}, {$set:{community: communityID}, $push:{revisions: newID}}, {upsert: true}, function(err){
+			if (!err) res.json({success: 1});
+			else {
+				res.json({success: 0});
+			}
+		});
+	});
+});
+
+//returns array with all approved commentaries for 
+router.get('/getApprovedCommentaries', function(req, res, next) {
+	console.log("looking")
+	var entity=req.query.entity;
+//	res.json({success: entity});
+//	return;
+	Commentary.find({entity: entity}, function(err, commentaries) {
+		if (err) {
+  			res.json({result: err});
+  		} else {
+  			if (commentaries.length>0) {
+  				var results=[];
+  				async.map(commentaries, function(commentary, cb) {
+  					console.log(commentary.revisions);
+  					async.mapSeries(commentary.revisions.reverse(), function(com_id, callback) {
+  						console.log(com_id);
+  						var found=results.filter(function(obj){return obj.entity == commentary.entity && obj.entityto == commentary.entityto});
+  						console.log(found.length)
+  						if (found.length==0) {
+							Revision.findOne({_id: com_id, status:"APPROVED"}, function(err, myRevision) {
+								if (myRevision) {  //only keep the latest one
+									User.findOne({_id:myRevision.user}, function(err,myUser) {
+										results.push({entity: commentary.entity, approver: myUser.local.name, entityto: commentary.entityto, text: myRevision.text, date: myRevision.committed});
+										callback(err, []);
+									});
+								}  else {
+									callback(err, []);
+								}
+							});
+						} else {
+							callback(err, []);
+						}
+  					}, function (err) {
+  						cb(null, []);
+  					});
+  				}, function () {
+  					res.json({results: results});
+  				});
+		 } else {
+			res.json({results: 0});
+		 }
+	  }
+  	});
+});
+
+router.post('/getCommentaries', function(req, res, next) {
+	var entity=req.query.entity;
+	var entityTo=req.query.entityTo;
+	Commentary.findOne({entity: entity, entityto:entityTo}, function(err, myCommentary) {
+		if (!myCommentary) {
+	 		res.json({success: false});
+	 	} else {	
+	 		//get all the commentaries on this line
+	 		async.map(myCommentary.revisions, function(com_id, callback) {
+	 			Revision.findOne({_id: com_id}, function(err, myRevision) {
+	 				if (myRevision) {
+	 					User.findOne({_id:myRevision.user}, function(err,myUser) {
+	 						if (myUser) {
+	 							callback(err, {text:myRevision.text, id: String(com_id), date:myRevision.created, status:myRevision.status, user:myUser.local.name });
+	 						} else {
+	 							callback(err);
+	 						}
+	 					});
+	 				} else {
+	 					callback(err);
+	 				}
+	 			})
+	 		}, function (err, results) {
+	 			if (!err) {
+	 				res.json({success: true, commentaries:results});
+	 			} else {
+	 				res.json({success: false});
+	 			}
+	 		});
+	 	}
+	});
+});
+
 router.post('/saveVMap', function(req, res, next) {
 	var vmap=req.body;
 	var community=req.query.community, name=req.query.name;
@@ -159,6 +271,17 @@ router.post('/saveVMap', function(req, res, next) {
 			res.json({success: 0});
 		}
 	})
+});
+
+router.post('/isEntity',  function(req, res, next) {
+	var entity=req.query.entity;
+	Entity.findOne({entityName: entity}, function(err, myEntity) {
+	 	if (!myEntity) {
+	 		res.json({success: false});
+	 	} else {	
+	 		res.json({success: true });
+	 	}
+	 });
 });
 
 router.post('/isAlreadyVMap',  function(req, res, next) {
@@ -211,6 +334,7 @@ router.post('/deleteVMap',  function(req, res, next) {
 
 var vBaseResource = new Resource(VBase, {id: 'vbase'});
 vBaseResource.serve(router, 'vbases');
+
 
 router.post('/community/:abbr/vbases/', function(req, res, next) {
   var community = req.params.abbr;

@@ -1,0 +1,40 @@
+<div style="font-size: 110%">
+  <div modal-draggable class="modalHeader">Write a commentary on part of "{{uiService.state.community.attrs.name}}"
+    <button type="button" (click)="closeModalIM()" class="close" data-dismiss="modal" style="font-size:200%; font-weight:800; position: relative; left:-10px; top:-3px;">&times;</button>
+  </div>
+  <div style="height:645px; overflow:scroll; position:absolute">
+  	 <div *ngIf="error.length>0" class="alert alert-danger" style="margin-bottom: 10px">
+      {{error}}
+    </div>
+    <div *ngIf="success.length>0" class="alert alert-success" style="margin-bottom: 1px">
+      {{success}}
+    </div>
+    <p style="margin: 15px">For entity (example: {{uiService.state.community.attrs.abbr}}/entity=X:line=Y; replace X and Y values as needed)
+      <input type="text" size="50" style="display: inline-block; border-width: 1px; border-style: solid;" (keyup)="clickEntityStart()" [(ngModel)]="entity"> 
+    </p>
+    <p style="margin: 15px">For a note covering a range of lines/sentences etc: specify the final entity:
+     <input type="text"  (keyup)="clickEntityTo()" size="50" style="display: inline-block; border-width: 1px; border-style: solid;" [(ngModel)]="entityTo"> 
+    </p>
+    <div class="form-group" style="margin-right:15px; margin-left: 15px">
+      <label style="display:flex; justify-content: space-between"><span>Commentary on {{entity}} <span *ngIf="entityTo.length>0"> to {{entityTo}}</span> 
+    </span>
+    <select id="WCSelect" *ngIf="commentaries.length" style="font-weight: normal" (change)="choose($event)">
+      	<option *ngFor="#r of commentaries; #i = index" [attr.data-index]="i">
+          {{r.user}}
+          {{formatDate(r.date)}} ({{r.status}})
+        </option>
+      </select>
+    </label>
+    <p style="text-align:center">Command/Windows+b for bold; Command/Windows+i for italic. &lt;br> for line break</p>
+      <textarea id="editCommentary" class="form-control" rows="6" cols="50" (keydown.meta.b)="doBold($event)" (keydown.meta.i)="doItalic($event)" placeholder="Your commentary (you can include HTML)" [(ngModel)]="commentary"></textarea>
+        <label style="margin-top: 10px;">Preview Commentary</label>
+        <div id="Commentary" [innerHTML]="commentary">
+        </div>
+    </div>
+  </div>
+  <hr style="border: 1px solid #8c8b8b; margin-bottom: 15px; margin-top:15px; position: relative; top: 637px">
+    <div class="form-group" style="text-align: center; height: 18px; position: relative; top: 639px">
+      <button type="button" class="btn btn-primary" (click)="submit()">Save Commentary</button>  <button type="button" class="btn btn-primary" (click)="approve()">Approve Commentary</button>
+    </div>
+      <div modal-resizable class="win-size-grip"></div>
+</div>

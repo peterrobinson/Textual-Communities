@@ -33,6 +33,8 @@
                 	<span *ngIf="!state.community.attrs.rebuildents"> <img class="menuimg" height="9" width="9" src="../../images/unchecked.png"></span>  </li>
                 <li><a class="dropdown-item" (click)="loadModal('collationeditor-createVarMaps')">Make Variant Map</a></li>
                  <li><a class="dropdown-item" (click)="loadModal('collationeditor-editVarMaps')">Edit Variant Maps</a></li>
+                    <li><a class="dropdown-item" (click)="testCollConversion()">Test Collation Conversion</a></li>
+                  <li ng-show="isCreator()===true"><a class="dropdown-item" (click)="loadModal('write-commentary')">Write Commentary</a></li>
              </ul>
             </li>
             <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Community Management<span class="caret"></span></a>
@@ -49,7 +51,6 @@
                 <li ng-show="isCreator()===true"><a class="dropdown-item" (click)="exportTranscriptsFromTC1()">Move Transcripts from TC1 to TC2</a></li>
                 <li ng-show="isCreator()===true"><a class="dropdown-item" (click)="exportDBVersionFromTC1()">Export Transcript from TC1 Database</a></li>
                 <li ng-show="isCreator()===true"><a class="dropdown-item" (click)="createDefaultTranscripts()">Create Default Transcripts</a></li>
-                <li ng-show="isCreator()===true"><a class="dropdown-item" (click)="testCollConversion()">Test Collation Conversion</a></li>
                 <li ng-show="isCreator()===true"><a class="dropdown-item" (click)="removeModOrigJSON()">Remove redundant mod/orig JSON</a></li>
                 <li ng-show="isCreator()===true"><a class="dropdown-item" (click)="removeModOrigXML()">Remove redundant mod/orig XML</a></li>
              </ul>

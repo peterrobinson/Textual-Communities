@@ -81,7 +81,7 @@ var ViewerComponent = ng.core.Component({
     });
     this._uiService.changeMessage$.subscribe(function(message){
 //      console.log(message);
-      self._uiService.manageModal$.emit({type: 'info-message', header: "Committing page "+message.page+" in document "+message.docname, message:message.message});
+      self._uiService.manageModal$.emit({type: 'info-message', source:'commit', header: "Committing page "+message.page+" in document "+message.docname, message:message.message});
       if (message.type=="commit") self.commitFailed=true;
     });
   }],
@@ -661,11 +661,12 @@ var ViewerComponent = ng.core.Component({
 					  });
 					} else {cb1(null)}
 				  }, function (err, results) {
-					self._uiService.manageModal$.emit({type: 'info-message', header: "Committing page "+page.attrs.name+" in document "+self.state.document.attrs.name, message: "Page successfully committed. All collatable entities in the database for this page updated. \r(Turn off entity updating at Manage-->Collation-->Rebuild Collation Entities on Commit)"});
+					self._uiService.manageModal$.emit({type: 'info-message', source:'commit', header: "Committing page "+page.attrs.name+" in document "+self.state.document.attrs.name, message: "Page successfully committed. All collatable entities in the database for this page updated. \r(Turn off entity updating at Manage-->Collation-->Rebuild Collation Entities on Commit)"});
+					
 				  })
 			  });
 		  } else {
-			self._uiService.manageModal$.emit({type: 'info-message', header: "Committing page "+page.attrs.name+" in document "+self.state.document.attrs.name, message: "Page successfully committed. \r(Turn on entity updating at Manage-->Collation-->Rebuild Collation Entities on Commit)"});
+			self._uiService.manageModal$.emit({type: 'info-message', source:'committed', header: "Committing page "+page.attrs.name+" in document "+self.state.document.attrs.name, message: "Page successfully committed. \r(Turn on entity updating at Manage-->Collation-->Rebuild Collation Entities on Commit)"});
 		  }
         });
       }

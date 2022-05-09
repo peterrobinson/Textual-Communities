@@ -1,6 +1,7 @@
 <div style="font-size: 110%; height:100%;">
-  <div modal-draggable class="modalHeader">Convert XML Apparatus to NEXUS for Community "{{uiService.state.community.attrs.name}}"
-    <button type="button" (click)="closeModalCXN()" class="close" data-dismiss="modal" style="font-size:200%; font-weight:800; position: relative; left:-10px; top:-3px;">&times;</button>
+  <div class="modalHeader">
+  	Accumulate spellings from XML apparatus (words, not lemmata) into a single JSON file
+    <button type="button" (click)="closeModalADX()" class="close" data-dismiss="modal" style="font-size:200%; font-weight:800; position: relative; left:-10px; top:-3px;">&times;</button>
   </div>
 
   <form>
@@ -16,11 +17,13 @@
     <textarea [(ngModel)]="text" rows="11" cols="40">
     </textarea>
   </div-->
-  <div id="MMADXFdiv" class="form-group" style="margin-top: 25px;">
-  <input type="checkbox" style="margin-left: 10px" [(ngModel)]="skipValidation">&nbsp;&nbsp;Validate the XML file on loading
+  <div id="MMADXFdiv" class="form-group" style="margin-top: 5px;">
+   Load existing JSON cumulative spelling file:
+    <tc-filereader (filechange)="filechange($event)"></tc-filereader>
+   Load XML apparatus file to add to cumulative spelling file:
     <tc-filereader (filechange)="filechange($event)"></tc-filereader>
     <div style="text-align: center; margin-top: 10px">
-      <button type="button" class="btn btn-primary" (click)="submit()">Load</button>
+      <button type="button" class="btn btn-primary" (click)="submit()">Accumulate</button>
     </div>
   </div>
 </div>
