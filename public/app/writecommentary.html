@@ -10,10 +10,12 @@
       {{success}}
     </div>
     <p style="margin: 15px">For entity (example: {{uiService.state.community.attrs.abbr}}/entity=X:line=Y; replace X and Y values as needed)
-      <input type="text" size="50" style="display: inline-block; border-width: 1px; border-style: solid;" (keyup)="clickEntityStart()" [(ngModel)]="entity"> 
+      <input type="text" size="30" style="display: inline-block; border-width: 1px; border-style: solid;" (keyup)="clickEntityStart()" [(ngModel)]="entity"> 
+     <span>&nbsp;&nbsp;{{baseEntity}}</span>
     </p>
     <p style="margin: 15px">For a note covering a range of lines/sentences etc: specify the final entity:
-     <input type="text"  (keyup)="clickEntityTo()" size="50" style="display: inline-block; border-width: 1px; border-style: solid;" [(ngModel)]="entityTo"> 
+     <input type="text"  (keyup)="clickEntityTo()" size="30" style="display: inline-block; border-width: 1px; border-style: solid;" [(ngModel)]="entityTo"> 
+     <span>&nbsp;&nbsp;{{baseEntityTo}}</span>
     </p>
     <div class="form-group" style="margin-right:15px; margin-left: 15px">
       <label style="display:flex; justify-content: space-between"><span>Commentary on {{entity}} <span *ngIf="entityTo.length>0"> to {{entityTo}}</span> 

@@ -34,7 +34,9 @@ var WriteCommentaryComponent = ng.core.Component({
     this.update=false;
     this.start=0;
     this.end=0;
-    }],
+    this.baseEntity="";
+    this.baseEntityTo="";
+   }],
   ngOnInit: function() {
   },
   approve: function(){
@@ -48,7 +50,7 @@ var WriteCommentaryComponent = ng.core.Component({
   			if (res.success) {
   				self.error="";
   				self.success="Commentary approved";
-  				self.checkCommentaries();
+  				self.checkCommentaries("entity1");
   				
   			} else {
   				self.error("Approval failed");
@@ -106,7 +108,7 @@ var WriteCommentaryComponent = ng.core.Component({
      .done(function( data ) {
        self.success="Commentary saved to database";
        self.error="";
-       self.checkCommentaries();
+       self.checkCommentaries("entity1");
       })
      .fail(function( jqXHR, textStatus, errorThrown) {
       self.success="Error " + errorThrown;
@@ -128,9 +130,11 @@ var WriteCommentaryComponent = ng.core.Component({
   			this.commentaries=[];
   			this.commentary="";
   			this.entityTo="";
+  			this.baseEntity="";
+  			this.baseEntityTo="";
  // 			this.checkCommentaries();
   		}
-  	} else this.checkCommentaries();
+  	} else this.checkCommentaries('entity');
   },
   clickEntityTo: function() {
   	var self=this;
@@ -146,6 +150,8 @@ var WriteCommentaryComponent = ng.core.Component({
 				this.commentaries=[];
 				this.commentary="";
 				this.entityTo="";
+				this.baseEntity="";
+  				this.baseEntityTo="";
 //				this.checkCommentaries();
 			} else {
 			  this.entityTo="";
@@ -153,24 +159,39 @@ var WriteCommentaryComponent = ng.core.Component({
 		}  else {
 			$.post(config.BACKEND_URL+'isEntity?entity='+replaceEnt, function(res) {
 				if (res.success) {
-					self.checkCommentaries();
+					self.checkCommentaries("entityto");
 				} else {
 					"Entity " + self.entity2 + " does not exist";
 				}
 			});
 		}
   },
-  checkCommentaries: function(){
+  checkCommentaries: function(entity){
   	if (this.entityTo=="") {
   		this.success="Checking for commentary on "+this.entity;
   	} else {
   		this.success="Checking for commentary on "+this.entity+" to "+this.entityTo;
   	}
   	var self=this;
-  	var replaceEnt=this.entity.replace(this.uiService.state.community.attrs.abbr+"/",this.uiService.state.community.attrs.abbr+":")
-  	 $.post(config.BACKEND_URL+'isEntity?entity='+replaceEnt, function(res) {
+  	if (entity=="entity") {
+  		var replaceEnt=this.entity.replace(this.uiService.state.community.attrs.abbr+"/",this.uiService.state.community.attrs.abbr+":")
+  	} else {
+  		var replaceEnt=this.entityTo.replace(this.uiService.state.community.attrs.abbr+"/",this.uiService.state.community.attrs.abbr+":")
+  	}
+  	$.post(config.BACKEND_URL+'isEntity?entity='+replaceEnt, function(res) {
 		if (res.success) {
-			self.success="Entity " + self.entity + " exists";
+			let base=self.uiService.state.community.attrs.ceconfig.base_text;
+			if (entity=="entity") {
+				self.success="Entity " + replaceEnt + " exists";
+				$.get(config.host_url+"/uri/urn:det:tc:usask:"+self.entity+":document="+base+"?type=transcript&format=xml", function(res) {
+					self.baseEntity=res[0].text;
+				});
+			} else {
+				self.success="Entity to " + replaceEnt + " exists";
+				$.get(config.host_url+"/uri/urn:det:tc:usask:"+self.entityTo+":document="+base+"?type=transcript&format=xml", function(res) {
+					self.baseEntityTo=res[0].text;
+				});
+			}
 			self.error="";
 			 $.post(config.BACKEND_URL+'getCommentaries?entity='+self.entity+"&entityTo="+self.entityTo, function(res) {
 			 	if (res.success) {
