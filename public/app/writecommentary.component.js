@@ -50,7 +50,7 @@ var WriteCommentaryComponent = ng.core.Component({
   			if (res.success) {
   				self.error="";
   				self.success="Commentary approved";
-  				self.checkCommentaries("entity1");
+  				self.checkCommentaries("entity");
   				
   			} else {
   				self.error("Approval failed");
@@ -108,7 +108,7 @@ var WriteCommentaryComponent = ng.core.Component({
      .done(function( data ) {
        self.success="Commentary saved to database";
        self.error="";
-       self.checkCommentaries("entity1");
+       self.checkCommentaries("entity");
       })
      .fail(function( jqXHR, textStatus, errorThrown) {
       self.success="Error " + errorThrown;
