@@ -62,6 +62,42 @@ var GetDocInfComponent = ng.core.Component({
     } else this.role="NONE";
     if (this.role!="LEADER"&&this.role!="CREATOR") $('#manageModal').height("625px");
   },
+  doItalic: function(event) { //do command/windows macros
+  	var activeEl = document.activeElement;
+  	var selectText=activeEl.value.slice(activeEl.selectionStart,activeEl.selectionEnd);
+  	if (selectText.indexOf("<i>")==0) {
+  		selectText=selectText.replace("<i>","").replace("</i>","");
+  		var start=activeEl.selectionStart;
+  		var end=activeEl.selectionEnd-7;
+  		this.description=activeEl.value.slice(0, activeEl.selectionStart)+selectText+activeEl.value.slice(activeEl.selectionEnd);	
+  	} else {
+		var start=activeEl.selectionStart;
+		var end=activeEl.selectionEnd+7; 	
+		this.description=activeEl.value.slice(0, activeEl.selectionStart)+"<i>"+activeEl.value.slice(activeEl.selectionStart, activeEl.selectionEnd)+"</i>"+activeEl.value.slice(activeEl.selectionEnd);	
+	}
+  	setTimeout(function(){
+  		var myEl=document.getElementById('witdescription');
+  		activeEl.setSelectionRange(start, end);
+  	},250);
+  },
+  doBold: function(event) { //do command/windows macros
+  	var activeEl = document.activeElement;
+  	  	var selectText=activeEl.value.slice(activeEl.selectionStart,activeEl.selectionEnd);
+  	if (selectText.indexOf("<b>")==0) {
+  		selectText=selectText.replace("<b>","").replace("</b>","");
+  		var start=activeEl.selectionStart;
+  		var end=activeEl.selectionEnd-7;
+  		this.description=activeEl.value.slice(0, activeEl.selectionStart)+selectText+activeEl.value.slice(activeEl.selectionEnd);	
+  	} else {
+		var start=activeEl.selectionStart;
+		var end=activeEl.selectionEnd+7; 	
+		this.description=activeEl.value.slice(0, activeEl.selectionStart)+"<b>"+activeEl.value.slice(activeEl.selectionStart, activeEl.selectionEnd)+"</b>"+activeEl.value.slice(activeEl.selectionEnd);	
+   	}
+   	setTimeout(function(){
+  		var myEl=document.getElementById('witdescription');
+  		activeEl.setSelectionRange(start, end);
+  	},250);
+ },
   closeModalUPLC: function() {
     this.message=this.success="";
     $('#manageModal').modal('hide');
