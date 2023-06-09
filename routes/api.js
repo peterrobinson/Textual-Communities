@@ -25,6 +25,7 @@ var _ = require('lodash')
   , VMap = models.VMap
   , Revision = models.Revision
   , Commentary = models.Commentary
+  , MakeEdition = models.MakeEdition
   , TEI = models.TEI
   , RESTError = require('./resterror')
   , ObjectId = mongoose.Types.ObjectId
@@ -151,6 +152,10 @@ vMapResource.serve(router, 'vmaps');
 var commentaryResource = new Resource(Commentary, {id: 'commentary'});
 commentaryResource.serve(router, 'commentaries');
 
+var makeeditionResource = new Resource(MakeEdition, {id: 'makeedition'});
+makeeditionResource.serve(router, 'makeeditions');
+
+
 router.post('/approveCommentary', function(req, res, next) {
 	var revisionID= req.query.revision;
 	Revision.collection.update({_id: ObjectId(revisionID)}, {$set: {status:"APPROVED", committed: new Date()}}, function(err, result){
@@ -164,6 +169,51 @@ router.post('/approveCommentary', function(req, res, next) {
 	});
 });
 
+router.post('/writeMakeEdition', function(req, res, next) {
+	var makeedition=req.body; 
+	var communityID= makeedition.community;
+	var editionID= makeedition.id;
+	var editionHTML=makeedition.html;
+	console.log("here now2");
+	MakeEdition.collection.update({identifier:editionID}, {$set: {community:communityID, html:editionHTML}}, {upsert: true}, function(err, result){
+		if (!err) {
+			res.json({success: 1});
+		} else {
+			res.json({success: 0});
+		}
+	});
+});
+
+router.get('/getMakeEdition', function(req, res, next) {
+	var editionID= req.query.editionID;
+	MakeEdition.findOne ({identifier:editionID}, function(err, edition) {
+		if (edition) {
+			console.log("found an edition")
+			res.json({success: 1, html: edition.html});
+		} else {
+			res.json({success: 0});
+		}
+	});
+});
+
+router.get('/deleteMakeEdition', function(req, res, next) {
+	var editionID= req.query.editionID;
+	MakeEdition.collection.remove ({identifier:editionID}, function(err, result) {
+		if (err || !result) res.json({success: 0});
+		else res.json({success:1});
+	});
+});
+
+router.get('/isMakeEdition', function(req, res, next) {
+	var editionID= req.query.editionID;
+	MakeEdition.findOne ({identifier:editionID}, function(err, edition) {
+		if (edition) {
+			res.json({success: 1});
+		} else {
+			res.json({success: 0});
+		}
+	});
+});
 
 router.post('/writeCommentary', function(req, res, next) {
 	var commentary=req.body; 
@@ -182,8 +232,8 @@ router.post('/writeCommentary', function(req, res, next) {
 
 //returns array with all approved commentaries for 
 router.get('/getApprovedCommentaries', function(req, res, next) {
-	console.log("looking")
 	var entity=req.query.entity;
+	console.log("looking for "+entity)
 //	res.json({success: entity});
 //	return;
 	Commentary.find({entity: entity}, function(err, commentaries) {
@@ -192,6 +242,7 @@ router.get('/getApprovedCommentaries', function(req, res, next) {
   		} else {
   			if (commentaries.length>0) {
   				var results=[];
+  				
   				async.map(commentaries, function(commentary, cb) {
   					console.log(commentary.revisions);
   					async.mapSeries(commentary.revisions.reverse(), function(com_id, callback) {
@@ -216,10 +267,10 @@ router.get('/getApprovedCommentaries', function(req, res, next) {
   						cb(null, []);
   					});
   				}, function () {
-  					res.json({results: results});
+  					res.json({result: results});
   				});
 		 } else {
-			res.json({results: 0});
+			res.json({result: 0});
 		 }
 	  }
   	});
@@ -325,7 +376,6 @@ router.post('/getVMap',  function(req, res, next) {
 router.post('/deleteVMap',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
 	VMap.collection.remove({community: community, name: name }, function(err, result) {
-		console.log("result "+result);
 		if (err || !result) res.json({success: 0});
 		else res.json({success:1});
 	});	

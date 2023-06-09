@@ -296,8 +296,11 @@ function entityRequest(req, res, entities, name, entityparts, i, community, call
                   var format=req.query.format;
                   if (format=="NEXUS") format="xml/positive"
                   Collation.findOne({id:community+"/"+myEntity.entityName+"/"+format}, function (err, myCollation){
-                    if (!myCollation) cb(err, {name: myEntity.entityName, collation:"NONE"})
-                    else cb(err, {name: myEntity.entityName, collation: myCollation.ce})
+                    if (!myCollation) {
+                    	console.log("no collation found for "+myEntity.entityName)
+                    	cb(err, {name: myEntity.entityName, collation:"NONE"})
+                    }
+                    else {cb(err, {name: myEntity.entityName, collation: myCollation.ce})};
                   });
                 }
             } else {
@@ -358,9 +361,11 @@ function entityRequest(req, res, entities, name, entityparts, i, community, call
           }
           else {  //terminal! now we could be looking for an apparatus...
             if (req.query.type=="apparatus") {  //we are looking only for the apparatus for one unit
+            	console.log("looking for apparatus "+entities[j].entityName);
+            	var myBlock=entities[j].entityName;
                 Collation.findOne({id:community+"/"+entities[j].entityName+"/"+req.query.format}, function (err, myCollation){
                   if (err || !myCollation) {
-                    {res.status(400).send("Error finding collation of block '"+entities[j].entityName+"'. There may be no collation of this block")}
+                    {res.send({result:0, message:"Error finding collation of block '"+myBlock+"'. There may be no collation of this block"})}
                   }
                   else res.send(myCollation.ce.replace(/</gi, "&lt;"));
                 })

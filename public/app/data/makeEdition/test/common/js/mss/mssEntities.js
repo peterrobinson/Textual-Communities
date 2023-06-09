@@ -1,0 +1,1 @@
+const mssEntities=[{"entity":"GP","witnesses":[{"name":"El"},{"name":"Hg"}]},{"entity":"L1","witnesses":[{"name":"El"},{"name":"Hg"}]},{"entity":"MI","witnesses":[{"name":"El"},{"name":"Hg"}]}]

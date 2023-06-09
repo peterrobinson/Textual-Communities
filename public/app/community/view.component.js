@@ -15,7 +15,7 @@ var prevHeight;
 var ViewComponent = ng.core.Component({
   selector: 'tc-community-view',
   templateUrl: '/app/community/view.html',
-  styleUrls: ['/app/community/view.css'],
+//  styleUrls: ['/app/community/view.css'],
   directives: [
   /*  require('../directives/tabs').TAB_DIRECTIVES, */
     require('../directives/splitter').SPLITTER_DIRECTIVES,

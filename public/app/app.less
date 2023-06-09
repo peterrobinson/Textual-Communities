@@ -421,3 +421,33 @@ tc-managemodal-assign-pages {
     }
  }
 }
+
+tc-community-makeEdition {
+  ul.tree {
+    list-style-type: none;
+    padding-left: 5px;
+    overflow: auto;
+    li {
+        padding-left: 5px;
+        list-style-type: none;
+        >div>.icon {
+            .glyphicon;
+            .glyphicon-triangle-bottom;
+            cursor: pointer;
+        }
+    }
+    li.collapse-node {
+        >div>.icon {
+            .glyphicon-triangle-right;
+        }
+        >ul {
+            list-style-type: none;
+            padding-left: 5px;
+            display: none;
+        }
+    }
+ }
+}
+
+
+

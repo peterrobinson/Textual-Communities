@@ -1,0 +1,37 @@
+<div style="margin-right:auto; margin-left:auto; width:90%" class="description">
+<h3 style="text-align: center">Make edition for {{state.community.attrs.longName}} </h3>
+
+<input type="radio" name="type" checked="checked" style="margin-left: 10px" (click)="toggleType(true)">&nbsp;&nbsp;Make edition of whole community with default values&nbsp;&nbsp;&nbsp;&nbsp;
+<br>
+  <div id="MEMessage"><div *ngIf="error" class="alert alert-danger">
+      {{error}}</div>
+  </div>
+
+<input type="radio"  style="margin-left: 10px" name="type" (click)="toggleType(false)">&nbsp;&nbsp;Use configuration file to customize edition&nbsp;&nbsp;&nbsp;&nbsp;
+<div *ngIf="!edition.whole" style="margin-top:10px">
+   <tc-filereader (filechange)="filechange($event)"></tc-filereader>
+</div>
+<br>
+<label style="margin-top: 10px">Edition title</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="text" style="display: inline-block; border-style" size="50"     
+      [(ngModel)]="edition.title">
+<br>
+<label style="margin-top: 10px">Edition editor</label>&nbsp;
+<input type="text" style="display: inline-block; border-style" size="50"     
+      [(ngModel)]="edition.editor">
+
+ <hr style="border: 1px solid #8c8b8b;">
+  <div  style="text-align: center">
+  	
+  
+     <button type="button" class="btn btn-primary btn-md" (click)="submit()">Make Edition</button>
+</div>
+<div  style="height:50px">
+	<p id="MEProgress"></p>
+</div>
+<div id="MEMessage" style="height:50px">
+	<div *ngIf="message" class="alert alert-danger">
+      {{message}}</div>
+  </div>
+</div>
+<iframe id="MEIframe" src="" title="WorkingHTML" width="800"></iframe>

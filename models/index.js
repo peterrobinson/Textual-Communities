@@ -13,6 +13,7 @@ var mongoose = require('mongoose')
   , VBase = require('./vbase')
   , VMap = require('./vmap')
   , Commentary = require('./commentary')
+  , MakeEdition = require('./makeedition')
 ;
 
 Doc.Entity = Entity;
@@ -52,5 +53,6 @@ module.exports = {
   VBase: VBase,
   VMap: VMap,
   Commentary: Commentary,
+  MakeEdition: MakeEdition,
   Action: mongoose.model('Action', ActionSchema),
 };

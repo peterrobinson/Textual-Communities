@@ -10,7 +10,7 @@ var CommunityService = require('./services/community')
 var AssignPagesComponent = ng.core.Component({
   selector: 'tc-managemodal-assign-pages',
   templateUrl: '/app/assignpages.html',
-  styleUrls: ['/app/community/view.css'],
+//  styleUrls: ['/app/community/view.css'],
   directives: [
     require('./directives/modaldraggable')
   ],

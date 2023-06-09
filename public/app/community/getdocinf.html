@@ -8,7 +8,7 @@
     </div>
     <p style="text-align:center">Command/Windows+b for bold; Command/Windows+i for italic. &lt;br> for line break; &lt;p> .. &lt;/p> for paragraphs</p>
     <div class="form-group" style="margin-right:15px; margin-left: 15px">
-      <textarea (keydown.meta.b)="doBold($event)" (keydown.meta.i)="doItalic($event)" *ngIf="role=='LEADER'||role=='CREATOR'" class="form-control" rows="14" cols="80" placeholder="Your description (you can include HTML)"
+      <textarea id="witdescription" (keydown.meta.b)="doBold($event)" (keydown.meta.i)="doItalic($event)" *ngIf="role=='LEADER'||role=='CREATOR'" class="form-control" rows="14" cols="80" placeholder="Your description (you can include HTML)"
         [(ngModel)]="description"></textarea>
         <label style="margin-top: 10px; margin-left:200px" *ngIf="role=='LEADER'||role=='CREATOR'">Preview Description</label>
         <div id="InviteText" [innerHTML]="description">

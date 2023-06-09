@@ -21,10 +21,11 @@
         <li *ngIf="role=='LEADER'||role=='CREATOR'"><a (click)="navigate('edit')">Edit</a></li>
         <li><a (click)="navigate('vbase')">VBase</a></li>
         <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools<span class="caret"></span></a>
-         	<ul class="dropdown-menu" style="width:100px">
-                <li><a class="dropdown-item" (click)="navigate('search')">Search pages..</a></li>
-                 <li><a class="dropdown-item" (click)="navigate('finduncommitted')">Uncommitted pages..</a></li>
-                  <li><a class="dropdown-item" (click)="navigate('allspellings')">Accumulate all spellings..</a></li>
+         	<ul class="dropdown-menu" style="width:140px">
+                <li><a class="dropdown-item" (click)="navigate('makeEdition')">Make edition..</a></li>
+               <li><a class="dropdown-item" (click)="navigate('search')">Search pages..</a></li>
+                <li><a class="dropdown-item" (click)="navigate('finduncommitted')">Uncommitted pages..</a></li>
+                <li><a class="dropdown-item" (click)="navigate('allspellings')">Accumulate all spellings..</a></li>
          </ul>
         </li>
       </ul>
@@ -44,6 +45,7 @@
   <tc-community-vbase [community]="state.community" *ngSwitchWhen="'vbase'"></tc-community-vbase>
   <tc-community-search [community]="state.community" *ngSwitchWhen="'search'"></tc-community-search>
   <tc-community-allspellings  *ngSwitchWhen="'allspellings'"></tc-community-allspellings>
+  <tc-community-makeEdition [community]="state.community" *ngSwitchWhen="'makeEdition'"></tc-community-makeEdition>
   <tc-community-uncommitted [community]="state.community" *ngSwitchWhen="'finduncommitted'"></tc-community-uncommitted>
  <tc-edit-community *ngSwitchWhen="'edit'" style="overflow:auto"
      id="tc-edit-community" [community]="state.community"></tc-edit-community>

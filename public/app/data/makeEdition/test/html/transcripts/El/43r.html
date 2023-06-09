@@ -1,0 +1,206 @@
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />	
+    <meta charset="UTF-8" />
+  <title id="title"></title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+     <script type="text/javascript" src="../../../common/js/async.js"></script> 
+     <script type="text/javascript" src="../../../common/js/split.js"></script> 
+     <script type="text/javascript" src="../../../common/js/clay.js"></script> 
+    <script type="text/javascript" src="http://www.inklesseditions.com/TCR/common/openseadragon/openseadragon.min.js"></script> 
+	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_event.js" type="text/javascript"></script>
+	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_viewport.js" type="text/javascript"></script>
+	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_tooltip.js" type="text/javascript"></script>
+	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_tooltip_aux.js" type="text/javascript"></script>
+    <script src="../../../common/js/palette.js"></script>
+  	<script src="../../../common/js/common.js"></script><style type="text/css" media="screen">.tipContent { display:none; }</style>
+  	 <script src="../../../common/js/transcript.js"></script>
+  	 <script src="../../../common/js/collation.js"></script>
+	 <script src="../../../common/js/VBase.js"></script>
+	 <script src="../../../common/js/mss/mssEntities.js"></script>
+	 <script src="../../../common/js/mss/witnesses.js"></script>
+ 	 <script src="../../../common/js/mss/pageEntities.js"></script>
+ 	 <script src="../../../common/js/editorial/commentary.js"></script>
+  	 <link rel="stylesheet" href="../../../common/css/common.css" type="text/css" />
+  	 <link rel="stylesheet" href="../../../common/css/transcript.css" type="text/css" />
+	 <link rel="stylesheet" href="../../../common/css/dropdown.css" />
+	 <script type="text/javascript">
+	 	const MakeEdition=true;
+	 </script>
+
+<script type="text/javascript">
+	const iiifURL="https://cdm16003.contentdm.oclc.org/iiif/2/p15150coll7:2451/info.json";
+	const thisMS="El";
+	const thisPage="43r";
+</script></head>
+<body onload="initEdition()">
+  <div id="whole">
+   <div id="page-head">
+    <div id="grp1" style="width: 100%;">
+     <div id="logos"><a href="http://www.inklesseditions.com"><img src="http://www.inklesseditions.com/TCR/common/images/inklesslogo.jpg" height="33px" /></a> </div>
+   	 <div id="titleEdition"><a style="color:white" href="javascript:showSplash()">An Edition of Fragment One</a></div>
+     <div id="search" class="outline" style="text-align:center">
+          <span id="aboutLink" onclick="showAbout()" style="color:white; font-size:100%;">About</span>
+         
+       <a href="javascript:showCopyright();"><img src="http://www.inklesseditions.com/TCR/common/images/copyright.png" height="18px" /></a>  
+       <a href="javascript:searchMe();"><img src="http://www.inklesseditions.com/TCR/common/images/searchicon.png" height="18px" /></a>  
+       <a style="color:white; font-size:100%" href="javascript:$('#splash').hide();searchVBase(null)">VBase</a>  
+     </div>
+    </div>
+	<div id="grp2">
+		<div style="z-index:1000">
+		  <nav>
+			  <label for="drop" class="toggle">≡ Menu</label>
+			  <input type="checkbox" id="drop" />
+			  <ul id="addMatMenu" class="menu">    
+			  </ul>
+			</nav>
+		</div>
+		<div id="select" class="outline">
+		  <select id="level1" onchange="changeView();">
+      	 </select>
+		  <input id="line" type="text" size="3" name="line" value="1" onchange="changeView()" />
+		  <select id="MS" onchange="changeView()">
+		</select>
+		  
+		</div>
+	</div>  
+  </div>  <!-- end page head -->
+  <div id="rTable" style="display: flex; flex-flow: row nowrap; height: 100px;">
+  	<div id="panel-left" style="width: calc(50% - 5px); min-width: 100px; height: 67px;"> <!-- image goes here -->
+  	</div>
+  	<div id="panel-right" style="width: 384.023px; min-width: 150px; height: 67px; resize: both; overflow: auto; position: relative;">
+  		<div id="transcriptFrame">
+  			<div id="p-r-top">
+  				<div class="pageInf">
+  					<span id="prevPageLink"><a height="18px" id="pplA" href="42v.html">42v</a></span>
+  					<span id="pageInf">3</span>
+  					<span id="nextPageLink"><a height="18px" id="nplA" href="47r.html">47r</a></span>
+  				</div>
+  				<div class="pageLinks">
+  					<div id="selectCollation"><a href="javascript:getCollation(true,false)">Collation</a></div>
+  					<div id="selectAbbrev" style="">
+  						<select onchange="if ($(this).val()=='am') {$('am').show(); $('ex').hide()} else {$('am').hide(); $('ex').show()}">
+  							<option value="am" selected="">Abbreviated</option>
+   							<option value="ex">Expanded</option>
+ 						</select>
+  					</div>
+   					<div id="selectApp" style="display: none">
+  						<select onchange="if ($(this).val()=='lit') {$('rdg[type=lit]').show();$('rdg[type=mod]').hide();$('rdg[type=orig]').hide();} else if ($(this).val()=='mod') {$('rdg[type=mod]').show();$('rdg[type=orig]').hide();$('rdg[type=lit]').hide();} else if ($(this).val()=='orig') {$('rdg[type=orig]').show();$('rdg[type=mod]').hide();$('rdg[type=lit]').hide()}">
+  							<option value="lit" selected="">Literal</option>
+   							<option value="orig">Original</option>
+ 	 						<option value="mod">Modified</option>
+ 	 					</select>
+  					</div>
+  					<div><span><a title="Search for variants" href="javascript:searchVBase(null)">VBase</a></span></div>
+				</div>
+  			</div>
+  			<div id="transcript" style="height: 0px; align-items: flex-start;">
+  				<div id="page-tm"></div>
+  				<div id="transcript-text">
+  					<div id="transcript-tm">
+  						<div id="transcript-tm-left" style="width: 4px;"></div>
+  						<div id="transcript-tm-centre"><fw type="header" place="tm">¶ Reue</fw></div>
+ 						<div id="transcript-tm-right"><fw type="pageNum" place="tr">43</fw></div>
+  					</div>
+  					<div id="transcript-body">
+  						<div id="t-c1-left" style="width: 4px;"></div>
+  						<div id="t-cols">
+							<div id="t-a">
+								<div id="t-c1-linenumbers"><div class="lineN" data-tce="RE_59" n="RE_59-1" style="position: relative; top: 3px;"> </div><div class="lineN" data-tce="RE_60" n="RE_60-1" style="position: relative; top: 8px;">60</div><div class="lineN" data-tce="RE_61" n="RE_61-1" style="position: relative; top: 14px;"> </div><div class="lineN" data-tce="RE_62" n="RE_62-1" style="position: relative; top: 19px;"> </div><div class="lineN" data-tce="RE_63" n="RE_63-1" style="position: relative; top: 25px;"> </div><div class="lineN" data-tce="RE_64" n="RE_64-1" style="position: relative; top: 30px;"> </div><div class="lineN" data-tce="RE_65" n="RE_65-1" style="position: relative; top: 36px;">65</div><div class="lineN" data-tce="RE_66" n="RE_66-1" style="position: relative; top: 41px;"> </div><div class="lineN" data-tce="RE_67" n="RE_67-1" style="position: relative; top: 47px;"> </div><div class="lineN" data-tce="RE_68" n="RE_68-1" style="position: relative; top: 52px;"> </div><div class="lineN" data-tce="RE_69" n="RE_69-1" style="position: relative; top: 58px;"> </div><div class="lineN" data-tce="RE_70" n="RE_70-1" style="position: relative; top: 63px;">70</div><div class="lineN" data-tce="RE_71" n="RE_71-1" style="position: relative; top: 69px;"> </div><div class="lineN" data-tce="RE_72" n="RE_72-1" style="position: relative; top: 74px;"> </div><div class="lineN" data-tce="RE_73" n="RE_73-1" style="position: relative; top: 80px;"> </div><div class="lineN" data-tce="RE_74" n="RE_74-1" style="position: relative; top: 85px;"> </div><div class="lineN" data-tce="RE_75" n="RE_75-1" style="position: relative; top: 91px;">75</div><div class="lineN" data-tce="RE_76" n="RE_76-1" style="position: relative; top: 96px;"> </div><div class="lineN" data-tce="RE_77" n="RE_77-1" style="position: relative; top: 102px;"> </div><div class="lineN" data-tce="RE_78" n="RE_78-1" style="position: relative; top: 107px;"> </div><div class="lineN" data-tce="RE_79" n="RE_79-1" style="position: relative; top: 113px;"> </div><div class="lineN" data-tce="RE_80" n="RE_80-1" style="position: relative; top: 118px;">80</div><div class="lineN" data-tce="RE_81" n="RE_81-1" style="position: relative; top: 124px;"> </div><div class="lineN" data-tce="RE_82" n="RE_82-1" style="position: relative; top: 129px;"> </div><div class="lineN" data-tce="RE_83" n="RE_83-1" style="position: relative; top: 135px;"> </div><div class="lineN" data-tce="RE_84" n="RE_84-1" style="position: relative; top: 140px;"> </div><div class="lineN" data-tce="RE_85" n="RE_85-1" style="position: relative; top: 146px;">85</div><div class="lineN" data-tce="RE_86" n="RE_86-1" style="position: relative; top: 151px;"> </div><div class="lineN" data-tce="RE_87" n="RE_87-1" style="position: relative; top: 157px;"> </div><div class="lineN" data-tce="RE_88" n="RE_88-1" style="position: relative; top: 162px;"> </div><div class="lineN" data-tce="RE_89" n="RE_89-1" style="position: relative; top: 168px;"> </div><div class="lineN" data-tce="RE_90" n="RE_90-1" style="position: relative; top: 173px;">90</div><div class="lineN" data-tce="RE_91" n="RE_91-1" style="position: relative; top: 179px;"> </div><div class="lineN" data-tce="RE_92" n="RE_92-1" style="position: relative; top: 184px;"> </div><div class="lineN" data-tce="RE_93" n="RE_93-1" style="position: relative; top: 190px;"> </div><div class="lineN" data-tce="RE_94" n="RE_94-1" style="position: relative; top: 195px;"> </div><div class="lineN" data-tce="RE_95" n="RE_95-1" style="position: relative; top: 201px;">95</div><div class="lineN" data-tce="RE_96" n="RE_96-1" style="position: relative; top: 206px;"> </div><div class="lineN" data-tce="RE_97" n="RE_97-1" style="position: relative; top: 212px;"> </div><div class="lineN" data-tce="RE_98" n="RE_98-1" style="position: relative; top: 217px;"> </div><div class="lineN" data-tce="RE_99" n="RE_99-1" style="position: relative; top: 223px;"> </div><div class="lineN" data-tce="RE_100" n="RE_100-1" style="position: relative; top: 228px;">100</div><div class="lineN" data-tce="RE_FRE" n="RE_FRE-1" style="position: relative; top: 267px;"> </div><div class="lineN" data-tce="L3_IRE" n="L3_IRE-1" style="position: relative; top: 288px;"> </div><div class="lineN" data-tce="L3_1" n="L3_1-1" style="position: relative; top: 327px;"> </div><div class="lineN" data-tce="L3_2" n="L3_2-1" style="position: relative; top: 332px;"> </div><div class="lineN" data-tce="L3_3" n="L3_3-1" style="position: relative; top: 338px;"> </div><div class="lineN" data-tce="L3_4" n="L3_4-1" style="position: relative; top: 343px;"> </div><div class="lineN" data-tce="L3_5" n="L3_5-1" style="position: relative; top: 349px;">5</div><div class="lineN" data-tce="L3_6" n="L3_6-1" style="position: relative; top: 354px;"> </div><div class="lineN" data-tce="L3_7" n="L3_7-1" style="position: relative; top: 360px;"> </div><div class="lineN" data-tce="L3_8" n="L3_8-1" style="position: relative; top: 367px;"> </div><div class="lineN" data-tce="L3_9" n="L3_9-1" style="position: relative; top: 374px;"> </div><div class="lineN" data-tce="L3_10" n="L3_10-1" style="position: relative; top: 379px;">10</div><div class="lineN" data-tce="L3_11" n="L3_11-1" style="position: relative; top: 385px;"> </div><div class="lineN" data-tce="L3_12" n="L3_12-1" style="position: relative; top: 390px;"> </div><div class="lineN" data-tce="L3_13" n="L3_13-1" style="position: relative; top: 396px;"> </div><div class="lineN" data-tce="L3_14" n="L3_14-1" style="position: relative; top: 401px;"> </div><div class="lineN" data-tce="L3_15" n="L3_15-1" style="position: relative; top: 407px;">15</div><div class="lineN" data-tce="L3_16" n="L3_16-1" style="position: relative; top: 412px;"> </div><div class="lineN" data-tce="L3_17" n="L3_17-1" style="position: relative; top: 418px;"> </div><div class="lineN" data-tce="L3_18" n="L3_18-1" style="position: relative; top: 423px;"> </div><div class="lineN" data-tce="L3_19" n="L3_19-1" style="position: relative; top: 429px;"> </div><div class="lineN" data-tce="L3_20" n="L3_20-1" style="position: relative; top: 434px;">20</div><div class="lineN" data-tce="L3_21" n="L3_21-1" style="position: relative; top: 440px;"> </div><div class="lineN" data-tce="L3_22" n="L3_22-1" style="position: relative; top: 445px;"> </div><div class="lineN" data-tce="L3_23" n="L3_23-1" style="position: relative; top: 451px;"> </div><div class="lineN" data-tce="L3_24" n="L3_24-1" style="position: relative; top: 456px;"> </div><div class="lineN" data-tce="L3_25" n="L3_25-1" style="position: relative; top: 462px;">25</div><div class="lineN" data-tce="L3_26" n="L3_26-1" style="position: relative; top: 469px;"> </div><div class="lineN" data-tce="L3_27" n="L3_27-1" style="position: relative; top: 476px;"> </div><div class="lineN" data-tce="L3_28" n="L3_28-1" style="position: relative; top: 481px;"> </div><div class="lineN" data-tce="L3_29" n="L3_29-1" style="position: relative; top: 487px;"> </div><div class="lineN" data-tce="L3_30" n="L3_30-1" style="position: relative; top: 492px;">30</div></div>
+								<div id="t-c1-text" style="width: 437px;"><div><div type="G" n="RE">  <br /><l n="59"><w n="2">Bothe</w> <w n="4">of</w> <w n="6">his</w> <w n="8">catel /</w> <w n="10">and</w> <w n="12">his</w> <w n="14">Mesuage</w></l><br /><l n="60"><w n="2">And</w> <w n="4">straunge /</w> <w n="6">he</w> <w n="8">made</w> <w n="10">it</w> <w n="12">of</w> <w n="14">hir</w> <w n="16">mariage</w></l><br /><l n="61"><w n="2">His</w> <w n="4">purpos</w> <w n="6">was</w> <w n="8">/</w> <w n="10">for</w> <w n="12">to</w> <w n="14">bistowe</w> <w n="16">hir<am>͗</am><ex style="display: none;">e</ex></w> <w n="18">hye</w></l><br /><l n="62"><w n="2">In</w> <w n="4">to</w> <w n="6">som</w> <w n="8">worthy</w> <w n="10">blood</w> <w n="12">of</w> <w n="14">Auncetrye</w></l><br /><l n="63"><w n="2">For</w> <w n="4">hooly</w> <w n="6">chirches</w> <w n="8">good /</w> <w n="10">moot</w> <w n="12">been</w> <w n="14">despended</w></l><br /><l n="64"><w n="2">On</w> <w n="4">hooly</w> <w n="6">chirches</w> <w n="8">blood /</w> <w n="10">that</w> <w n="12">is</w> <w n="14">descended</w></l><br /><l n="65"><w n="2">Therfore /</w> <w n="4">he</w> <w n="6">wolde</w> <w n="8">his</w> <w n="10">hooly</w> <w n="12">blood</w> <w n="14">honoure</w></l><br /><l n="66"><w n="2">Though /</w> <w n="4">that</w> <w n="6">he</w> <w n="8">hooly</w> <w n="10">chirche</w> <w n="12">sholde</w> <w n="14">deuoure</w></l><br /><l n="67"><w n="2"><hi rend="orncp2">G</hi>reet</w> <w n="4">sokene</w> <w n="6">/</w> <w n="8">hath</w> <w n="10">this</w> <w n="12">Miller<am>͗</am><ex style="display: none;">e</ex></w> <w n="14">/</w> <w n="16">out</w> <w n="18">of</w> <w n="20">doute</w></l><br /><l n="68"><w n="2">With</w> <w n="4">whete</w> <w n="6">and</w> <w n="8">Malt</w> <w n="10">of</w> <w n="12">al</w> <w n="14">the</w> <w n="16">land</w> <w n="18">aboute</w></l><br /><l n="69"><w n="2">And</w> <w n="4">nameliche /</w> <w n="6">ther</w> <w n="8">was</w> <w n="10">a</w> <w n="12">greet</w> <w n="14">Collegge</w></l><br /><l n="70"><w n="2">Men</w> <w n="4">clepen</w> <w n="6">the</w> <w n="8">soler</w> <w n="10">halle</w> <w n="12">at</w> <w n="14">Cantebregge</w></l><br /><l n="71"><w n="2">Ther</w> <w n="4">was</w> <w n="6">hir</w> <w n="8">whete /</w> <w n="10">and</w> <w n="12">eek</w> <w n="14">hir</w> <w n="16">malt</w> <w n="18">ygrounde</w></l><br /><l n="72"><w n="2">And</w> <w n="4">on</w> <w n="6">a</w> <w n="8">day /</w> <w n="10">it</w> <w n="12">happed</w> <w n="14">in</w> <w n="16">a</w> <w n="18">stounde</w></l><br /><l n="73"><w n="2">Sik</w> <w n="4">lay</w> <w n="6">the</w> <w n="8">Maunciple /</w> <w n="10">on</w> <w n="12">a</w> <w n="14">maladye</w></l><br /><l n="74"><w n="2">Men</w> <w n="4">wenden</w> <w n="6">wisly /</w> <w n="8">that</w> <w n="10">he</w> <w n="12">sholde</w> <w n="14">dye</w></l><br /><l n="75"><w n="2">For</w> <w n="4">which /</w> <w n="6">this</w> <w n="8">Millere /</w> <w n="10">stal</w> <w n="12">bothe</w> <w n="14">mele</w> <w n="16">and</w> <w n="18">corn</w></l><br /><l n="76"><w n="2">An</w> <w n="4">hundred</w> <w n="6">tyme /</w> <w n="8">moore</w> <w n="10">than</w> <w n="12">biforn</w></l><br /><l n="77"><w n="2">For</w> <w n="4">ther</w> <w n="6">biforn /</w> <w n="8">he</w> <w n="10">stal</w> <w n="12">but</w> <w n="14">curteisly</w></l><br /><l n="78"><w n="2">But</w> <w n="4">now /</w> <w n="6">he</w> <w n="8">was</w> <w n="10">a</w> <w n="12">theef</w> <w n="14">outrageously</w></l><br /><l n="79"><w n="2">For</w> <w n="4">which /</w> <w n="6">the</w> <w n="8">wardeyn</w> <w n="10">chidde</w> <w n="12">and</w> <w n="14">made</w> <w n="16">fare</w></l><br /><l n="80"><w n="2">But</w> <w n="4">ther</w> <w n="6">of</w> <w n="8">/</w> <w n="10">sette</w> <w n="12">the</w> <w n="14">Miller<am>͗</am><ex style="display: none;">e</ex></w> <w n="16">nat</w> <w n="18">a</w> <w n="20">tare</w></l><br /><l n="81"><w n="2">And</w> <w n="4">craketh</w> <w n="6">boost /</w> <w n="8">and</w> <w n="10">swoor</w> <w n="12">it</w> <w n="14">was</w> <w n="16">nat</w> <w n="18">so</w></l><br /><l n="82"><w n="2">¶ Thanne</w> <w n="4">were</w> <w n="6">ther /</w> <w n="8">yonge</w> <w n="10">poure</w> <w n="12">clerkes</w> <w n="14">two</w></l><br /><l n="83"><w n="2">That</w> <w n="4">dwelten</w> <w n="6">in</w> <w n="8">this</w> <w n="10">halle /</w> <w n="12">of</w> <w n="14">which</w> <w n="16">I</w> <w n="18">seye</w></l><br /><l n="84"><w n="2">Testif</w> <w n="4">they</w> <w n="6">were /</w> <w n="8">and</w> <w n="10">lusty</w> <w n="12">for</w> <w n="14">to</w> <w n="16">pleye</w></l><br /><l n="85"><w n="2">And</w> <w n="4">oonly</w> <w n="6">/</w> <w n="8">for</w> <w n="10">hir<am>͗</am><ex style="display: none;">e</ex></w> <w n="12">myrthe</w> <w n="14">and</w> <w n="16">reuerye</w></l><br /><l n="86"><w n="2">Vp</w> <w n="4">on</w> <w n="6">the</w> <w n="8">wardeyn /</w> <w n="10">bisily</w> <w n="12">they</w> <w n="14">crye</w></l><br /><l n="87"><w n="2">To</w> <w n="4">yeue</w> <w n="6">hem</w> <w n="8">leue /</w> <w n="10">but</w> <w n="12">a</w> <w n="14">litel</w> <w n="16">stounde</w></l><br /><l n="88"><w n="2">To</w> <w n="4">goon</w> <w n="6">to</w> <w n="8">Mille /</w> <w n="10">and</w> <w n="12">seen</w> <w n="14">hir</w> <w n="16">corn</w> <w n="18">ygrounde</w></l><br /><l n="89"><w n="2">And</w> <w n="4">hardily /</w> <w n="6">they</w> <w n="8">dorste</w> <w n="10">leye</w> <w n="12">hir</w> <w n="14">nekke</w></l><br /><l n="90"><w n="2">The</w> <w n="4">Miller<am>͗</am><ex style="display: none;">e</ex></w> <w n="6">sholde</w> <w n="8">nat</w> <w n="10">stele</w> <w n="12">hem</w> <w n="14">/</w> <w n="16">half</w> <w n="18">a</w> <w n="20">pekke</w></l><br /><l n="91"><w n="2">Of</w> <w n="4">corn</w> <w n="6">by</w> <w n="8">sleighte /</w> <w n="10">ne</w> <w n="12">by</w> <w n="14">force</w> <w n="16">hem</w> <w n="18">reue</w></l><br /><l n="92"><w n="2">And</w> <w n="4">at</w> <w n="6">the</w> <w n="8">laste /</w> <w n="10">the</w> <w n="12">wardeyn</w> <w n="14">yaf</w> <w n="16">hem</w> <w n="18">leue</w></l><br /><l n="93"><w n="2">Iohn</w> <w n="4">highte</w> <w n="6">that</w> <w n="8">oon /</w> <w n="10">and</w> <w n="12">Aleyn</w> <w n="14">heet</w> <w n="16">that</w> <w n="18">oother</w></l><br /><l n="94"><w n="2">Of</w> <w n="4">o</w> <w n="6">toun</w> <w n="8">were</w> <w n="10">they</w> <w n="12">born /</w> <w n="14">that</w> <w n="16">highte</w> <w n="18">Strother</w></l><br /><l n="95"><w n="2">Fer</w> <w n="4">in</w> <w n="6">the</w> <w n="8">North /</w> <w n="10">I</w> <w n="12">kan</w> <w n="14">nat</w> <w n="16">telle</w> <w n="18">where</w></l><br /><l n="96"><w n="2">¶ This</w> <w n="4">Aleyn /</w> <w n="6">maketh</w> <w n="8">redy</w> <w n="10">al</w> <w n="12">his</w> <w n="14">gere</w></l><br /><l n="97"><w n="2">And</w> <w n="4">on</w> <w n="6">an</w> <w n="8">hors /</w> <w n="10">the</w> <w n="12">sak</w> <w n="14">he</w> <w n="16">caste</w> <w n="18">anon</w></l><br /><l n="98"><w n="2">Forth</w> <w n="4">goth</w> <w n="6">Aleyn</w> <w n="8">the</w> <w n="10">clerk /</w> <w n="12">and</w> <w n="14">also</w> <w n="16">Iohn</w></l><br /><l n="99"><w n="2">With</w> <w n="4">good</w> <w n="6">swerd /</w> <w n="8">and</w> <w n="10">bokeler</w> <w n="12">by</w> <w n="14">hir</w> <w n="16">syde</w></l><br /><l n="100"><w n="2">Iohn</w> <w n="4">knew</w> <w n="6">the</w> <w n="8">wey /</w> <w n="10">hem</w> <w n="12">neded</w> <w n="14">no</w> <w n="16">gyde</w></l><space unit="lines" quantity="2"></space><br /><l n="FRE"><w n="2">¶ Heere</w> <w n="4">is</w> <w n="6">ended</w> <w n="8">the</w> <w n="10">Reues</w> <w n="12">tale</w></l><space unit="lines" quantity="2"></space></div><div type="G" n="L3"> <br /><l n="IRE"><w n="2">¶ The</w> <w n="4">prologe</w> <w n="6">of</w> <w n="8">the</w> <w n="10">Cokes</w> <w n="12">Tale</w></l><space unit="lines" quantity="2"></space><br /><l n="1"><w n="2"><hi rend="orncp5">T</hi>he</w> <w n="4">Cook</w> <w n="6">of</w> <w n="8">London̄</w> <w n="10">/</w> <w n="12">whil</w> <w n="14">that</w> <w n="16">the</w> <w n="18">Reue</w> <w n="20">spak</w></l><br /><l n="2"><w n="2">For</w> <w n="4">ioye</w> <w n="6">hi<am>̄</am><ex style="display: none;">m</ex></w> <w n="8">thoughte</w> <w n="10">/</w> <w n="12">he</w> <w n="14">clawed</w> <w n="16">hi<am>̄</am><ex style="display: none;">m</ex></w> <w n="18">on</w> <w n="20">the</w> <w n="22">bak</w></l><br /><l n="3"><w n="2">Ha</w> <w n="4">·</w> <w n="6">ha</w> <w n="8">·</w> <w n="10">quod</w> <w n="12">he</w> <w n="14">/</w> <w n="16">for</w> <w n="18">cristes</w> <w n="20">passio<am rend="ū">ıı̄</am><ex style="display: none;">un</ex></w></l><br /><l n="4"><w n="2">This</w> <w n="4">Miller<am>͗</am><ex style="display: none;">e</ex></w> <w n="6">/</w> <w n="8">hadde</w> <w n="10">a</w> <w n="12">sharp<am>̄</am><ex style="display: none;">e</ex></w> <w n="14">conclusio<am rend="ū">ıı̄</am><ex style="display: none;">un</ex></w></l><br /><l n="5"><w n="2">Vp</w> <w n="4">on</w> <w n="6">his</w> <w n="8">argument /</w> <w n="10">of</w> <w n="12">herbergage</w></l><br /><l n="6"><w n="2">Wel</w> <w n="4">seyde</w> <w n="6">Salomo<am>̄</am><ex style="display: none;">n</ex></w> <w n="8">/</w> <w n="10">in</w> <w n="12">his</w> <w n="14">langage</w></l><br /><l n="7"><w n="2">Ne</w> <w n="4">brynge</w> <w n="6">nat</w> <w n="8">euery</w> <w n="10">man</w> <w n="12">in</w> <w n="14">to</w> <w n="16">thyn</w> <w n="18">hous</w></l><br /><l n="8"><w n="2">For</w> <w n="4">herberwynge</w> <w n="6">by</w> <w n="8">nyghte</w> <w n="10">is</w> <w n="12"></w> <w n="14"><am>ꝑ</am><ex style="display: none;">per</ex>ilous</w></l><br /><l n="9"><w n="2">Wel</w> <w n="4">oghte</w> <w n="6">a</w> <w n="8">man /</w> <w n="10">auysed</w> <w n="12">for</w> <w n="14">to</w> <w n="16">be</w></l><br /><l n="10"><w n="2">Whom</w> <w n="4">that</w> <w n="6">he</w> <w n="8">broghte /</w> <w n="10">in</w> <w n="12">to</w> <w n="14">his</w> <w n="16">pryuetee</w></l><br /><l n="11"><w n="2">I</w> <w n="4">pray</w> <w n="6">to</w> <w n="8">god /</w> <w n="10">so</w> <w n="12">yeue</w> <w n="14">me</w> <w n="16">sorwe</w> <w n="18">and</w> <w n="20">care</w></l><br /><l n="12"><w n="2">If</w> <w n="4">eu<am>̉</am><ex style="display: none;">er</ex>e</w> <w n="6">sitthe</w> <w n="8">/</w> <w n="10">I</w> <w n="12">highte</w> <w n="14">hogge</w> <w n="16">of</w> <w n="18">ware</w></l><br /><l n="13"><w n="2">Herde</w> <w n="4">I</w> <w n="6">a</w> <w n="8">Miller<am>̉</am><ex style="display: none;">e</ex></w> <w n="10">/</w> <w n="12">bettre</w> <w n="14">yset</w> <w n="16">a</w> <w n="18">werk</w></l><br /><l n="14"><w n="2">He</w> <w n="4">hadde</w> <w n="6">a</w> <w n="8">Iape</w> <w n="10">of</w> <w n="12">malice</w> <w n="14">in</w> <w n="16">the</w> <w n="18">derk</w></l><br /><l n="15"><w n="2">But</w> <w n="4">god</w> <w n="6">forbede</w> <w n="8">/</w> <w n="10">that</w> <w n="12">we</w> <w n="14">stynte</w> <w n="16">heere</w> <w n="18"><note rend="inter">hic</note></w></l><br /><l n="16"><w n="2">And</w> <w n="4">therfore</w> <w n="6">/</w> <w n="8">if</w> <w n="10">ye</w> <w n="12">vouche</w> <w n="14">sauf</w> <w n="16">to</w> <w n="18">heere</w> <w n="20"><note rend="inter">audire</note></w></l><br /><l n="17"><w n="2">A</w> <w n="4">tale</w> <w n="6">of</w> <w n="8">me /</w> <w n="10">that</w> <w n="12">am</w> <w n="14">a</w> <w n="16">poure</w> <w n="18">man</w></l><br /><l n="18"><w n="2">I</w> <w n="4">wol</w> <w n="6">yow</w> <w n="8">telle</w> <w n="10">/</w> <w n="12">as</w> <w n="14">wel</w> <w n="16">as</w> <w n="18">eu<am>̉</am><ex style="display: none;">er</ex>e</w> <w n="20">I</w> <w n="22">kan</w></l><br /><l n="19"><w n="2">A</w> <w n="4">litel</w> <w n="6">iape /</w> <w n="8">that</w> <w n="10">fil</w> <w n="12">in</w> <w n="14">oure</w> <w n="16">Citee</w></l><br /><l n="20"><w n="2">¶ Oure</w> <w n="4">hoost</w> <w n="6">answerde /</w> <w n="8">and</w> <w n="10">seide</w> <w n="12">I</w> <w n="14">graunte</w> <w n="16">it</w> <w n="18">thee</w></l><br /><l n="21"><w n="2">Now</w> <w n="4">telle</w> <w n="6">on</w> <w n="8">Roger /</w> <w n="10">looke</w> <w n="12">that</w> <w n="14">it</w> <w n="16">be</w> <w n="18">good</w></l><br /><l n="22"><w n="2">For</w> <w n="4">many</w> <w n="6">a</w> <w n="8">pastee /</w> <w n="10">hastow</w> <w n="12">laten</w> <w n="14">blood</w></l><br /><l n="23"><w n="2">And</w> <w n="4">many</w> <w n="6">a</w> <w n="8">Iakke</w> <w n="10">of</w> <w n="12">douere</w> <w n="14">hastow</w> <w n="16">soold</w></l><br /><l n="24"><w n="2">That</w> <w n="4">hath</w> <w n="6">been /</w> <w n="8">twies</w> <w n="10">hoot</w> <w n="12">and</w> <w n="14">twies</w> <w n="16">coold</w></l><br /><l n="25"><w n="2">Of</w> <w n="4">many</w> <w n="6">a</w> <w n="8">pilgrym /</w> <w n="10">hastow</w> <w n="12">cristes</w> <w n="14">curs</w></l><br /><l n="26"><w n="2">For</w> <w n="4">of</w> <w n="6">thy</w> <w n="8"><am>ꝑ</am><ex style="display: none;">per</ex>cely</w> <w n="10">/</w> <w n="12">yet</w> <w n="14">they</w> <w n="16">fare</w> <w n="18">the</w> <w n="20">wors</w></l><br /><l n="27"><w n="2">That</w> <w n="4">they</w> <w n="6">han</w> <w n="8">eten /</w> <w n="10">with</w> <w n="12">thy</w> <w n="14">stubbel</w> <w n="16">goos</w></l><br /><l n="28"><w n="2">For</w> <w n="4">in</w> <w n="6">thy</w> <w n="8">shoppe /</w> <w n="10">is</w> <w n="12">many</w> <w n="14">a</w> <w n="16">flye</w> <w n="18">loos</w></l><br /><l n="29"><w n="2">Now</w> <w n="4">telle</w> <w n="6">on /</w> <w n="8">gentil</w> <w n="10">Roger</w> <w n="12">by</w> <w n="14">thy</w> <w n="16">name</w></l><br /><l n="30"><w n="2">But</w> <w n="4">yet</w> <w n="6">I</w> <w n="8">pray</w> <w n="10">thee /</w> <w n="12">be</w> <w n="14">nat</w> <w n="16">wroth</w> <w n="18">for</w> <w n="20">gam</w></l></div></div></div>
+								<div id="t-c1c2-gutter" style="width: 4px;"></div>
+								<div id="t-c2-linenumbers"></div>
+								<div id="t-c2-text" style="width: 4px;"></div>
+							</div>
+							<div id="t-b">    <!-- deals with two colument pages divided into zones, eg Wy e3v -->
+								<div id="t-b-banner-text"></div>  <!-- banner between two column zones -->
+								<div id="t-b-body">
+									<div id="t-b-c1-linenumbers"></div>
+									<div id="t-b-c1-text" style="width: 437px;"></div>
+									<div id="t-b-c1c2-gutter" style="width: 4px;"></div>
+									<div id="t-b-c2-linenumbers"></div>
+									<div id="t-b-c2-text" style="width: 4px;"></div>
+								</div>
+							</div>
+						</div>
+						<div id="t-c2-right" style="width: 4px;"></div>
+					</div>
+  					<div id="transcript-bm">
+   						<div id="transcript-bm-left"></div>
+  						<div id="transcript-bm-centre"></div>
+  						<div id="transcript-bm-right"></div>					
+  					</div>
+  				</div>
+  				<div id="page-bm"></div>
+  			</div>
+  		</div> <!-- end transcriptFrame -->
+  		<div id="collationFrame" style="display: none;">
+			<div id="c-r-top">
+				<div class="pageInf">
+					<span id="prevColl">   <a id="prevCollLink" href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconPrev.png" height="16px" /></a></span><span class="showTip infoVM msInf">About variant maps</span>
+					<span id="collSummary">Info here</span><span id="nextColl"><a id="nextCollLink" href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconNext.png" height="16px" />   </a></span>	
+				</div>
+				<div class="pageLinks">
+					<span><a href="javascript:initMyTranscript()">Transcript </a></span><span title="Check box to see original spelling"><input onclick="changeCollation()" id="spellingBox" type="checkbox" /> Original spelling</span><span id="spellingSpan" style="display:none" title="Check box to see original spellings by words"><input onclick="changeCollation()" id="wordsBox" type="checkbox" /> By words</span><!-- span>&nbsp;<a href="javascript:showComparison()">Compare</a></span-->  <span><a title="Search for variants" href="javascript:searchVBase(null)">VBase</a></span>
+				</div>
+			</div>
+			<div id="collation">
+				<div id="collationText"></div>
+			</div>
+		</div> 
+		<div id="compareFrame" style="display:none">
+			<div id="compare-r-top">
+				<div class="pageInf">
+					<span id="prevCompare">   <a id="prevCompareLink" href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconPrev.png" height="16px" /></a></span><span><a href="javaScript:initMyTranscript()">Transcript</a></span>
+					<span id="compareSummary">Information here</span><span><a id="compareCollLink" href="dummy">Collation</a></span><span id="nextCompare"><a id="nextCompareLink" href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconNext.png" height="16px" />   </a></span>	
+				</div>
+				<div class="pageLinks">
+				</div>
+			</div>
+			<div id="compareText">
+			</div>
+		</div>
+  	<object style="display: block; position: absolute; top: 0; left: 0; height: 100%; width: 100%; overflow: hidden; pointer-events: none; z-index: -1;" class="resize-sensor" type="text/html" data="about:blank"></object></div>  <!-- end panelRight -->
+  </div>  <!-- end rTable -->
+  <div id="searchVBase" style="display:none">
+	<div id="searchVBContainer">
+		<div id="searchVBheader">
+			<div id="aboutVB"><span><a href="javascript:javascript:initTranscript()">Transcript</a></span><span class="showTip infoVB msInf">About VBase</span><span class="showTip infoVM msInf">About variant maps</span><span><a href="javascript:getCollation(true, false)">Collation</a></span><!-- span><a href="javascript:showComparison()">Compare</a></span--></div>
+			<div id="VBerror"></div>
+			<div id="VBFrameContainer">
+				<div id="searchVBFrame">
+					<div id="conditions"></div>
+				</div>
+			</div>
+			<div id="presetVBs"></div>
+			<div id="VBChoices"><span id="witList"><a href="javascript:showWitList()">Show witnesses</a></span><span id="VBchooseSpan"><input id="VBchoose" onclick="searchVariantSite(null)" type="checkbox" />Find variant sites</span><span style="margin-left: 10px" class="showTip infoVBS msInf">About variant sites search</span>   </div>
+			<div id="doSearchVB"><button id="doSearchVButton" onclick="doSearch()">Search</button><span id="VBResultsHead"></span></div>
+			<hr style="border: 1px solid lightgrey" />
+		</div>
+		<div id="searchVBResults"></div>
+	</div>
+  </div>
+  <div id="OAstatement" style="height: auto;">
+		<p style="text-align: center; margin: 0px"><a href="javascript:getImageInf()">Image</a> and <a href="javascript:getTranscriptInf();">transcript</a> from Open Access site <a target="_blank" href="http://www.inklesseditions.com/TCP/Open/RE">www.inklesseditions.com/TCP/Open/RE</a></p>
+		<p id="imageInf" style="display:none"><a href="javascript:$('#imageInf').hide();resizeRTable()"><img src="../../../common/images/close.png" /></a> Image of folio 43r in San Marino, Huntington Library El 26 C 9 made available for Open Access with kind permission of the Huntington Library. Images of this manuscript are served in IIIF form by the Huntington Library server, at <a href="https://hdl.huntington.org/digital/collection/p15150coll7/id/2359" target="msImage">https://hdl.huntington.org/digital/collection/p15150coll7/id/2359</a>.</p>
+		<p id="transcriptInf" style="display:none"><a href="javascript:$('#transcriptInf').hide();resizeRTable()"><img src="../../../common/images/close.png" /></a>Transcript of folio 43r in San Marino, Huntington Library El 26 C 9. Canterbury Tales project at the University of Saskatchewan
+ 						Original transcription of the Ellesmere manuscript by F.J. Furnivall and the Chaucer Society, 1868. Captured as electronic text and SGML encoding by the University of Michigan 2000. Converted to XML with corrections Canterbury Tales project at the University of Saskatchewan 2011-2103.
+ 					Last commit by : Feb 1, 1990, 24:00.</p>
+</div>
+  <div id="ancillaries">
+  		<a href="javascript:closeAncillary()"><img src="../../../common/images/close.png" /></a>
+		<div id="editorial"></div>
+		<div id="searchVBase"></div>
+		<div id="searchContainer"> </div>
+		<div id="popUps"><div id="WordColl"> </div></div>
+		<ul id="VmapUL"></ul>
+		<div id="VMapIDs"></div>
+	</div>
+</div> <!-- end whole -->
+
+
+  				
+  				
+  	<div id="tipDiv" class="tooltip" style="position: absolute; visibility: hidden; z-index: 10000; left: 0px; top: 0px;"></div></body></html>
