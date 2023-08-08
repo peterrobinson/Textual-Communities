@@ -5,65 +5,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="UTF-8">	
     <meta charset="UTF-8">
-  <title id="title"></title>
+  <title id="title">Tales of the Reeve and Cook</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-     <script type="text/javascript" src="js/async.js"></script> 
-     <script type="text/javascript" src="js/split.js"></script> 
-     <script type="text/javascript" src="js/clay.js"></script> 
-    <script type="text/javascript" src="http://www.inklesseditions.com/TCR/common/openseadragon/openseadragon.min.js"></script> 
-	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_event.js" type="text/javascript"></script>
-	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_viewport.js" type="text/javascript"></script>
-	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_tooltip.js" type="text/javascript"></script>
-	<script src="http://www.inklesseditions.com/TCR/common/js/dw_tooltips/js/dw_tooltip_aux.js" type="text/javascript"></script>
-    <script  src="js/palette.js"></script>
-  	<script  src="js/common.js"></script>
-  	 <script  src="js/transcript.js"></script>
-  	 <script  src="js/collation.js"></script>
-	 <script  src="js/VBase.js"></script>
-	 <script  src="js/mss/mssEntities.js"></script>
-	 <script  src="js/mss/witnesses.js"></script>
- 	 <script  src="js/mss/pageEntities.js"></script>
- 	 <script  src="js/editorial/commentary.js"></script>
-  	 <link rel="stylesheet" href="css/common.css" type="text/css">
-  	 <link rel="stylesheet" href="http://www.inklesseditions.com/CT/common/css/transcript.css" type="text/css">
-	 <link rel="stylesheet" href="css/dropdown.css">
-	 <script type="text/javascript">
-	 	const MakeEdition=true;
-	 </script>
-
+     <script type="text/javascript" src="/app/data/makeEdition/common/js/async.js"></script> 
+     <script type="text/javascript" src="/app/data/makeEdition/common/js/split.js"></script> 
+     <script type="text/javascript" src="/app/data/makeEdition/common/js/clay.js"></script> 
+	<script src="/app/data/makeEdition/common/js/dw_tooltips/js/dw_event.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/js/dw_tooltips/js/dw_viewport.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/js/dw_tooltips/js/dw_tooltip.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/js/dw_tooltips/js/dw_tooltip_aux.js" type="text/javascript"></script>
+    <script  src="/app/data/makeEdition/common/js/palette.js"></script>
+   <script type="text/javascript" src="/app/data/makeEdition/common/js/clay.js"></script> 
+	<script  src="/app/data/makeEdition/common/js/common.js"></script>
+    <link rel="stylesheet" href="/app/data/makeEdition/common/css/common.css" type="text/css">
+	 <link rel="stylesheet" href="/app/data/makeEdition/common/css/junicode_regular_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+  	 <link rel="stylesheet" href="/app/data/makeEdition/common/css/junicode_bold_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/css/junicode_italic_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/css/junicode_bolditalic_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+	 <link rel="stylesheet" href="/app/data/makeEdition/common/css/dropdown.css">
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/CTP2/common/css/transcript.css" type="text/css">
+  	 <script  src="/app/data/makeEdition/CTP2/common/js/collation.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/VBase.js"></script>
+   	 <script  src="/app/data/makeEdition/CTP2/common/js/mss/L2mss.js"></script>
+     <script  src="/app/data/makeEdition/CTP2/common/js/mss/REmss.js"></script>
+     <script  src="/app/data/makeEdition/CTP2/common/js/mss/L3mss.js"></script>
+     <script  src="/app/data/makeEdition/CTP2/common/js/mss/COmss.js"></script>
+     <script  src="/app/data/makeEdition/CTP2/common/js/mss/L4mss.js"></script>
+     <script  src="/app/data/makeEdition/CTP2/common/js/mss/L5mss.js"></script>
+     <script  src="/app/data/makeEdition/CTP2/common/js/mss/L6mss.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/L2pages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/REpages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/L3pages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/COpages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/L4pages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/L5pages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/L6pages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/pages/MSSpages.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/mss/manuscripts.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/common/js/collationents.js"></script>
+	 <script  src="/app/data/makeEdition/CTP2/RE/driver/js/transcript.js"></script>
+	 <script type="text/javascript">const community="CTP2", currMS="Hg", currPage="50r", currTale="L2", currLine="1";</script>
+  	
 </head>
 <body onload="initEdition()">
   <div id="whole">
    <div id="page-head">
     <div id="grp1">
-     <div id="logos"><a href="http://www.inklesseditions.com"><img src="http://www.inklesseditions.com/TCR/common/images/inklesslogo.jpg" height="33px"></a> </div>
-   	 <div id="titleEdition"><a style="color:white" href="javascript:showSplash()"></a></div>
+     <div id="logos"><a href="http://www.inklesseditions.com"><img src="/app/data/makeEdition/common/images/inklesslogo.png		" height="33px"></a> </div>
+   	 <div id="title"><a style="color:white" href="javascript:showSplash()">Tales of the Reeve and Cook</a></div>
      <div id="search" class="outline" style="text-align:center">
         &nbsp;&nbsp;<span id="aboutLink" onclick="showAbout()" style="color:white; font-size:100%;" >About</span>
        &nbsp;&nbsp;
-       <a href="javascript:showCopyright();"><img  src="http://www.inklesseditions.com/TCR/common/images/copyright.png" height="18px"></a>&nbsp;&nbsp;
-       <a href="javascript:searchMe();"><img  src="http://www.inklesseditions.com/TCR/common/images/searchicon.png" height="18px"></a>&nbsp;&nbsp;
+       <a href="javascript:showCopyright();"><img  src="/app/data/makeEdition/common/images/copyright.png" height="18px"></a>&nbsp;&nbsp;
+       <a href="javascript:searchMe();"><img  src="/app/data/makeEdition/common/images/searchicon.png" height="18px"></a>&nbsp;&nbsp;
        <a style="color:white; font-size:100%" href="javascript:$('#splash').hide();searchVBase(null)">VBase</a>&nbsp;&nbsp;
      </div>
     </div>
-	<div id="grp2">
+    <div id="grp2">
 		<div style="z-index:1000">
 		  <nav>
-			  <label for="drop" class="toggle">≡ Menu</label>
+			  <label for="drop" class="toggle">&#8801; Menu</label>
 			  <input type="checkbox" id="drop" />
-			  <ul id="addMatMenu" class="menu">    
+			  <ul class="menu">    
+				<li> 
+				  <label for="drop-2" class="toggle">Editorial Material</label>
+				  <a href="#" style="height: 16px; position: relative; top:-4px; padding-left:5px; padding-right:5px">Editorial Material <img src="/app/data/makeEdition/common/images/down-arrow-brown.png" height="8px"></a>
+				  <input type="checkbox" id="drop-2"/>
+				  <ul class="box">
+				    <li role="none" style="text-align: center; color: black">— Preliminaries (HTML) —</li>
+					<li><a href="javascript:showTitlePage()">Title Page</a></li>
+					<hr style="margin: 0.25px; color:black; border-top:solid; border-top-width:thin"/>
+					<li role="none"><a role="menuitem" href="Editorial Matter.pdf" target="_blank" tabindex="-1" style="text-align: center">— Editorial Matter (PDF) —</a></li>
+					<li> 
+					  <label for="drop-6" class="toggle"><span class="ssm"><span>Further Preliminaries</span> <img src='/app/data/makeEdition/common/images/down-arrow-brown.png'></span></label>
+					  <a href="#"><span class="ssm"><span>Further Preliminaries</span> <img src='/app/data/makeEdition/common/images/right-arrow-brown.png'></span></a>
+					  <input type="checkbox" id="drop-6"/>
+					  <ul>
+						<li role="btop"><a role="menuitem" href="Editorial Matter.pdf#COPYRIGHT STATEMENTS FOR IMAGES, TRANSCRIPTS AND EDITORIAL MATTER" target="_blank" tabindex="-1">Copyright statements</a></li>
+						<li role="bmid"><a role="menuitem" href="Editorial Matter.pdf#Foreword 2010" target="_blank" tabindex="-1">Foreword 2010</a></li>
+						<li role="bbottom"><a role="menuitem" href="Editorial Matter.pdf#Team Members" target="_blank" tabindex="-1">Team members</a></li>
+					  </ul>
+				  </li>
+				  <li role="none">
+					  <a role="menuitem" href="Editorial Matter.pdf#Table of Abbreviations" target="_blank" tabindex="-1">Table of Abbreviations
+					  </a>
+				  </li>
+				  </ul>
+				</li>
 			  </ul>
 			</nav>
 		</div>
 		<div id="select" class="outline">
-		  <select id="level1" onchange="changeView();">
+		  <select id="tale" onchange="populateMSS();changeView();">
       	 </select>
-		  <input id="line" type="text" size="3" name="line" value="1" onchange="changeView()" />
+		  <input id="line" type="text" size="3" name="line" value="1" onchange="changeView()">
 		  <select id="MS" onchange="changeView()">
 		</select>
 		  
 		</div>
-	</div>  
+	</div>
   </div>  <!-- end page head -->
   <div id="rTable" style="display:none">
   	<div id="panel-left"> <!-- image goes here -->
@@ -72,9 +112,9 @@
   		<div id="transcriptFrame">
   			<div id="p-r-top">
   				<div class="pageInf">
-  					<span id="prevPageLink"></span>
+  					<span id="prevPageLink">2</span>
   					<span id="pageInf">3</span>
-  					<span id="nextPageLink"></span>
+  					<span id="nextPageLink">4</span>
   				</div>
   				<div class="pageLinks">
   					<div id="selectCollation"><a href="javascript:getCollation(true,false)">Collation</a></div>
@@ -137,8 +177,8 @@
   		<div id="collationFrame">
 			<div id="c-r-top">
 				<div class="pageInf">
-					<span id="prevColl">&nbsp;&nbsp;&nbsp;<a id="prevCollLink"  href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconPrev.png" height="16px"></a></span><span class="showTip infoVM msInf">About variant maps</span>
-					<span id="collSummary">Info here</span><span id="nextColl"><a id="nextCollLink"  href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconNext.png" height="16px">&nbsp;&nbsp;&nbsp;</a></span>	
+					<span id="prevColl">&nbsp;&nbsp;&nbsp;<a id="prevCollLink"  href="gothere"><img src="/app/data/makeEdition/common/images/iconPrev.png" height="16px"></a></span><span class="showTip infoVM msInf">About variant maps</span>
+					<span id="collSummary">Info here</span><span id="nextColl"><a id="nextCollLink"  href="gothere"><img src="/app/data/makeEdition/common/images/iconNext.png" height="16px">&nbsp;&nbsp;&nbsp;</a></span>	
 				</div>
 				<div class="pageLinks" >
 					<span><a href="javascript:initMyTranscript()">Transcript&nbsp;</a></span><span title="Check box to see original spelling"><input onclick="changeCollation()" id="spellingBox" type="checkbox"> Original spelling</span><span id="spellingSpan" style="display:none" title="Check box to see original spellings by words"><input onclick="changeCollation()" id="wordsBox" type="checkbox"> By words</span><!-- span>&nbsp;<a href="javascript:showComparison()">Compare</a></span--> &nbsp;<span><a title="Search for variants" href="javascript:searchVBase(null)">VBase</a></span>
@@ -151,10 +191,11 @@
 		<div id="compareFrame" style="display:none">
 			<div id="compare-r-top">
 				<div class="pageInf">
-					<span id="prevCompare">&nbsp;&nbsp;&nbsp;<a id="prevCompareLink"  href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconPrev.png" height="16px"></a></span><span><a href="javaScript:initMyTranscript()">Transcript</a></span>
-					<span id="compareSummary">Information here</span><span><a id="compareCollLink" href="dummy">Collation</a></span><span id="nextCompare"><a id="nextCompareLink"  href="gothere"><img src="http://www.inklesseditions.com/TCR/common/images/iconNext.png" height="16px">&nbsp;&nbsp;&nbsp;</a></span>	
+					<span id="prevCompare">&nbsp;&nbsp;&nbsp;<a id="prevCompareLink"  href="gothere"><img src="/app/data/makeEdition/common/images/iconPrev.png" height="16px"></a></span><span><a href="javaScript:initMyTranscript()">Transcript</a></span>
+					<span id="compareSummary">Information here</span><span><a id="compareCollLink" href="dummy">Collation</a></span><span id="nextCompare"><a id="nextCompareLink"  href="gothere"><img src="/app/data/makeEdition/common/images/iconNext.png" height="16px">&nbsp;&nbsp;&nbsp;</a></span>	
 				</div>
 				<div class="pageLinks">
+					<span id="compareCBs"><input n="Ash" id="compAsh" onclick="compareWit('Ash',true)" type="checkbox">Ash <input n="Ham" id="compHam" onclick="compareWit('Ham',true)" type="checkbox">Ham <input n="LauSC" id="compLauSC" onclick="compareWit('LauSC',true)" type="checkbox">LauSC <input n="Mart" id="compMart" onclick="compareWit('Mart',true)" type="checkbox">Mart <input n="Rb" id="compRb" onclick="compareWit('Rb',true)" type="checkbox">Rb <input n="Triv" id="compTriv" onclick="compareWit('Triv', true)" type="checkbox">Triv <input n="Urb" id="compUrb" onclick="compareWit('Urb',true)" type="checkbox">Urb <input n="FS" id="compFS" onclick="compareWit('FS',true)" type="checkbox">FS <input n="PET" id="compPET" onclick="compareWit('PET', true)" type="checkbox">PET</span><span><input id="compDel" onclick="deleteComps()" type="checkbox">Reset</span><span><input id="toggleSync" onclick="toggleSync()" checked type="checkbox">Synchronize scrolling</span>
 				</div>
 			</div>
 			<div id="compareText">
@@ -180,17 +221,29 @@
 		<div id="searchVBResults"></div>
 	</div>
   </div>
-  <div id="OAstatement">
-		<p style="text-align: center; margin: 0px"><a href="javascript:getImageInf()">Image</a> and <a href="javascript:getTranscriptInf();">transcript</a> from Open Access site <a target="_blank" href="http://www.inklesseditions.com/TCP/Open/RE">www.inklesseditions.com/TCP/Open/RE</a></p>
-		<p id="imageInf" style="display:none"><a href="javascript:$('#imageInf').hide();resizeRTable()"><img src="../../../common/images/close.png" /></a></p>
-		<p id="transcriptInf" style="display:none"><a href="javascript:$('#transcriptInf').hide();resizeRTable()"><img src="../../../common/images/close.png" /></a></p>
-</div>
-  <div id="ancillaries">
-  		<a href='javascript:closeAncillary()'><img src='../../../common/images/close.png'></img></a>
-		<div id="editorial"></div>
+  <div id="footer" style="display:none">
+	  <div id="OAstatement">
+		<p style="text-align: center; margin: 0px"><a href="javascript:getImageInf()">Image</a> and <a href="javascript:getTranscriptInf()">transcript</a> from Open Access site <a target="_blank" href="http://www.inklesseditions.com/TCP/Open/RE">www.inklesseditions.com/TCP/Open/RE</a></p>
+		<p id="imageInf" style="display:none"></p>
+		<p id="transcriptInf" style="display:none"></p>
+	  </div>
+  </div>
+  <div id="splash">
+		<div id="splashInner" style="margin:auto">
+			<div style="color:#c58f45; text-align: center;border-top: solid; border-top-width: thin;">
+				<p style="font-size: 160%; margin:8px 0px 0px 15px"><a class="splash" href="javascript:initTranscript()">Tales of the Reeve and Cook</a> • <a class="splash" href="javascript:initTranscript()">Transcript</a> • <a class="splash" href="javascript:getCollation(true,false)">Collation</a> • <a class="splash" href="javascript:$('#splash').hide();searchVBase(null);">VBase</a></p>
+				<a href="javascript:initTranscript()"><img src="/app/data/makeEdition/CTP2/RE/common/images/ReeveSplash.jpg" height="560px"></a>
+			</div>
+			<div style="height: 84px">&nbsp;</div>
+		</div>
+  </div>
+  	<div id="ancillaries">
+		<div id="editorial"><p>Stuff</p></div>
 		<div id="searchVBase"></div>
 		<div id="searchContainer"> </div>
-		<div id="popUps"><div id="WordColl"> </div></div>
+		<div id="popUps">
+			<div id="WordColl"></div>
+		</div>
 		<ul id="VmapUL"></ul>
 		<div id="VMapIDs"></div>
 	</div>

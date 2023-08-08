@@ -3049,6 +3049,24 @@ router.get('/getDocNames', function(req, res, next) {
   });
 });
 
+router.get('/getDocNamesCommunity', function(req, res, next) {
+  var abbr=req.query.community;
+  Community.findOne({abbr: abbr}, function(err, myCommunity){
+    if (!myCommunity) res.json({});
+    else {
+      async.map(myCommunity.documents, function(myDoc, cb){
+        Doc.findOne({_id: myDoc}, function (err, thisDoc){
+          cb(err, {name: thisDoc.name, npages: thisDoc.children.length, control: thisDoc.control });
+        })
+      }, function (err, results){
+      	if (err) res.json({error:"failure in get docnames routine"})
+        res.json(results);
+      })
+    }
+  });
+});
+
+
 router.get('/getRevisions', function(req, res, next) {
   var docid=req.query.page;
   Revision.find({doc: ObjectId(docid)}, function(err, revisions) {

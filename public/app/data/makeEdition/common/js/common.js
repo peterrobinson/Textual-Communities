@@ -20,6 +20,8 @@ var viewer=null;
 var overlay=false;
 var colors=[];  //use palette.js to generate all the colors we need...
 
+$(window).bind('resize', resizeRTable);
+
 
 
 function initEdition() {
@@ -36,7 +38,6 @@ function initTranscript(ms, page, index) {
 	$(".gutter").show();
  	initializeTranscript();
  	resizeRTable();
- 	$(window).resize(resizeRTable);
  	var panelRight = new Clay('#panel-right');
 	panelRight.on('resize', function(size) {
 		 resizeRTable();
@@ -131,6 +132,9 @@ function resizeRTable() {
 			$("#panel-left").height(newHeight-10);
 			$("#panel-right").height(newHeight-10);
 			$("#rTable").height(newHeight-10);
+		}
+		if ($("#searchContainer").is(":visible")) {
+			$("#searchContainer").height(newHeight-10);
 		}
 	}
 	if ($("#OAstatement").is(":visible")) {

@@ -6,7 +6,6 @@
   <div id="MEMessage"><div *ngIf="error" class="alert alert-danger">
       {{error}}</div>
   </div>
-
 <input type="radio"  style="margin-left: 10px" name="type" (click)="toggleType(false)">&nbsp;&nbsp;Use configuration file to customize edition&nbsp;&nbsp;&nbsp;&nbsp;
 <div *ngIf="!edition.whole" style="margin-top:10px">
    <tc-filereader (filechange)="filechange($event)"></tc-filereader>
@@ -26,12 +25,8 @@
   
      <button type="button" class="btn btn-primary btn-md" (click)="submit()">Make Edition</button>
 </div>
-<div  style="height:50px">
+<div  style="height:20px">
 	<p id="MEProgress"></p>
 </div>
-<div id="MEMessage" style="height:50px">
-	<div *ngIf="message" class="alert alert-danger">
-      {{message}}</div>
-  </div>
 </div>
-<iframe id="MEIframe" src="" title="WorkingHTML" width="800"></iframe>
+<iframe id="MEIframe" title="WorkingHTML" width="800" height="600px"></iframe>

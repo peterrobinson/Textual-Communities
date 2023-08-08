@@ -52,7 +52,7 @@ var PreviewPageComponent = ng.core.Component({
 
 window.uploadDone=function(){
   /* grab css and js file */
-  var p4=self.content;
+    var p4=self.content;
     p4=p4.replace(/<head/g, "<h3");
 		p4=p4.replace(/<\/head/g, "</h3");
 		p4=p4.replace(/<row/g, "<tr");

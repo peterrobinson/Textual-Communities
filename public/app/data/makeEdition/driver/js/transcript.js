@@ -1,18 +1,21 @@
 //generic javascript for handling CTP transcripts
 
-var TCurl="https://textualcommunities.org";
-var TCimages="https://textualcommunities.org";
+//next injected into driver file
+//var TCurl="";
+//var TCimages="https://textualcommunities.org";
+//var community="";
 const punctuation=".,:-/&@¶§;·⸫▽?!'"+'"';
 const suffixes=["","-mod","-orig"]; //used to handle alternative app readings
 var popCollations=[];
-var community="";
+
 	
 //this creates whole transcript and send to the database..
 function initMyTranscript(ms, page) {
 	if (typeof ms != "undefined") currMS=ms;
 	if (typeof page != "undefined") currPage=page;
-	openImage();
-	openTranscript();
+	openImage(function(){
+		openTranscript();
+	});
 }
 
 function getCurrTale () {
@@ -31,31 +34,15 @@ function getCurrTale () {
 	return(found);
 }
 
-//reset currTale if 
+//in makeEdition: we inject the currMS currPage prevPage nextPage viewType etc values into the index.html driver file
 
 function initMyEdition() {
-	if (typeof MakeEdition=="undefined") {
-		for (let i=0; i<currEntities.length; i++) {
-			if (currTale==currEntities[i].val) {
-				$("#tale").append("<option value='"+currEntities[i].val+"' SELECTED>"+currEntities[i].name+"</option>")
-			} else {
-				$("#tale").append("<option value='"+currEntities[i].val+"'>"+currEntities[i].name+"</option>");
-			}
-		}
-	}
-	if ($.urlParam("ms") && $.urlParam("page")) {
-		if (typeof MakeEdition!="undefined") {
-			community=$.urlParam("community");
-			TCurl=window.location.protocol + "//"+window.location.host;
-			TCimages=window.location.protocol + "//"+ window.location.host;
-			let prevPage=decodeURI($.urlParam("prevPage"));
-			let nextPage=decodeURI($.urlParam("nextPage"));
-			if (prevPage!="null") $("#prevPageLink").html("<a height='18px' id=\"pplA\" href=\""+prevPage+".html\">"+prevPage+"</a>");
-			if (nextPage!="null") $("#nextPageLink").html("<a height='18px' id=\"nplA\" href=\""+nextPage+".html\">"+nextPage+"</a>");
-			$("#titleEdition a").html(decodeURI($.urlParam("title")));
-		}
-		currMS=$.urlParam("ms");
-		currPage=$.urlParam("page");
+	if (viewType=="transcript") {
+	//	TCurl=window.location.protocol + "//"+window.location.host;
+	//	TCimages=window.location.protocol + "//"+ window.location.host;
+		if (prevPage!="null") $("#prevPageLink").html("<a height='18px' id=\"pplA\" href=\""+prevPage+".html\">"+prevPage+"</a>");
+		if (nextPage!="null") $("#nextPageLink").html("<a height='18px' id=\"nplA\" href=\""+nextPage+".html\">"+nextPage+"</a>");
+		$("#titleEdition a").html(title);
 		populateMSS();
 		if (!getCurrTale()) console.log("problem finding page... from URL")
 		initTranscript(currMS, currPage);
@@ -93,14 +80,18 @@ function getTranscriptInf (cb){
 		cb(null, []);
 		return;
 	}
-	$.get(TCurl+"/uri/urn:det:tc:usask:"+community+"/document=Base:folio=1?type=transcriptInf", function(baseInf) {
+	$.get(TCurl+"/uri/urn:det:tc:usask:"+TCCommunity+"/document=Base:folio=1?type=transcriptInf", function(baseInf) {
 		//may contain all the information we need...
-		var transcriptInfo="Transcript of folio "+currPage+" in "+manuscripts[currMS].id+". ";
+		var transcriptInfo="Transcript of folio "+currPage+" in "+witnesses[currMS].id+". ";
 			let node = document.createElement("div");
 			$(node).html(baseInf.teiHeader);
 			//$('#XMLBase').html(baseInf.teiHeader);
-			var genMSInf=$(node).find('respStmt[n="General"]')[0].innerText;
-			$.get(TCurl+"/uri/urn:det:tc:usask:"+community+"/document="+currMS+":folio="+currPage+"?type=transcriptInf", function(transcriptInf) {
+			if ($(node).find('respStmt[n="General"]').length==0) {
+				var genMSInf=""
+			} else {
+				var genMSInf=$(node).find('respStmt[n="General"]')[0].innerText;
+			}
+			$.get(TCurl+"/uri/urn:det:tc:usask:"+TCCommunity+"/document="+currMS+":folio="+currPage+"?type=transcriptInf", function(transcriptInf) {
 		//		$('#XMLP').html(transcriptInf.teiHeader);
 				let node2 = document.createElement("div");
 				$(node2).html(transcriptInf.teiHeader);
@@ -109,7 +100,7 @@ function getTranscriptInf (cb){
 				if (specMSInf) transcriptInfo+=specMSInf.innerText;
 				else transcriptInfo+=genMSInf;
 				//get the entities on this page
-				$.get(TCurl+"/uri/urn:det:tc:usask:"+community+"/entity=*:document="+currMS+":folio="+currPage+"?type=list", function(entities) {
+				$.get(TCurl+"/uri/urn:det:tc:usask:"+TCCommunity+"/entity=*:document="+currMS+":folio="+currPage+"?type=list", function(entities) {
 					var ents=[];
 					for (let i=0; i<entities.length; i++) {
 						if (!entities[i].collateable) { //get CTP identifier
@@ -170,16 +161,18 @@ function populateMSS() {
 	} 
 }
 
-function openImage () {
-	$.get(TCimages+"/uri/urn:det:tc:usask:"+community+"/document="+currMS+":folio="+currPage+"?type=IIIF&format=url", function(url) {
+function openImage (callback) {
+	$.get(TCimages+"/uri/urn:det:tc:usask:"+imagesCommunity+"/document="+currMS+":folio="+currPage+"?type=IIIF&format=url", function(url) {
 		if (url.length) {
 // we write the url to the file here
 //				if (viewer) viewer.open([source]);
 				var conscript='<script type="text/javascript">\r\tconst iiifURL="'+url[0].url+'";\r\tconst thisMS="'+currMS+'";\r\tconst thisPage="'+currPage+'";\r</script>';
 				$( "head" ).append(conscript);
+				callback();
 		} else { //we might not have an image! still write the transcript (could be the base)
 			var conscript='<script type="text/javascript">\r\tconst iiifURL="null";\r\tconst thisMS="'+currMS+'";\r\tconst thisPage="'+currPage+'";\r</script>';
 			$( "head" ).append(conscript);
+			callback();
 		}
 	});
 }
@@ -194,11 +187,9 @@ function openTranscript() {
 	$("#searchVBase").hide();
 	$("#popUps").empty();
 	$("#popUps").append("<div id=\"WordColl\">&nbsp;</div>");
-	if ($('#OAstatement').is(":visible")) {
-		getImageInf();	
-	}
+//	getImageInf();	
 	resizeRTable();
-	$.get( TCurl+"/uri/urn:det:tc:usask:"+community+"/document="+currMS+":folio="+currPage+"?type=transcript&format=xml", function(xml) {
+	$.get( TCurl+"/uri/urn:det:tc:usask:"+TCCommunity+"/document="+currMS+":folio="+currPage+"?type=transcript&format=xml", function(xml) {
 		let text=adjustText(xml, true);  //get rid of superfluous encoding, changle lbs, deal with embedded ed notes
 		// do we have columns???
 		emptyMargins();
@@ -257,7 +248,7 @@ function finishTranscript() {
 				$.ajax({
 				  url: TCurl+"/api/writeMakeEdition",
 				  type: 'POST',
-				  data:  JSON.stringify({id: "Transcript-"+community+"-"+currMS+"-"+currPage, html: str, community: community}),
+				  data:  JSON.stringify({id: "Transcript-"+TCCommunity+"-"+currMS+"-"+currPage, html: str, community: TCCommunity}),
 				  accepts: 'application/json',
 				  contentType: 'application/json; charset=utf-8',
 				  dataType: 'json'
@@ -278,7 +269,7 @@ function getWECollationElements(callback) {
 	//do it this way. Get every collation level element on this page and then get the collation for each 
 	//that way doesn't matter whether collatable chunks are lines, paras, abs
 	return (callback());
-	 $.get(TCurl+'/uri/urn:det:tc:usask:'+community+'/entity=*:document='+currMS+':pb='+currPage+'?type=list', function (pEnts) {
+	 $.get(TCurl+'/uri/urn:det:tc:usask:'+TCCommunity+'/entity=*:document='+currMS+':pb='+currPage+'?type=list', function (pEnts) {
 	//	 let lines=$("l");  //obvio won't work if we have paragraphs
 		 //restructure pEnts..
 		 for (let i=0; i<pEnts.length; i++) {
@@ -318,7 +309,7 @@ function getWECollationElements(callback) {
 						//go get collation for this one
 						found=true;
 						let entitySought=entity.entity.slice(entity.entity.indexOf(":")+1);
-						$.get(TCurl+"/uri/urn:det:tc:usask:"+community+"/"+entitySought+"?type=apparatus&format=approved", {entitySought: entitySought})
+						$.get(TCurl+"/uri/urn:det:tc:usask:"+TCCommunity+"/"+entitySought+"?type=apparatus&format=approved", {entitySought: entitySought})
 							.done (function(json) {
 								var foo=1;
 								//add to the line...
@@ -677,7 +668,7 @@ function getLetterWidth (myText, rend) {
 function getImageInf() {
 	if (currMS=="Base") return;
 	$('#OAstatement').css("height", "auto");
-	var imageInfo=" Image of folio "+currPage+" in "+manuscripts[currMS].id +" "+ manuscripts[currMS].permission;
+	var imageInfo=" Image of folio "+currPage+" in "+witnesses[currMS].id +" "+ witnesses[currMS].permission;
 	$('#imageInf').append(imageInfo);
 }
 

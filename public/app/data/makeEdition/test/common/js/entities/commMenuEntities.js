@@ -1,1 +1,0 @@
-const commMenuEntities ={"GP":[{"entity":"FRG1:entity=GP:line=1","item":"1"},{"entity":"FRG1:entity=GP:line=15","item":"15"}],"MI":[{"entity":"FRG1:entity=MI:line=1","item":"1"},{"entity":"FRG1:entity=MI:line=15","item":"15"}],"L2":[{"entity":"FRG1:entity=L2:line=15","item":"15"}]}

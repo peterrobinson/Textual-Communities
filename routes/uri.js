@@ -209,6 +209,8 @@ router.get('**', function(req, res, next) {
                   		});
                   }  else if (req.query.type=="attrs") {
                   	res.json(foundDoc);
+                  }  else if (req.query.type=="teiheader") {
+                  		res.json(foundDoc.teiHeader);
                   } else res.json({name:foundDoc.name, label:foundDoc.label, nparts: foundDoc.children.length, hasImage: foundDoc.hasOwnProperty("image")});
                 }
               })
@@ -506,6 +508,7 @@ function processText(req, res, next, community, seekEntity, seekDocument, detStr
       });
   }
 }
+
 
 //we return a list of entities present in a document, or document part. Sp final entity must be *:* or maybe x:*
 function  getDocEntities(community, seekDocument, seekEntity,  entityparts, docparts, callback){
