@@ -96,7 +96,7 @@ var CommunityMakeEditionComponent = ng.core.Component({
 						if (isDoc) {
 							documents.push({name:self.config.documents[i].name, pages:[]});
 						} else {
-							self.error+="Document '"+self.config.documents[i]+"', specified in 'documents' in the edition configuration file, does not exist in this community"
+							self.error+="Document '"+self.config.documents[i].name+"', specified in 'documents' in the edition configuration file, does not exist in this community"
 						}
 					}
 				}
@@ -195,7 +195,120 @@ var CommunityMakeEditionComponent = ng.core.Component({
 		},    //add a step to filter pages of documents so that only those which have entities we are looking for ...
 		function(arguments, cb1) { //identify all pages of all documents sought, and which pages have entities we are looking for
 			$("#MEProgress").html("Processing information about documents");
-			if (self.config.standalone && self.config.makePageEntities) {
+			if (self.config.standalone && self.config.makePageEntities && self.config.dirName=="CTP2") {
+				self.restService.http.get(self.config.sourceWitnessesFile).subscribe(function(myfile) {
+					let witnessPages=JSON.parse(myfile._body);
+					let commEntities=[], collEntities=[]
+					async.mapSeries(self.config.documents, function (doc, cbdocs) {
+						pageEntities.push({witness:doc.name, entities:[]});
+						doc.pages=witnessPages[doc.name];
+						if (typeof self.config.pagesLimit!="undefined") {
+							doc.pages.splice(self.config.pagesLimit)
+						}
+						let startFound=false, endFound=false;
+						let thisMs=pageEntities.filter(function (obj){return obj.witness==doc.name})[0];
+						async.mapSeries(doc.pages, function (myPage, saCB) {
+							if  (!startFound && typeof doc.start!="undefined") {
+								if (myPage==doc.start) {
+									startFound=true;
+								} else {
+									saCB(null);
+								}
+							} else {
+								if (endFound) saCB(null);
+							}
+							if (startFound && !endFound) {
+								$("#MEProgress").html("Reading entities on "+myPage+" in "+doc.name);
+								$.get(self.config.TCurl+'/uri/urn:det:tc:usask:'+self.config.TCCommunity+'/entity=*:document='+doc.name+':pb='+myPage+'?type=list', function (pEnts) {
+									if  (typeof doc.end!="undefined" && myPage==doc.end) {
+										endFound=true;
+									} 	
+									//remove lines, and sort remaining pEnts...
+									for (let i=0; i<pEnts.length; i++) {
+										pEnts[i].match=makeMatch(pEnts[i].entity);
+										if (pEnts[i].match.indexOf("_")==-1) {
+											pEnts.splice(i--, 1);
+										} else {//is this an entity we are collating?
+											let isEnt=false;
+											for (let j=0; j<self.config.entities.length && !isEnt; j++) {
+												if (pEnts[i].entity.indexOf("entity="+self.config.entities[j])>-1) isEnt=true;
+											}
+											if (!isEnt) pEnts.splice(i--, 1);
+										}
+									}	
+									//now check for existence of collation and commentary on this line	
+									async.mapSeries(pEnts, function (thisEnt, sbCB)	{
+										let hasCollation=false, hasCommentary=false;
+										let searchEnt=thisEnt.entity.replace(":","/");
+										async.waterfall([
+											function (scCB) { //is there a collation
+												if (collEntities.includes(thisEnt.entity)) {
+													hasCollation=true;
+													scCB(null,[]); 
+												} else {
+													$.get(self.config.TCurl+"/api/isAlreadyCollation?entity="+thisEnt.entity+"&community=CTP2&status=approved", function (json) {
+														if (json.status) {
+															hasCollation=true;
+															collEntities.push(thisEnt.entity);
+														}
+														scCB(null,[]); 
+													});
+												}
+											},
+											function(arguments, scCB) { //is the a commentary
+												if (commEntities.includes(thisEnt.entity)) {
+													hasCommentary=true;
+													scCB(null,[]); 
+												} else {
+													$.get(self.config.TCurl+'/api/getApprovedCommentaries?entity='+searchEnt, function (json){
+														if (json.results.length) {
+															hasCommentary=true;
+															commEntities.push(thisEnt.entity);
+														};
+														scCB(null,[]);
+													});
+												}
+											}
+										], function (err) { 
+											//write it out now
+											thisMs.entities.push({page: myPage, match: makeMatch(thisEnt.entity), entity: thisEnt.entity, collateable: thisEnt.collateable, hasCollation:hasCollation, hasCommentary: hasCommentary});
+											sbCB(null);
+										}); 
+									}, function (err) {
+										saCB(null);				
+									}) 
+								});
+							}
+						}, function (err) {
+							cbdocs(null);
+						});
+					}, function (err) {
+						//for CTP2: create a compact version of this file
+						let pageEntitiesMin=[];
+						for (let i=0; i<documents.length; i++) {
+							let thisMs=pageEntities.filter(function (obj){return obj.witness==documents[i].name})[0];
+							pageEntitiesMin.push({"witness":thisMs.witness, "pages":[]});
+							let lastPage="";
+							for (let j=0; j<thisMs.entities.length; j++ ) {
+								if (thisMs.entities[j].page!=lastPage) {
+									pageEntitiesMin[i].pages.push({"page":thisMs.entities[j].page, "entities":[]});
+									lastPage=thisMs.entities[j].page;
+								}
+								pageEntitiesMin[i].pages[pageEntitiesMin[i].pages.length-1].entities.push(thisMs.entities[j].match)
+							}
+						}
+						zip.file('edition/common/js/mss/pageEntitiesMin.js', 'const pageEntitiesMin ='+JSON.stringify(pageEntitiesMin));						
+						zip.file('edition/common/js/mss/pageEntities.js', 'const pageEntities ='+JSON.stringify(pageEntities));
+						cb1(null,[]);
+					});
+				});
+			} /* else if (self.config.standalone && !self.config.makePageEntities && self.config.dirName=="CTP2") {
+				self.restService.http.get(self.config.pageEntitiesFile).subscribe(function(myfile) {
+					pageEntities=JSON.parse(myfile._body);
+					cb1(null,[]);
+				});
+			} */ else if (self.config.standalone && self.config.makePageEntities && self.config.dirName=="teseida") {
+				//we need a file with all the manuscripts in it .. MSSWitnesses is a good example
 				async.mapSeries(self.config.documents, function (doc, cbdocs) { //get AUT.js etc from store
 					pageEntities.push({witness:doc.name, entities:[]});
 					self.restService.http.get('/app/data/makeEdition/'+self.config.dirName+'/js/'+doc.name+".js").subscribe(function(myfile) {
@@ -237,7 +350,7 @@ var CommunityMakeEditionComponent = ng.core.Component({
 					cb1(null,[]);
 				});
 			} else if (!self.config.makePageEntities) {
-				 self.restService.http.get('/app/data/makeEdition/'+self.config.pageEntitiesFile).subscribe(function(myfile) {
+				 self.restService.http.get(self.config.pageEntitiesFile).subscribe(function(myfile) {
 				 	pageEntities=JSON.parse(myfile._body);
 				 	//now write the pages into the documents...
 				 	for (let i=0; i<documents.length; i++) {
@@ -367,19 +480,32 @@ var CommunityMakeEditionComponent = ng.core.Component({
 				cb1(null, []);
 			} else {
 				$("#MEProgress").html("Creating html for document pages");
+				//if we are doing the CTP ... use pageEntities file to generate the list of pages we need
 				var commentary=[];
+				let startFound=false, endFound=false;
 				async.mapSeries(documents, function (doc, cbdocs){
 				//for every live page in the pages...
 					//right. Let's get the xml and html for each page...
 					//if working from a config file: check the page contains at least one of the entities sought; 
 					//set the iframe source to load the page
+
 					let iterator=0, prevPage="", nextPage="";
 					if (doc.pages.length==0) {
 						$("#MEProgress").html("No pages found holding these entities in "+doc.name+". Likely a problem here! Check you have defined the right community on the right server\r");
 						cbdocs(null);
 					} else {
+						let startFound=false, endFound=false;
 						async.mapSeries(doc.pages, function(tpage, cbpage){
 							//are we specifying particular pages?
+							if  (!startFound && typeof self.config.documents.filter(witness=>witness.name==doc.name)[0].start!="undefined") {
+								if (tpage.page==self.config.documents.filter(witness=>witness.name==doc.name)[0].start) {
+									startFound=true;
+								} else {
+									cbdocs(null);
+								}
+							} else {
+								if (endFound) cbdocs(null);
+							}
 							let doIt=true;
 							if (self.config.standalone && (typeof self.config.pages!="undefined")) {
 								doIt=false;
@@ -393,7 +519,10 @@ var CommunityMakeEditionComponent = ng.core.Component({
 							if (!doIt) { //page not specified
 									iterator++;
 									cbpage(null);
-							} else {
+							} else if (startFound && !endFound) {
+								if  (typeof self.config.documents.filter(witness=>witness.name==doc.name)[0].end!="undefined" && tpage.page==self.config.documents.filter(witness=>witness.name==doc.name)[0].end) {
+									endFound=true;
+								} 
 								if (iterator==0) {
 									prevPage=null;
 								} else {
@@ -409,15 +538,21 @@ var CommunityMakeEditionComponent = ng.core.Component({
 								$("#MEProgress").html("Creating "+doc.name+"/"+tpage+".html<br>");
 								//we manipulate the srcdoc to include the variables we need for this page
 								let myDOM = new DOMParser().parseFromString(self.pagesdoc, "text/html");
-								let scriptTag = "<script>var community='"+self.community.attrs.abbr+"', currMS='"+doc.name+"', currPage='"+tpage+"', prevPage="+prevPage+", nextPage="+nextPage+", title='"+doc.name+" "+tpage+"';\n";
-								scriptTag+="\nvar TCurl='"+self.edition.TCurl+"', TCimages='"+self.edition.TCimages+"', makeEdition=true, imagesCommunity='"+self.edition.imagesCommunity+"', TCCommunity='"+self.edition.TCCommunity+"'\n<";
+								let scriptTag = "<script>var community='"+self.community.attrs.abbr+"', currMS='"+doc.name+"', currPage='"+tpage+"', prevPage="+prevPage+", nextPage="+nextPage+";\n";
+								if (self.config.dirName=="CTP2") {
+									let match=pageEntities.filter(witness=>witness.witness==doc.name)[0].entities.filter(ent=>ent.page==tpage)[0].match;
+									let currTale=match.split("_")[0];
+									let currLine=match.split("_")[1];
+									scriptTag+='const currTale="'+currTale+'", currLine="'+currLine+'", currEntities='+JSON.stringify(self.config.entities)+'\n';
+								}
+								scriptTag+="\nconst makeEdition=true, imagesCommunity='"+self.edition.imagesCommunity+"', TCCommunity='"+self.edition.TCCommunity+"'\n<";
 								scriptTag +=  "/script>";
 								$(myDOM).contents().find("head").append(scriptTag);
 								let s = new XMLSerializer();
 								$("#MEIframe").attr("srcdoc", s.serializeToString(myDOM));
 								//we poll for completion..
 								let current=0;
-								var delay = setInterval(loader, 1000); 
+								var delay = setInterval(loader, 500); 
 								function loader() {
 									current+=500;  //note: DBUrl is whee we wrote the temporary file
 									  $.get(self.config.DBUrl+'/api/isMakeEdition?editionID=Transcript-'+self.edition.TCCommunity+"-"+doc.name+"-"+tpage, function(result){
@@ -431,8 +566,15 @@ var CommunityMakeEditionComponent = ng.core.Component({
 													let newHtml3=newHtml2.replaceAll('makeEdition=true', 'makeEdition=false');
 													let newHtml5=newHtml3.replace('<div id="staticSearch"></div>', self.config.ssSearch);
 													let newHtml6=newHtml5.replaceAll('/app/data/makeEdition/common/', '../../../common/').replaceAll('makeEdition=true', 'makeEdition=false');
-													let newHtml7=newHtml6.replaceAll('/app/data/makeEdition/teseida/driver/', '../../../common/');
+													let newHtml4=newHtml6.replaceAll('/app/data/makeEdition/teseida/driver/', '../../../common/');
+													let newHtml7=newHtml4.replaceAll('/app/data/makeEdition/driver/', '../../../common/');
+													if (self.config.dirName=="CTP2") {
+														newHtml6=newHtml7.replaceAll('/app/data/makeEdition/CTP2/RE/driver/','../../../common/').replaceAll('/app/data/makeEdition/CTP2/RE/common/js/mss/pageEntities.js','').replaceAll('<script src="/app/data/makeEdition/CTP2/common/js/manuscripts.js"></script>','');
+														newHtml2=newHtml6.replaceAll('/app/data/makeEdition/CTP2/RE/','../../../');
+														newHtml7=newHtml2.replaceAll('/app/data/makeEdition/CTP2/','../../../');
+													}
 													let newHtml=newHtml7.replaceAll('/app/data/makeEdition/teseida/common/', '../../../common/');
+													
 									
 													zip.file('edition/html/transcripts/'+doc.name+'/'+tpage+".html", newHtml);
 													 //get the xml...
@@ -560,7 +702,7 @@ var CommunityMakeEditionComponent = ng.core.Component({
 			}
 		},
 		function (arguments, cb1) {
-			if (!self.config.makeEntities) {
+			if (!self.config.makeEntities && self.config.entitiesFile!="") {
 			    self.restService.http.get('/app/data/makeEdition/'+self.config.entitiesFile).subscribe(function(myfile) {
 			    	let tempEnts=JSON.parse(myfile._body);  //turn into a flat file
 			    	for (let i=0; i<tempEnts.length; i++) {
