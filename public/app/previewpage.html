@@ -19,8 +19,7 @@
 </div>
     <div *ngIf="error.length>0" class="alert alert-danger" style="margin-bottom: 10px">
       <div *ngFor="#nerror of error">
-        <p>Error in line {{nerror.line-3}}, character {{nerror.column}}: {{nerror.message}}<br/>
-        Context is: "{{lines[nerror.line-4]}}"</p>
+        <p>Error in line {{nerror.line}}, character {{nerror.column}}: {{nerror.message}}</p>
       </div>
   </div>
   <div id="predivparent" *ngIf="error.length==0" style="margin-top: 10px; margin-left: 10px; margin-right: 10px; height: 100%">

@@ -3,9 +3,7 @@
 
 <input type="radio" name="type" checked="checked" style="margin-left: 10px" (click)="toggleType(true)">&nbsp;&nbsp;Make edition of whole community with default values&nbsp;&nbsp;&nbsp;&nbsp;
 <br>
-  <div id="MEMessage"><div *ngIf="error" class="alert alert-danger">
-      {{error}}</div>
-  </div>
+<div *ngIf="error" class="alert alert-danger">{{error}}</div>
 <input type="radio"  style="margin-left: 10px" name="type" (click)="toggleType(false)">&nbsp;&nbsp;Use configuration file to customize edition&nbsp;&nbsp;&nbsp;&nbsp;
 <div *ngIf="!edition.whole" style="margin-top:10px">
    <tc-filereader (filechange)="filechange($event)"></tc-filereader>
@@ -25,8 +23,8 @@
   
      <button type="button" class="btn btn-primary btn-md" (click)="submit()">Make Edition</button>
 </div>
-<div  style="height:20px">
-	<p id="MEProgress"></p>
+<div>
+	<p id="MEProgress" style="height:60px"></p>
 </div>
 </div>
 <iframe id="MEIframe" title="WorkingHTML" width="800" height="600px"></iframe>

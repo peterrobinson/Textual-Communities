@@ -3,7 +3,7 @@ var passport = require('passport');
 // load all the things we need
 var LocalStrategy   = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
-var TwitterStrategy  = require('passport-twitter').Strategy;
+const TwitterStrategy  = require('@superfaceai/passport-twitter-oauth2');
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
 //emailer ======================================================================
@@ -32,8 +32,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
 
   // used to deserialize the user
   passport.deserializeUser(function(id, done) {
-    User.findById(id, function(err, user) {
-      done(err, user);
+    User.findById(id)
+    .then (function(user) {
+      done(null, user);
     });
   });
 
@@ -55,10 +56,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
 
       //  Whether we're signing up or connecting an account, we'll need
       //  to know if the email address is in use.
-      User.findOne({'local.email': email}, function(err, existingUser) {
+      User.findOne({'local.email': email}).then (function(existingUser) {
         // if there are any errors, return the error
-        if (err)
-          return done(err);
+//        if (err) return done(err);
 
         // check to see if there's already a user with that email
         if (existingUser) {
@@ -113,10 +113,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
   function(req, email, password, done) { // callback with email and password from our form
     // find a user whose email is the same as the forms email
     // we are checking to see if the user trying to login already exists
-    User.findOne({ 'local.email' :  email }, function(err, user) {
+    User.findOne({ 'local.email' :  email }).then (function(user) {
       // if there are any errors, return the error before anything else
-      if (err)
-        return done(err);
+ //     if (err) return done(err);
 
       // if no user is found, return the message
       if (!user)
@@ -147,10 +146,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
   function(req, email, password, done) { // callback with email  from our form
     // find a user whose email is the same as the forms email
     // we are checking to see if the user trying to login already exists
-    User.findOne({ 'local.email' :  email }, function(err, user) {
+    User.findOne({ 'local.email' :  email }).then (function(user) {
       // if there are any errors, return the error before anything else
-      if (err)
-        return done(err);
+//      if (err) return done(err);
       // if no user is found, return the message
       if (!user)
         return done(null, false, req.flash('forgotMessage', 'No user with the email "'+email+'"')); // req.flash is the way to set flashdata using connect-flash
@@ -188,9 +186,8 @@ if (config.localDevel) TCMailer = require('./TCMailer');
     process.nextTick(function() {
       // check if the user is already logged in
       if (!req.user) {
-        User.findOne({ 'facebook.id' : profile.id }, function(err, user) {
-          if (err)
-            return done(err);
+        User.findOne({ 'facebook.id' : profile.id }).then (function(user) {
+//          if (err) return done(err);
 
           if (user) {
 
@@ -252,8 +249,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
   // =========================================================================
   passport.use(new TwitterStrategy({
 
-    consumerKey     : configAuth.twitterAuth.consumerKey,
-    consumerSecret  : configAuth.twitterAuth.consumerSecret,
+    clientID     : configAuth.twitterAuth.consumerKey,
+    clientSecret  : configAuth.twitterAuth.consumerSecret,
+    clientType: 'confidential',
     callbackURL     : configAuth.twitterAuth.callbackURL,
     passReqToCallback : true // allows us to pass in the req from our route (lets us check if a user is logged in or not)
 
@@ -264,9 +262,8 @@ if (config.localDevel) TCMailer = require('./TCMailer');
     process.nextTick(function() {
       // check if the user is already logged in
       if (!req.user) {
-        User.findOne({ 'twitter.id' : profile.id }, function(err, user) {
-          if (err)
-            return done(err);
+        User.findOne({ 'twitter.id' : profile.id }).then (function(user) {
+  //        if (err) return done(err);
           if (user) {
             // if there is a user id already but no token (user was linked at one point and then removed)
             if (!user.twitter.token) {
@@ -335,9 +332,8 @@ if (config.localDevel) TCMailer = require('./TCMailer');
       // check if the user is already logged in
       if (!req.user) {
 
-        User.findOne({ 'google.id' : profile.id }, function(err, user) {
-          if (err)
-            return done(err);
+        User.findOne({ 'google.id' : profile.id }).then (function(user) {
+  //        if (err)  return done(err);
 
           if (user) {
 
@@ -363,10 +359,10 @@ if (config.localDevel) TCMailer = require('./TCMailer');
             newUser.google.name  = profile.displayName;
             newUser.google.email = profile.emails[0].value; // pull the first email
 
-            newUser.save(function(err) {
-              if (err)
-                throw err;
+            newUser.save().then (function(result) {
               return done(null, newUser);
+            }, function (err){
+                 throw err;
             });
           }
         });
@@ -380,14 +376,12 @@ if (config.localDevel) TCMailer = require('./TCMailer');
         user.google.name  = profile.displayName;
         user.google.email = profile.emails[0].value; // pull the first email
 
-        user.save(function(err) {
-          if (err)
-            throw err;
+        user.save().then (function(result) {
           return done(null, user);
+        }, function(err){
+        	if (err)throw err;
         });
-
       }
-
     });
 
   }));

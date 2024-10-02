@@ -6,8 +6,9 @@ var URI = require('urijs')
   , config = require('./config')
   , UpdateDbService = require('./services/updatedb')
   , async = require('async')
-  , BrowserFunctionService = require('./services/functions')
- ;
+  , BrowserFunctionService = require('./services/functions');
+
+
 //this cute code from https://jsfiddle.net/pdfjs/cq0asLqz/?utm_source=website&utm_medium=embed&utm_campaign=cq0asLqz
 //works with  <script src="//mozilla.github.io/pdf.js/build/pdf.js"></script>
 //require('jquery-ui/draggable');
@@ -30,8 +31,10 @@ var MakeVarMapsComponent = ng.core.Component({
     ) {
     var self=this;
 //    var Doc = TCService.Doc, doc = new Doc();
-	this.pdfjsLib =  window['pdfjs-dist/build/pdf'];
-	this.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
+	
+//	var { pdfjsLib } = globalThis;
+//	this.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
+//	this.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://raw.githubusercontent.com/mozilla/pdfjs-dist/master/build/pdf.worker.js';
 
     this.doc = {name:""};
     $('#manageModal').width("420px");
@@ -115,7 +118,7 @@ var MakeVarMapsComponent = ng.core.Component({
 						$('#manageModal').height("340px");
 						return;
 					}
-					var loadingTask = self.pdfjsLib.getDocument({data: textout});
+					var loadingTask = pdfjsLib.getDocument({data: textout});
 					loadingTask.promise.then(function(pdf) {
 						self.success+= " "+self.pdf+" read. ";
 						$('#manageModal').height("340px");
@@ -136,7 +139,7 @@ var MakeVarMapsComponent = ng.core.Component({
 					}
 					var pheight=0;
 					var pwidth=0;
-					loadingTask = self.pdfjsLib.getDocument({data: text2out});  //this must be the labelled file
+					loadingTask = pdfjsLib.getDocument({data: text2out});  //this must be the labelled file
 					loadingTask.promise.then(function(pdf) {
 						pdf.getPage(1).then(function(page) {
 							pheight=page.view[3];

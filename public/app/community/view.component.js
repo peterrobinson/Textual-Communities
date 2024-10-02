@@ -46,7 +46,10 @@ var ViewComponent = ng.core.Component({
     });
     this.collationEditor=false;
     this.callCollationEditor='';
-   $.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id, function(res) {
+    var bill=2;
+	$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
+   	.done ( function(res) {
+//   	  console.log("succeed");
       self.docnames=res;
       for (var i=0; i<self.state.community.attrs.documents.length; i++) {
         self.state.community.attrs.documents[i].attrs.name=res[i].name;
@@ -55,6 +58,11 @@ var ViewComponent = ng.core.Component({
         if (self.state.community.attrs.documents[i].attrs.children.length==0 && res[i].npages!=0)
           self.state.community.attrs.documents[i].attrs.children[0]={attrs:"dummy"}  //idea is to force not to show add page if we have pages */
       }
+    })
+    .fail(function( jqXHR, textStatus, errorThrown ) {
+        console.log(jqXHR);
+        console.log(textStatus);
+        console.log(errorThrown );
     });
     $( window ).resize(function() {
       var tcWidth=$('#tcPaneViewer').width();

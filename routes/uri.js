@@ -13,7 +13,7 @@ var _ = require('lodash')
   , mongoose = require('mongoose')
   , config = require('../config')
   , gridfs = require('../utils/gridfs')
-  , libxml = require('libxmljs')
+//  , libxml = require('libxmljs')
   , Community = models.Community
   , Action = models.Action
   , User = models.User
@@ -83,9 +83,7 @@ router.get('**', function(req, res, next) {
     //ok so far.. now, is this a public community?
     // we coujld be asking for all communities,in which case community is *
       if (authparts[4]=="*") {
-          Community.find({public:true}, function(err, communities){
-            if (err) res.status(400).send("Database error "+err);
-            else {
+          Community.find({public:true}).then (function(communities){
               if (req.query.type=="count") res.json({count: communities.length});
               else if (req.query.type=="list") {
                 var mycommunities=[];
@@ -94,13 +92,14 @@ router.get('**', function(req, res, next) {
               } else {
                 res.status(400).send("Error in query string '"+JSON.stringify(req.query)+"'. Only types count and list accepted in this context");
               }
-            }
+          }, function(err){
+          	res.status(400).send("Database error "+err);
           });
       } else {
 //        console.log(authparts[4]);
 //      currently every community API is open...
-        Community.findOne({abbr:authparts[4]}, function(err, community){
-  //        console.log(community)
+        Community.findOne({abbr:authparts[4]}).then (function(community){
+//          console.log("got here")
           if (!community) res.status(400).send('The community "'+authparts[4]+'" is not known on this Textual Communities server, or is not publicly available.');
           else { //fun starts! we got a community. Now, what do we have??? are we looking for just entity, just document, or text
             //ok.. we have only entity search, document search, or text search
@@ -114,6 +113,7 @@ router.get('**', function(req, res, next) {
                 var seekDocument=detparts[1].slice(detparts[1].indexOf("document="), detparts[1].indexOf(":entity="));
                 var seekEntity=detparts[1].slice(detparts[1].indexOf("entity="));
               }
+//              console.log("here")
               processText(req, res, next, authparts[4], seekEntity, seekDocument, detparts[1], entityparts, docparts);
             } else if (detparts[1].indexOf("entity=")!=-1) {
               entityRequest(req, res, community.entities, detparts[1], entityparts, 0, authparts[4], function(err, foundEntity) {
@@ -156,9 +156,9 @@ router.get('**', function(req, res, next) {
                   		var seekDocument=detparts[1].slice(9, detparts[1].indexOf(":"));
                   		//get the document this is part of
                   		var pid= foundDoc.ancestors[0];
-                  		Doc.findOne({_id: ObjectId(pid)}, function (err, parent){
+                  		Doc.findOne({_id: new ObjectId(pid)}).then (function (parent){
                   			//now get the revisions...
-                  			Revision.find({doc: foundDoc._id}, function (err, revisions){
+                  			Revision.find({doc: new ObjectId(foundDoc._id)}).then (function (revisions){
                   				//ok .. go get the users, the date, the status of each
                   				let pRevisions=[];
                   				let users=[];
@@ -187,11 +187,10 @@ router.get('**', function(req, res, next) {
                   				});
                   				//now get the user information
                   				async.map(users, function(user, cb){
-                  					User.findOne({_id:ObjectId(user)}, function(err, myUser){
-                  						if (err || !myUser) cb(err);
-                  						else {
-                  							cb(null, {user: user, name: myUser.local.name});
-                  						}
+                  					User.findOne({_id:new ObjectId(user)}).then (function(myUser){
+                						cb(null, {user: user, name: myUser.local.name});
+                   					}, function (err){
+                  						cb(err);
                   					});
                   				}, function (err, results) {
                   					//replace id in transcribers and committer with name
@@ -281,8 +280,8 @@ function entityRequest(req, res, entities, name, entityparts, i, community, call
         if (entityparts[i].property=="*"|| (i==0 && entityparts[i].property=="entity")) {
           async.mapSeries(entities, function(myEntity, cb){ //how many children does each one have. Also.. here is where we extract the collaton
               var thisEntityProperty=myEntity.entityName.slice(myEntity.entityName.lastIndexOf(":")+1,myEntity.entityName.lastIndexOf("="));
-              Entity.find({ancestorName:myEntity.entityName}, function(err, myentities){
-                cb(err, {name:myEntity.name, label:thisEntityProperty, nparts: myentities.length})
+              Entity.find({ancestorName:myEntity.entityName}).then (function( myentities){
+                cb(null, {name:myEntity.name, label:thisEntityProperty, nparts: myentities.length})
               });
           }, function (err, results) {
             if (err) {res.status(400).send("Database error")}
@@ -297,19 +296,19 @@ function entityRequest(req, res, entities, name, entityparts, i, community, call
                 if (myEntity.isTerminal) {
                   var format=req.query.format;
                   if (format=="NEXUS") format="xml/positive"
-                  Collation.findOne({id:community+"/"+myEntity.entityName+"/"+format}, function (err, myCollation){
+                  Collation.findOne({id:community+"/"+myEntity.entityName+"/"+format}).then(function (myCollation){
                     if (!myCollation) {
-                    	console.log("no collation found for "+myEntity.entityName)
-                    	cb(err, {name: myEntity.entityName, collation:"NONE"})
+ //                   	console.log("no collation found for "+myEntity.entityName)
+                    	cb(null, {name: myEntity.entityName, collation:"NONE"})
                     }
-                    else {cb(err, {name: myEntity.entityName, collation: myCollation.ce})};
+                    else {cb(null, {name: myEntity.entityName, collation: myCollation.ce})};
                   });
                 }
             } else {
               var thisEntityProperty=myEntity.entityName.slice(myEntity.entityName.lastIndexOf(":")+1,myEntity.entityName.lastIndexOf("="));
               if (thisEntityProperty==entityparts[i].property) {
-                Entity.find({ancestorName:myEntity.entityName}, function(err, myentities){
-                  cb(err, {name:myEntity.name, label:thisEntityProperty, nparts: myentities.length})
+                Entity.findOne({ancestorName:myEntity.entityName}).then (function(myentities){
+                  cb(null, {name:myEntity.name, label:thisEntityProperty, nparts: myentities.length})
                 });
               } else cb(null, null);
             }
@@ -357,16 +356,16 @@ function entityRequest(req, res, entities, name, entityparts, i, community, call
           var thisEntityProperty=entities[j].entityName.slice(entities[j].entityName.lastIndexOf(":")+1, entities[j].entityName.lastIndexOf("="));
           if (!entities[j].isTerminal) {
             var thisEntity=entities[j];
-            Entity.find({ancestorName: thisEntity.entityName}, function(err, myentities){
-              callback(err, {name: thisEntity.name, nparts:myentities.length, ancestorName: ("ancestorName" in entities[j])?thisEntity.ancestorName:"", entityName:thisEntity.entityName, label:thisEntityProperty});
+            Entity.find({ancestorName: thisEntity.entityName}).then (function(myentities){
+              callback(null, {name: thisEntity.name, nparts:myentities.length, ancestorName: ("ancestorName" in entities[j])?thisEntity.ancestorName:"", entityName:thisEntity.entityName, label:thisEntityProperty});
             });
           }
           else {  //terminal! now we could be looking for an apparatus...
             if (req.query.type=="apparatus") {  //we are looking only for the apparatus for one unit
-            	console.log("looking for apparatus "+entities[j].entityName);
+//            	console.log("looking for apparatus "+entities[j].entityName);
             	var myBlock=entities[j].entityName;
-                Collation.findOne({id:community+"/"+entities[j].entityName+"/"+req.query.format}, function (err, myCollation){
-                  if (err || !myCollation) {
+                Collation.findOne({id:community+"/"+entities[j].entityName+"/"+req.query.format}).then (function (myCollation){
+                  if (!myCollation) {
                     {res.send({result:0, message:"Error finding collation of block '"+myBlock+"'. There may be no collation of this block"})}
                   }
                   else res.send(myCollation.ce.replace(/</gi, "&lt;"));
@@ -377,7 +376,7 @@ function entityRequest(req, res, entities, name, entityparts, i, community, call
           }
         } else { //go round again
             //but... only go if this entity has children... else error
-            Entity.find({ancestorName:thisEnt}, function(err, myentities){
+            Entity.find({ancestorName:thisEnt}).then (function(myentities){
               if (myentities.length==0) {
                 res.status(400).send('Found "'+thisEnt+'" as part of "'+name+'", but this has no children');
               } else {
@@ -399,12 +398,12 @@ function docRequest(req, res, documents, name, docparts, i, callback) {
       if (docparts[i].property=="*" || (i==0 && docparts[i].property=="document")) {
         var foundline=0;
         async.mapSeries(documents, function(myDoc, cb){
-          Doc.findOne({_id: myDoc}, function (err, thisDoc){
+          Doc.findOne({_id: new ObjectId(myDoc)}).then (function (thisDoc){
             if (!thisDoc.hasOwnProperty('name') && thisDoc.label=="lb") {
               foundline++;
-              cb(err, {name: foundline, nparts: thisDoc.children.length, label:thisDoc.label,hasImage: thisDoc.hasOwnProperty("image")});
+              cb(null, {name: foundline, nparts: thisDoc.children.length, label:thisDoc.label,hasImage: thisDoc.hasOwnProperty("image")});
             }
-            else cb(err, {name: thisDoc.name, nParts: thisDoc.children.length, label:thisDoc.label, hasImage: thisDoc.hasOwnProperty("image")});
+            else cb(null, {name: thisDoc.name, nParts: thisDoc.children.length, label:thisDoc.label, hasImage: thisDoc.hasOwnProperty("image")});
           })
         }, function (err, results){
           if (err) res.status(400).send("Database error")
@@ -415,13 +414,13 @@ function docRequest(req, res, documents, name, docparts, i, callback) {
       } else { //we have a defined property. Filter documents by property name
         var foundline=0;
         async.mapSeries(documents, function(myDoc, cb){
-          Doc.findOne({_id: myDoc, label:docparts[i].property}, function (err, thisDoc){
+          Doc.findOne({_id: new ObjectId(myDoc), label:docparts[i].property}).then (function (thisDoc){
             if (thisDoc) {
               if (docparts[i].property=="lb" && !thisDoc.hasOwnProperty('name')) {
                 foundline++;
-                cb(err, {name: foundline, nparts: thisDoc.children.length, label:thisDoc.label, hasImage: thisDoc.hasOwnProperty("image")});
-              } else cb(err, {name: thisDoc.name, nparts: thisDoc.children.length, label:thisDoc.label, hasImage: thisDoc.hasOwnProperty("image") });
-            } else cb(err, null)
+                cb(null, {name: foundline, nparts: thisDoc.children.length, label:thisDoc.label, hasImage: thisDoc.hasOwnProperty("image")});
+              } else cb(null, {name: thisDoc.name, nparts: thisDoc.children.length, label:thisDoc.label, hasImage: thisDoc.hasOwnProperty("image") });
+            } else cb(null, null)
           });
         }, function (err, results) {
           //remove non-matching pages
@@ -437,7 +436,7 @@ function docRequest(req, res, documents, name, docparts, i, callback) {
     //special case: lb elements are not given explicit names
     var foundline=0;
     async.mapSeries(documents, function(myDoc, cb){
-      Doc.findOne({_id: myDoc}, function (err, thisDoc){ //we may not number line breaks explicitly
+      Doc.findOne({_id: new ObjectId(myDoc)}).then (function (thisDoc){ //we may not number line breaks explicitly
         if (!thisDoc.hasOwnProperty('name') && thisDoc.label=="lb") {
           foundline++;
 //          console.log("looking for the line")
@@ -446,13 +445,13 @@ function docRequest(req, res, documents, name, docparts, i, callback) {
             foundDoc=thisDoc;
             foundDoc.name=""+foundline;
             cb("found document");
-          } else cb(err);
+          } else cb(null);
         }
         else if (thisDoc.name==docparts[i].value) {
           foundDoc=thisDoc
           cb("found document");
         }
-        else cb(err);
+        else cb(null);
       })
     }, function (err) {
       if (err=="found document") {
@@ -479,10 +478,10 @@ function processText(req, res, next, community, seekEntity, seekDocument, detStr
   //presently, only support: listing of docs with a particular entity; text of an entity in a doc returned in various formats including colledtior
   //return all documents containing a particular entity
   //need to support: find all entities present in a document..or part of a document..
+//  console.log("in process text")
   if (entityparts[entityparts.length-1].value=="*" && docparts.length>0) {
-//    console.log("here");
+//      console.log("here");
       getDocEntities(community, seekDocument, seekEntity,  entityparts, docparts, function (result){
-
           res.json(result);
       });
   } else if (docparts[docparts.length-1].value=="*" && docparts.length==1) { //looking for documents holding this text
@@ -499,7 +498,8 @@ function processText(req, res, next, community, seekEntity, seekDocument, detStr
       //we ONLY support base level entities at the full document level
       res.status(400).send("Unable to retrieve texts holding an entity in documents below the whole document level.");
   } else { //we only support retrieval at base level
-      Entity.findOne({entityName: community+":"+seekEntity}, function (err, myEntity) {
+//  	  console.log("inside PT 2")
+      Entity.findOne({entityName: community+":"+seekEntity}).then (function (myEntity) {
         if (!myEntity.isTerminal) res.status(400).send("Entity '"+seekEntity+"' contains other elements. Only base level entities may be retrieved (lines, not poems; paragraphs not chapters, etc)");
         else if (req.query.format=="xml") getXMLText(res, next, community, seekEntity, seekDocument, detString, entityparts, docparts, true);
         else if (req.query.format=="CollEditor") getXMLText(res, next, community, seekEntity, seekDocument, detString, entityparts, docparts, false);
@@ -516,9 +516,9 @@ function  getDocEntities(community, seekDocument, seekEntity,  entityparts, docp
   var ancestors=[];  //inital search is going to be looking for docs with no ancestors.. work our day down the tree
   var iteration=1;
   async.mapSeries(docparts, function (docpart, cb1) {//do a deep div to find the document...
-    Doc.findOne({name:docpart.value, community:community, ancestors: ancestors}, function (err, myDoc){
-      if (!err && myDoc) {
-//        console.log(myDoc);
+    Doc.findOne({name:docpart.value, community:community, ancestors: ancestors}).then (function (myDoc){
+      if (myDoc) {
+//        console.log("got a doc"+myDoc);
         ancestors.push(myDoc._id)
         cb1(null, myDoc._id);
       } else {
@@ -529,20 +529,23 @@ function  getDocEntities(community, seekDocument, seekEntity,  entityparts, docp
     //ok, now find the entities as specified...a bit tricky as we have to get the entity ancestors of all teis present in this page, not just the entities which start on this page
     if (entityparts[0].value=="*" && entityparts.length==1) {
       var myEntities=[];
-      TEI.find({docs: result[result.length-1]}, function (err, teis){
+//      console.log("doc "+result[result.length-1])
+      TEI.find({docs: result[result.length-1]}).then (function (teis){
         async.each(teis, function(teiel, cb2) {
- //           console.log(teiel._id);
+//            console.log("tei "+teiel);
             if (teiel.isEntity) {
                 if (!myEntities.some(e => e.entity === teiel.entityName)) myEntities.push({entity: teiel.entityName, collateable:teiel.isTerminal});
                 cb2(null);
             } else { //gp looking for the entity...by definition the tei must be inside a documemnt..
               var nextTeiId=teiel.ancestors[teiel.ancestors.length-1];
+ //             console.log("nextTeiId "+nextTeiId)
               async.whilst (
-                function () {return nextTeiId!=null},
+                function test(cb) {cb(null, nextTeiId!=null)},
                 function(cb1) {
-                  TEI.findOne({_id: nextTeiId}, function(err, ancestorTei){
+                  TEI.findOne({_id: new ObjectId(nextTeiId)}).then (function(ancestorTei){
+ //                   console.log("ancestor "+ancestorTei);
                     if (ancestorTei.isEntity && ancestorTei.name!="text") {
-        //              if (ancestorTei.name!="text") console.log (ancestorTei);
+ //                     if (ancestorTei.name!="text") console.log ("ancestor "+ancestorTei);
                       if (!myEntities.some(e => e.entity === ancestorTei.entityName)) myEntities.push({entity: ancestorTei.entityName, collateable:ancestorTei.isTerminal});
                       nextTeiId=ancestorTei.ancestors[ancestorTei.ancestors.length-1];
                       cb1(null, null);
@@ -551,9 +554,12 @@ function  getDocEntities(community, seekDocument, seekEntity,  entityparts, docp
                       else nextTeiId=ancestorTei.ancestors[ancestorTei.ancestors.length-1];
                       cb1(null, null);
                     }
+                  }, function(err){
+ //                 	console.log("search fail "+err)
                   })
                 },
                 function (err) {
+  //                console.log(myEntities)
                   cb2(null); //finished this each
                 }
               )
@@ -607,13 +613,12 @@ function getEntityDocs(community, seekEntity, req, res, docparts, entityparts, c
   //we are either searching for documents holding this entity...
  // console.log("here in ged docparts "); console.log(docparts);
   if (docparts.length==1) {
-    TEI.find({entityName: community+":"+seekEntity, community: community}, function (err, texts) {
-      if (err) res.status(400).send("Database search error "+err);
-      else if (req.query.type=="count") {res.json({count: texts.length})}
+    TEI.find({entityName: community+":"+seekEntity, community: community}).then (function (texts) {
+	  if (req.query.type=="count") {res.json({count: texts.length})}
       else if (req.query.type!="list") {res.status(400).send("Error in query string '"+JSON.stringify(req.query)+"'. Only types count and list accepted in this context")}
       else if (req.query.type=="list") {
       	//we need to return these in the order in which they are in the master docs
-      	Community.findOne({abbr:community}, function(err, myCommunity){
+      	Community.findOne({abbr:community}).then (function(myCommunity){
      // 		console.log(myCommunity.documents);
       		async.mapSeries(myCommunity.documents, function(myDoc, cb){
       		  //does this doc contain this entity?
@@ -626,16 +631,18 @@ function getEntityDocs(community, seekEntity, req, res, docparts, entityparts, c
      		  	if (String(text.docs[0])==String(myDoc)) foundText=true;
      		  });
      		  if (foundText) {
-				  Doc.findOne({_id:myDoc}, function(err, thisDoc){
-					cb(err, {name: thisDoc.name})
+				  Doc.findOne({_id: new ObjectId(myDoc)}).then (function(thisDoc){
+					cb(null, {name: thisDoc.name})
 				  })
-			  } else {cb(err, "")};
+			  } else {cb(null, "")};
 			}, function(err, results){
 			  if (err) res.status(400).send("Database error");
 			  else callback(results.filter(Boolean));
 			});
       	});
       }
+    }, function (err){
+    	res.status(400).send("Database search error "+err);
     });
   } else {//more than one doc part. We must be looking for a page range
     //we have to look at every page in the docoment. Either the page tei is the ancestor of the entity TEI, or is a child of the entity TEI
@@ -732,26 +739,25 @@ function loadObjTree(xmlDoc, parentEl, obj, queue) {
 
 function getXMLText(res, next, community, seekEntity, seekDocument, detString, entityparts, docparts, isXML) {
   //find the community, the document, the entity...
-  Community.findOne({abbr:community}, function(err, myCommunity){
-    if (err || !myCommunity)  res.status(400).send("Error finding community '"+community+"'.");
-    else {
+  Community.findOne({abbr:community}).then (function(myCommunity){
       var foundDoc=null;
-//      console.log(seekDocument);
+ //     console.log("in get XML text "+docparts[0].value);
       async.forEachOf(myCommunity.documents, function(thisDoc) {
+ //     	  console.log("in get XML text 2 "+thisDoc);
           const callback = _.last(arguments);
-          Doc.findOne({_id:thisDoc}, function(err, thisDoc){
-            if (err || !thisDoc) callback(err);
-            else if (thisDoc.name==docparts[0].value) {
+          Doc.findOne({_id: new ObjectId(thisDoc)}).then (function(resultDoc){
+ //           console.log("got doc"+resultDoc.name);
+  			if (resultDoc.name==docparts[0].value) {
               foundDoc=thisDoc;
               callback(null);
             } else callback(null);
+          }, function(err){
+          	callback(err)
           });
       }, function (err){
         if (err || !foundDoc) res.status(400).send("Error finding document '"+seekDocument+"'.");
         else {//get the teis for this
-          TEI.find({entityName:community+":"+seekEntity, docs: {$in:[foundDoc._id]}}, function (err, teis){
-            if (err) res.status(400).send("Error finding teis for document '"+seekDocument+"'.");
-            else {
+          TEI.find({entityName:community+":"+seekEntity, docs: {$in:[new ObjectId(foundDoc._id)]}}).then (function (teis){
               var foundVersions=[];
               if (!isXML) var content='{"_id": "'+foundDoc.name+'_'+seekEntity+'", "context": "'+seekEntity+'","tei":"", "transcription_id": "'+foundDoc.name+'","transcription_siglum": "'+foundDoc.name+'","siglum": "'+foundDoc.name+'", "witnesses":[';
               var counter=0;
@@ -760,7 +766,7 @@ function getXMLText(res, next, community, seekEntity, seekDocument, detString, e
                 var teiContent={"content":""};
                 FunctionService.loadTEIContent(version, teiContent).then(function (){
                   //get the page name...
-                  Doc.findOne({_id: version.docs[1]}, function(err, myPage){
+                  Doc.findOne({_id: version.docs[1]}).then (function(myPage){
                     if (isXML) foundVersions.push({place: myPage.name, text: teiContent.content})
                     else {
                       if (counter>0) {
@@ -769,7 +775,7 @@ function getXMLText(res, next, community, seekEntity, seekDocument, detString, e
                       else  content+=DualFunctionService.makeJsonList(teiContent.content, foundDoc.name);
                       counter++;
                     }
-                    cb2(err);
+                    cb2(null);
                   })
                 });
               }, function(err){
@@ -779,11 +785,13 @@ function getXMLText(res, next, community, seekEntity, seekDocument, detString, e
                   res.json(JSON.parse(content));
                 }
               });
-            }
+          }, function (err){
+          	res.status(400).send("Error finding teis for document '"+seekDocument+"'.");
           })
         }
       });
-    }
+  }, function (err){
+  	res.status(400).send("Error finding community '"+community+"'.");
   })
 }
 

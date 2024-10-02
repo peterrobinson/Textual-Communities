@@ -36,7 +36,9 @@
   </div>
   <hr style="border: 1px solid #8c8b8b; margin-bottom: 15px; margin-top:15px; position: relative; top: 637px">
     <div class="form-group" style="text-align: center; height: 18px; position: relative; top: 639px">
-      <button type="button" class="btn btn-primary" (click)="submit()">Save Commentary</button>  <button type="button" class="btn btn-primary" (click)="approve()">Approve Commentary</button>
+      <button type="button" class="btn btn-primary" (click)="submit()">Save Commentary</button>
+     <button *ngIf="commentaries.length==0 || commentaries[0].status!='APPROVED'" type="button" class="btn btn-primary" (click)="approve()">Approve Commentary</button>
+     <button *ngIf="commentaries.length>0 && commentaries[0].status=='APPROVED'" class="btn btn-primary" style="background-color: red" type="button" (click)="disapprove()">Remove Approval</button>
     </div>
       <div modal-resizable class="win-size-grip"></div>
 </div>

@@ -19,23 +19,46 @@ const _methods = {
 };
 
 const _statics = {
-  getParent: function(id, callback) {
-    return this.findOne({children: id}, callback);
+  getParent: function(id, cb1) {
+//  	console.log("GetParent inside links")
+  	this.findOne({children: id})
+  	.then(function(found){
+ // 		console.log("Got Parent inside links "+found.name)
+ // 			return (found, callback)
+    		return cb1(null, found);
+//  		return this(found, callback);
+  	})
+//    return this.findOne({children: id}, callback);
   },
   getAncestors: function(id, callback) {
+//  	console.log("find ancestors")
     var cls = this;
     async.waterfall([
       function(cb) {
-        cls.findOne({_id: id}, cb);
+//        cls.findOne({_id: id}, cb);
+		  cls.findOne({_id: id})
+		  	.then(function(result){
+//		  		console.log("ancestor ")
+		  		return cb(null, result);
+		  	})
       },
       function(node) { // get ancestors
+//      	console.log("still looking for ancestors at node ")
         const cb = _.last(arguments);
         if (!node) {
           return cb(null, []);
         }
-        cls.find({_id: {$in: node.ancestors}}, cb);
+//        cls.find({_id: {$in: node.ancestors}}, cb);
+		   cls.find({_id: {$in: node.ancestors}})
+		   	.then(function(result){
+		   	//	console.log("still looking for ancestors at node ancestors "+result)
+		   		return cb(null, result);
+		   	})
       },
-    ], callback);
+    ],  function(err, result) {
+//    	console.log("has results ")
+    	return callback(null, result)
+    });
   },
   getPrev: function(id, callback) {
     var cls = this;
@@ -62,8 +85,15 @@ const _statics = {
   getNext: function(id, callback) {
     var cls = this;
     cls._getParentAndIndex(id, function(err, parent, index) {
+//      console.log('get Next 2 for index'+index+" parent ")
       if (parent && (index < parent.children.length - 1)) {
-        return cls.findOne({_id: parent.children[index + 1]}, callback);
+//      	console.log('get Next 2 inside')
+        cls.findOne({_id: parent.children[index + 1]})
+		  .then ( function (found) {
+//			console.log('get Next 2x ')
+			 return callback(null, found); 
+		  });
+//        return cls.findOne({_id: parent.children[index + 1]}, callback);
       } else {
         return callback(err, null);
       }
@@ -120,11 +150,14 @@ const _statics = {
   },
   _getParentAndIndex: function(id, callback) {
     var cls = this;
+//    console.log("inside parent index")
     async.waterfall([
       function(cb) {
+//    	console.log("looking inside parent index")
         cls.getParent(id, cb);
       },
       function(parent) {
+//      	console.log("got parent after getParent")
         const cb = _.last(arguments);
         if (parent) {
           var index = _.findIndex(parent.children, function(childId) {
@@ -135,7 +168,8 @@ const _statics = {
               `can not find ${id} in ${parent._id} children`
             ));
           }
-          cb(null, parent, index);
+//          console.log("about to return parent and index "+index+" "+parent.name)
+          return cb(null, parent, index);
         }
         return cb(null, null, null);
       },
@@ -206,12 +240,18 @@ const _statics = {
         }
       });
     });
-    return cls.find({_id: {$in: _.keys(ancestors)}}, callback);
+//    console.log("getting ancestors from leaves")
+//    return cls.find({_id: {$in: _.keys(ancestors)}}, callback);
+	  cls.find({_id: {$in: _.keys(ancestors)}})
+	  	.then(function(results){
+	  		return callback(null, results);
+	  	})
   },
   getDeepNext: function(id, callback) {
     const cls = this;
     async.waterfall([
       function(cb) {
+      	conso
         cls.getAncestors(id, cb);
       },
       function(ancestors) {
@@ -316,6 +356,7 @@ const _statics = {
   orderLeaves: function(leaves, cb) {
     const cls = this;
     let ancestors = {};
+//    console.log("in orderLeavesXX "+leaves.length)
     _.each(leaves, function(node) {
       // collect all ancestors of given leaves
       _.forEachRight(node.ancestors, function(id) {
@@ -326,7 +367,31 @@ const _statics = {
         }
       });
     });
-    cls.find({_id: {$in: _.keys(ancestors)}}, function(err, results) {
+    const d = new Date();
+	let time = d.getTime();
+//    console.log("in orderLeaves 1 "+time)
+    cls.find({_id: {$in: _.keys(ancestors)}})
+     .then(function (results){
+     	  time = d.getTime();
+//     	  console.log("in orderLeaves 2 "+time)
+     	  const root = cls.getTreeFromNodes(results.concat(leaves))
+          , orderedLeaves = []
+      ;
+      time = d.getTime();
+//      console.log("in orderLeaves 3 "+time);
+      _.dfs([root], function(node) {
+        if (node && _.isEmpty(node.children)) {
+          orderedLeaves.push(node.obj);
+        }
+      });
+       time = d.getTime();
+//      console.log("in orderLeaves 4 "+time);
+      return cb(null, orderedLeaves);
+     },
+     function(err){
+     	return cb(err);
+     })
+ /*    function(err, results) {
       if (err) {
         return cb(err);
       }
@@ -339,10 +404,11 @@ const _statics = {
         }
       });
       cb(err, orderedLeaves);
-    });
+    }); */
   },
   getTreeFromNodes: function(objs) {
     const nodesMap = {};
+//  	console.log("get tree from nodes 1"+nodesMap)
     let root = null
       , parent, children
     ;
@@ -352,10 +418,13 @@ const _statics = {
         obj: obj,
       };
     });
+//    console.log("get tree from nodes 2 "+nodesMap)
+    var incr=1;
     _.each(nodesMap, function(node) {
       let obj = node.obj;
       if (obj.ancestors.length === 0) {
         // only support single root for now
+        
         if (root !== null) {
           throw new MultipleRootError(
             `found multiple root in given leaves: ${root._id} ${node._id}`
@@ -364,15 +433,19 @@ const _statics = {
         root = node;
       } else {
         parent = nodesMap[_.last(obj.ancestors)];
+ //       console.log("got parent in get tree from nodes 2, index "+incr)
+        incr++;
         var index = _.findIndex(parent.obj.children, function(id) {
           return _idEqual(id, obj._id);
         });
         parent.children[index] = node;
       }
     });
+//    console.log("get tree from nodes 3")
     _.each(nodesMap, function(node) {
       _.remove(node.children, _.isUndefined);
     });
+//    console.log("get tree from nodes 4")
     return root;
   },
 };

@@ -4,7 +4,6 @@ const _ = require('lodash')
   , ObjectId = mongoose.Types.ObjectId
   , Doc = require('../models/doc')
   , TEI = require('../models/tei')
-  , libxml = require('libxmljs')
 ;
 
 const TEST_TEI = {

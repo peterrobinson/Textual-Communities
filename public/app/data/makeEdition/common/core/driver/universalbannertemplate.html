@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" >
 <head>
-  <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
          <!-- Global site tag (gtag.js) - Google Analytics -->
       <!-- meta name="viewport" content="width=device-width, initial-scale=1"/-->
@@ -11,12 +10,12 @@
     <meta charset="UTF-8"/>	
     <title>Universal banner</title>
     <!-- every HTML page uses these. Loaded by  -->
-	<script src="/app/data/makeEdition/common/core/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 	<script src="/app/data/makeEdition/common/core/js/jquery.min.js"></script>
     <script src="/app/data/makeEdition/common/core/js/openseadragon.js" type="text/javascript"></script>
     <script type="text/javascript" src="/app/data/makeEdition/common/core/js/async.js"></script> 
     <script type="text/javascript" src="/app/data/makeEdition/common/core/js/split.js"></script> 
     <script type="text/javascript" src="/app/data/makeEdition/common/core/js/clay.js"></script> 
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/banner.js"></script> 
 	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_event.js" type="text/javascript"></script>
 	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_viewport.js" type="text/javascript"></script>
 	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_tooltip.js" type="text/javascript"></script>
@@ -24,10 +23,8 @@
     <script  src="/app/data/makeEdition/common/core/js/palette.js"></script>
     <script type="text/javascript" src="/app/data/makeEdition/common/core/js/clay.js"></script> 
 	<script  type="text/javascript" src="/app/data/makeEdition/common/core/js/common.js"></script>
-	<script  type="text/javascript" src="/app/data/makeEdition/common/core/js/bootstrapmultilevel.js"></script>
-	<link href="/app/data/makeEdition/common/core/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
-    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/common.css" type="text/css">
- 	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/bootstrapmultilevel.css">
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/common.css" type="text/css" />
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/banner.css" type="text/css" />
 
         	 	   <!-- used by many editions. You should customize  -->
  	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_regular_macroman/stylesheet.css" type="text/css" charset="utf-8" />
@@ -35,8 +32,9 @@
  	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_italic_macroman/stylesheet.css" type="text/css" charset="utf-8" />
  	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_bolditalic_macroman/stylesheet.css" type="text/css" charset="utf-8" />
 	 	   <!-- specific to this edition. You should customize. Now done via the configuration file  -->
-	 <script  src="/app/data/makeEdition/common/core/driver/driverbanner.js"></script>
-	 <!-- script>const view=makeBanner;</script>
+	 <!-- script  src="/app/data/makeEdition/common/core/driver/driverbanner.js"></script>
+	 <script  src="/app/data/makeEdition/common/core/js/banner.js"></script>
+	 <script>const view="makeBanner", hasVBase=false, ssSearch=false;</script>
 	 <script  type="text/javascript" src="/app/data/MakeEdition/common/CTP2/RE/js/editorial.js"></script>
 	 <script  type="text/javascript" src="/app/data/MakeEdition/common/CTP2/RE/js/entityPages.js"></script>
 	 <script  type="text/javascript" src="/app/data/MakeEdition/common/CTP2/RE/js/menu.js"></script -->
@@ -45,29 +43,9 @@
 <body onload="initBanner()">
   <div id="whole"> <!-- we will replace the whole of page-head in every page with what is generated from this file -->
    <div id="page-head">  
-    <div id="grp1" style="width: 100%;">
-    	<div id="logos"><a href="http://www.inklesseditions.com">
-    		<img src="/app/data/makeEdition/common/core/images/inklesslogo.png" height="33px"></img></a>
-        </div>
-		<div id="title"><a style="color:white" href="../../../index.html" id="shortTitle">The Tales of the Reeve and Cook</a></div>
-      	<div id="infoLinks">
-		  <span id="aboutLink"><a style="color:white; font-size:100%;" href="../../../html/editorial/menu/About.html"> About </a></span>
-		</div>
-		<div>
-		  <a href="../../../html/editorial/menu/Copyright.html">
-		  	<img src="/app/data/makeEdition/common/core/images/copyright.png" height="18px" /></img>
-		  </a>
-		</div>
-		<div>
-		  <a style="color:white; font-size:100%" href="../../../vBase.html">VBase</a>&nbsp;&nbsp;
-		</div>
-		<div id="search" class="outline" style="text-align:center">
-    	  <div id='staticSearch'></div>
-    	</div>
-     </div>
      <div id="grp2"> <!-- contents of editorial and entity menus. Editorial menu ex bootstrap first -->
        <div id="editorialMenu"></div>
-      <div id="entityMenu"></div>
+       <div id="entityMenu"></div>
      </div>
   </div>  <!-- end page head, which is all that matters-->
 </div> <!-- end whole -->

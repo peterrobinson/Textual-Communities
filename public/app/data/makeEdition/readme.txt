@@ -29,3 +29,7 @@ entityAliases = [
 3. Maybe: an alias file for the manuscripts? and specify their ordering also?
 
 Further configuration files can be deployed to override css styling, and javascript rendering, splash pages, etc etc
+
+Some useful functions...
+let place=compareIndex.findIndex(x => x.entity === myEntity);
+...brings back the position in compareIndex of "entity: myEntity"

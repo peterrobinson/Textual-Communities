@@ -128,7 +128,9 @@ var AddDocumentXMLComponent = ng.core.Component({
           teiHeader=teiHeader.replace(/(\t)/gm,"\\t");
           teiHeader=teiHeader.replace(/"/g, '\\"');
     //      teiHeader=teiHeader.replace(/'/g, "\\'");
-          var jsoncall=JSON.parse(JSON.stringify('[{"_id":"'+mydoc.attrs._id+'"},{"$set": {"teiHeader":"'+teiHeader+'"}}]'));
+          var jsoncall='[{"_id": "'+mydoc.attrs._id+'"},{"$set": {"teiHeader":"'+teiHeader+'"}}]';
+          var myjson=JSON.parse(jsoncall);
+ //        console.log
           UpdateDbService("Document", jsoncall, function(result){
             if (result!="success") {
               self.message="The save failed. Maybe you have lost your internet connection.";

@@ -4,7 +4,7 @@ var mongoose = require('mongoose')
   , Schema = mongoose.Schema
   , ObjectId = mongoose.Types.ObjectId
   , extendNodeSchema = require('./extend-node-schema')
-  , libxml = require('libxmljs')
+//  , libxml = require('libxmljs')
   , Error = require('../common/error')
   , TEI = require('./tei')
   , Entity = require('./entity')
@@ -36,7 +36,7 @@ var DocSchema = extendNodeSchema('Doc', {
   image: String,
   meta: Schema.Types.Mixed,
   teiHeader: String,
-  control: {transcripts: String, tmsg: String, images: String, imsg:""},
+  control: {transcripts: String, tmsg: String, images: String, imsg:String},
 }, {
   methods: {
     _commit: function(
@@ -61,7 +61,7 @@ var DocSchema = extendNodeSchema('Doc', {
         docEl = {name: self.label, attrs: {n: self.name}};
       }
 //     if (config.localDevel)  console.log("starting oit");
- //     console.log(communityAbbr);
+ //     console.log("in doc js");
  //     console.log(docEl)
       globalDoc=docRoot;
       globalCommAbbr=communityAbbr;
@@ -69,11 +69,11 @@ var DocSchema = extendNodeSchema('Doc', {
       updateTeiElsAA.clear();
       otherAncestorTeisAA.clear();
 
-//     console.log(teiRoot.children[0].children[1].children[0].children);
-//      console.log(teiRoot);
+//     console.log(	.children[0].children[1].children[0].children);
+//      console.log("teiRoot");
       if (_.isEmpty(teiRoot)) {
         let loop = true;
-
+//		console.log("shit happens")
         return async.whilst(
           function() {
             return loop;
@@ -109,7 +109,7 @@ var DocSchema = extendNodeSchema('Doc', {
           }
         );
       }
-//      if (config.localDevel)  console.log("function 0a")
+ //     console.log("function 0a")
       let boundsMap = _boundsMap(leftBound, rightBound);
       let errors = _linkBounds(docEl, leftBound, rightBound, teiRoot);
 
@@ -148,7 +148,7 @@ var DocSchema = extendNodeSchema('Doc', {
           child.next = el.children[i+1];
         });
       });
-//      if (config.localDevel)  console.log("function 0b")
+//      console.log("function 0b")
       let results = _parseBound(boundsMap);
       errors = errors.concat(results.errors);
       deleteTeis = deleteTeis.concat(results.deleteTeis);
@@ -177,18 +177,20 @@ var DocSchema = extendNodeSchema('Doc', {
  //         if (config.localDevel)  console.log("function 1");
           filterEntities(docRoot, insertTeis, updateTeis, communityAbbr, elInfo, masterCallback, function(updateTeiElements, err) {
             topEntities=filterLiveEntities(insertTeis, insertEntities, communityAbbr);
-//            console.log("my entities"); console.log(topEntities);
+//            console.log("my entities"); 
+//            console.log(topEntities);
             uniqueEntities = _.uniqBy(insertEntities, "entityName");
             updateTeiEls=updateTeiElements;
             cb1(err, updateTeiEls);
           });
         },
        function adjustDeleteTeis (argument, cb1) {
-//          if (config.localDevel)  console.log("function 2");
+//           console.log("function 2");
           if (fromVFile) {  //fix for mistake where single page deletion is blank
+//           console.log("go now");
            TEI.findOne({docs: {$in: [docRoot._id]}}, function (err, deleteRoot) {
              if (!deleteRoot) {
- //               if (config.localDevel)  console.log("function 2a");
+ //              console.log("function 2a");
                 cb1(null, []);
              } else {
 //               if (config.localDevel)  console.log("function 2b");
@@ -199,8 +201,10 @@ var DocSchema = extendNodeSchema('Doc', {
          } else  {cb1(null, [])}
        },
        function identifyTEIDeleteChildren (argument, cb1) {
-//          if (config.localDevel) console.log("function 3");
-           TEI.find({$or: [{ancestors: {$in: deleteTeis}}, {_id: {$in: deleteTeis}},]}, function (err, results) {
+ //          console.log("function 3");
+           TEI.find({$or: [{ancestors: {$in: deleteTeis}}, {_id: {$in: deleteTeis}},]})
+           .then (function (results) {
+ //            console.log("function 3");
              deleteTeis=[];
              for (var i = 0; i < results.length; i++) {
                deleteTeis.push(results[i]._id);
@@ -218,7 +222,7 @@ var DocSchema = extendNodeSchema('Doc', {
          function removeChildEntitiesUpdates (TEIDeleteChildren, cb1) {
            //take out deleted children from updateTeis
            //go through entity children in teiUpdates and remove all in deletions
- //          if (config.localDevel) console.log("function 4");
+//            console.log("function 4");
            for (var i=0; i<TEIDeleteChildren.length; i++) {
              for (var j=0; j<updateTeiEls.length; j++) {
                if (!_.isEmpty(updateTeiEls[j].entityChildren)) {
@@ -233,27 +237,29 @@ var DocSchema = extendNodeSchema('Doc', {
            cb1(null, TEIDeleteChildren);
          },
         function saveDocRoot (TEIDeleteChildren, cb1) {
-//          if (config.localDevel) console.log("function 5");
+//		  console.log("function 5");
           if (!insertTeis[0].ancestors.length || fromVFile) {
             if (fromVFile) {
+//              console.log("inside function 5");
               Doc.collection.update({_id: docRoot.ancestors[0]}, {
                 $set: {entities:topEntities},
               }, cb1(null, self));
             } else {
               self.entities=topEntities;
               self.children = docRoot.children;
-              self.save(function(err) {
-                cb1(err, self);
+              self.save().then(function(err) {
+                cb1(null, self);
               });
             }
           } else { //from doc
             if (insertTeis.length>1) {
-//              console.log("checking insert TEIs "); console.log(docRoot.ancestors[0]);
+   //           console.log("checking insert TEIs "); 
+   //           console.log(docRoot.ancestors[0]);
               //we need to find the first docs element in the insert teis...so go through TEIs to find the first one...
               var thisDoc=null, i=0;
               while (thisDoc==null && i<insertTeis.length) {if (insertTeis[i].docs) {thisDoc=insertTeis[i].docs[0]} else {i++}};
-              Doc.findOne({_id: thisDoc}, function(err, doc) {
-                if (err) throw err;
+              Doc.findOne({_id: thisDoc})
+              .then( function(doc) {
                 if (doc)  {
                   if (_.isEmpty(doc.entities)) {
                     doc.entities=topEntities;
@@ -288,12 +294,13 @@ var DocSchema = extendNodeSchema('Doc', {
                     //first -- if current top entity is among those to be deleted
                   }
                   //for some reason, straight doc.save does not work. This does.
-                  Doc.collection.update({_id: doc._id}, {
-                    $set: {entities: doc.entities},
-                  }, cb1(null, self));
+                  Doc.updateOne({_id: doc._id}, {$set: {entities: doc.entities}})
+                  .then (cb1(null, self));
                 } else {
                   cb1(null, self);
                 }
+              }, function (err){
+                  throw err;
               });
             } else (cb1(null, self));
           }
@@ -301,37 +308,41 @@ var DocSchema = extendNodeSchema('Doc', {
             //old docs for this page are NOT deleted, nor are doc children for the pb updated. We do that here
             //if pb doc has children docs already: delete them, update links to new docs
         function checkOldPb (argument, cb1) {
-//          if (config.localDevel) console.log("function 6");
+ //         if (config.localDevel) console.log("function 6");
           if (String(docRoot.label)=="pb") {
-            Doc.findOne({_id: docRoot._id}, function(err, document){
+            Doc.findOne({_id: docRoot._id})
+            .then (function(document){
               var docChildren=document.children;
               if (docChildren.length>0) {
                 async.map(docChildren, deleteDocChildren, function (err, results) {
                   cb1(err,[]);
                 })
-              } else cb1(err, []);
+              } else cb1(null, []);
             });
           } else cb1(null, []);
         },  //now, figure out which are the top level docs among those added are write them to the pb
         function updateDocChildren (argument, cb1) {
-//          if (config.localDevel) console.log("function 7");
+//		   console.log("function 7");
           if (String(docRoot.label)=="pb") {
             var topKids=[];
             for (var i = 0; i < docs.length; i++) {
               if (docs[i].ancestors[docs[i].ancestors.length-1]==docRoot._id) topKids.push(docs[i]._id);
             }
-            Doc.collection.update({_id: docRoot._id}, {$set: {children: topKids}}, function (err){
-              cb1(err, []);
+            Doc.updateOne({_id: docRoot._id}, {$set: {children: topKids}})
+            .then (function (err){
+              cb1(null, []);
             });
           } else cb1(null, []);
         },
         function(argument, cb1) {
           if (docs.length > 0) {
- //           if (config.localDevel) console.log("function 8");
+   //       console.log("function 8");
   //          console.log("all our docs"); console.log(docs);
             //add community to each one
             docs.forEach(function(eachDoc){eachDoc.community=globalCommAbbr})
-            Doc.collection.insert(docs, function(err) {
+            Doc.insertMany(docs)
+            .then (function(err) {
+  //             console.log("documents inserted")
               cb1(null, []);
             });
           } else {
@@ -342,7 +353,7 @@ var DocSchema = extendNodeSchema('Doc', {
           //wierd things happening with synchronicity I think.. need to have things happen in order
           //first, remove entity children from master TEIs
           //set up waterfall to do the deletions
- //         if (config.localDevel) console.log("function 9");
+//         console.log("function 9");
           if (deleteTeis.length) {
             async.waterfall([
               function getEntityNames (cbAsync) {
@@ -391,13 +402,15 @@ var DocSchema = extendNodeSchema('Doc', {
                 },
                 function(argument, cbAsync) {
                   if (deleteTeis.length > 0) {
-                    TEI.collection.remove({
+                    TEI.deleteMany({
                       $or: [
                         {ancestors: {$in: deleteTeis}},
                         {_id: {$in: deleteTeis}},
                       ]
-                    }, function(err) {
-                      cbAsync(err, []);
+                    })
+                    .then( function(result) {
+   //                   console.log("deleted!"+result)
+                      cbAsync(null, []);
                     });
                   } else {
                      cbAsync(null, []);
@@ -412,14 +425,16 @@ var DocSchema = extendNodeSchema('Doc', {
             } else {cb1(null, self);}
           },
           function(argument, cb1) {
-//            if (config.localDevel) console.log("function 10"); 
+//             console.log("function 10"); 
             if (updateTeiEls.length > 0) {
               async.forEachOf(updateTeiEls, function(up) {
                 const cb2 = _.last(arguments);
-                TEI.collection.update({_id: up._id}, {
+                TEI.updateOne({_id: up._id}, {
                   $set: {children: up.children,  entityChildren: up.entityChildren},
-                }, cb2);
+                })
+                .then(cb2(null,[]));
               }, function(err) {
+ //               console.log("errr herez"+err)
                 cb1(err, self);
               });
             } else {
@@ -427,11 +442,11 @@ var DocSchema = extendNodeSchema('Doc', {
             }
           },
           function insertEntitiesFunct(argument, cb1) {
-//            if (config.localDevel) console.log("function 11");
+//             console.log("function 11");
              var entityDict={};
              if (uniqueEntities.length > 300) {
                //get all the entities for this community
-               Entity.find({'community': globalCommAbbr}, function (err, results) {
+               Entity.find({'community': globalCommAbbr}).then(function (results) {
                  //match all entities found against uniqueEntities
                  for (var i=0; i<results.length; i++) {
                    entityDict[results[i].entityName]=1;
@@ -441,7 +456,7 @@ var DocSchema = extendNodeSchema('Doc', {
                      uniqueEntities.splice(i--,1);
                  }
                  if (uniqueEntities.length) {
-                   Entity.collection.insert(uniqueEntities, function(err){
+                   Entity.create(uniqueEntities).then (function(err){
                      cb1(null, self);
                      });
                    }  else cb1(null, self);
@@ -451,36 +466,41 @@ var DocSchema = extendNodeSchema('Doc', {
                  async.forEachOf(uniqueEntities, function(up) {
                    const cb2 = _.last(arguments);
                      //this version is MJCH MUCH faster then using upsert
-                     Entity.find({'entityName': up.entityName}, function(err, results) {
-                     if (results.length==0)  {
-                       Entity.collection.insert(up, function(err){
-                       });
-                     }
-                     cb2(err);
+                     Entity.find({'entityName': up.entityName})
+                     .then (function(results) {
+						 if (results.length==0)  {
+						   Entity.create(up)
+						   .then (cb2(null, []));
+						 } else {
+						 	cb2(null, []);
+						 }
                    });
-                 }, function(err) {cb1(err, self);});
+                 }, function(err) {
+ //                   console.log("inserted stuff")
+                 	cb1(err, self);
+                 });
                } else {
                  cb1(null, self);
                }
            },
            function insertTopEntitiesFunc(argument, cb1) {
             //remove top entity if isTerminal is true
-//            if (config.localDevel) console.log("function 12");
+ //           console.log("function 12");
             for (var i=0; i<topEntities.length; i++) {
               if (topEntities[i].isTerminal) topEntities.splice(i, 1);
             }
             if (topEntities.length) {
 //              console.log(topEntities);
-              if (config.localDevel)   console.log("function 12a");
+//              console.log("function 12a");
               async.forEachOf(topEntities, function(up) {
 //                console.log(up)
                 const cb2 = _.last(arguments);
                 //do this differently. Check if we have an entityName in the entities array. If we do, no need to do anythiing. Else, add it
-                Community.findOne({'abbr': communityAbbr, "entities.entityName":up.entityName}, function(err,myComm){
+                Community.findOne({'abbr': communityAbbr, "entities.entityName":up.entityName}).then (function(myComm){
   //                console.log(myComm);
                   if (!myComm) {
-                    Community.update({'abbr': communityAbbr}, {$addToSet: {"entities": {"entityName":up.entityName, "isTerminal": up.isTerminal, "name": up.name} } },
-                      cb2);
+                    Community.updateOne({'abbr': communityAbbr}, {$addToSet: {"entities": {"entityName":up.entityName, "isTerminal": up.isTerminal, "name": up.name} } }).then(
+                      cb2(null));
                   } else cb2(null);
                 })
               }, function(err) {
@@ -489,13 +509,14 @@ var DocSchema = extendNodeSchema('Doc', {
             } else cb1(null, self);
           },
           function(argument, cb1) {
-//            if (config.localDevel) console.log("function 12c");
+  //        console.log("function 12c");
             if (insertTeis.length > 0) {
       //        insertTeis.forEach(function(eachTEI){eachTEI.community=globalCommAbbr})
-              TEI.collection.insert(insertTeis, function(err) {
-  //              if (config.localDevel) console.log("function 12d"); console.log(insertTeis)
+              TEI.insertMany(insertTeis)
+              .then (function(result) {
+ //                 console.log("function 12d"); // console.log(insertTeis)
 //                console.log(err);
-                cb1(err, self);
+               	 cb1(null, self);
               });
             } else {
               cb1(null, self);
@@ -542,7 +563,7 @@ var DocSchema = extendNodeSchema('Doc', {
           } else cb1(null, []);
         } */
       ], function (err) {
-//          if (config.localDevel) console.log("at the end of it all..")
+//		  console.log("at the end of it all..")
           inProcess=false;
           calledBack=false;
           callback(null);
@@ -557,7 +578,7 @@ var DocSchema = extendNodeSchema('Doc', {
         , docRoot = _.defaults(data.doc, self.toObject())
         , revision = data.revision
       ;
-//      console.log(docRoot);
+//      console.log("docRoot");
       if (inProcess) { //can happen with browser resending call
         //
 //        if (config.localDevel) console.log("we should never get here...I think..");
@@ -590,12 +611,17 @@ var DocSchema = extendNodeSchema('Doc', {
           self._commit(
             teiRoot, docRoot, leftBound, rightBound, callback,
             function(err) {
-              return cb(err, self);
+ //              console.log("ending it all now error "+err)
+               return cb(err, self);
             }
           );
         },
-      ], callback
-      );
+      ], function (err) {//for reasons I don't understand: when loading a XML document this returns "self, undefined" to the callback, and hence to sendData in resource.js
+ //       console.log("returning... error "+err)
+ //       console.log("returning .. self "+self)
+      	callback(null, self);
+//		callback("bruce","fred")
+      });
     },
   },
   statics: {
@@ -613,11 +639,13 @@ var DocSchema = extendNodeSchema('Doc', {
     },
     getTexts: function(id, callback) {
       let results = [];
+ //     console.log("in getTexts");
       async.waterfall([
         function(cb) {
-          TEI.find({docs: id, children: []}, cb);
+          TEI.find({docs: id, children: []}).then(function(result){ return cb(null, result)});
         },
         function(nodes) {
+//          console.log("we have nodes")
           const cb = _.last(arguments);
           results = nodes;
           TEI.getAncestorsFromLeaves(nodes, cb);
@@ -631,7 +659,11 @@ var DocSchema = extendNodeSchema('Doc', {
     getTextsLeaves: function(id, callback) {
       async.waterfall([
         function(cb) {
-          TEI.find({docs: id}, cb);
+        	TEI.find({docs: id})
+        	.then(function(result){
+        		return cb(null, result);
+        	})
+ //         TEI.find({docs: id}, cb);
         },
         function(texts) {
           const cb = _.last(arguments);
@@ -652,6 +684,7 @@ var DocSchema = extendNodeSchema('Doc', {
     */
     getOutterTextBounds: function(id, callback) {
       const cls = this;
+//      console.log("get the linkx")
       async.parallel([
         function(cb) {
           cls.getLeftTextBound(id, cb);
@@ -665,24 +698,37 @@ var DocSchema = extendNodeSchema('Doc', {
     },
     getLeftTextBound: function(id, callback) {
       const cls = this;
+//      console.log("looking left GLTB")
       async.waterfall([
         function(cb) {
+//          console.log("get parent GLTB")
           cls._getParentAndIndex(id, cb);
         },
         function(parent, index) {
+//          console.log("parent GLTB index "+index)
           const cb = _.last(arguments);
           if (!parent) {
             cb(null, []);
           } else if (index === 0) {
+//          	console.log("this is left most tree! first page!")
             async.waterfall([
               function(cb1) {
-                TEI.find({docs: parent.ancestors.concat(parent._id)}, cb1);
+//              	console.log("left bound GLTB "+parent._id+" ancestors"+parent.ancestors.concat(parent._id));
+                TEI.find({docs: parent.ancestors.concat(parent._id)})
+                   .then ( function(result){
+//                	console.log("in LB GLTPxxx")
+                	return cb1(null, result);
+                   }, function(err){
+//                	console.log("error");
+                });
               },
               function(texts) {
+ //               console.log("left bound textsxx length "+texts.length);
                 const cb1 = _.last(arguments);
                 TEI.orderLeaves(texts, cb1);
               },
               function(orderedLeaves) {
+//              	console.log("left bound texts2");
                 const cb1 = _.last(arguments);
                 const node = _.last(orderedLeaves);
                 if (node) {
@@ -702,6 +748,7 @@ var DocSchema = extendNodeSchema('Doc', {
     },
     getRightTextBound: function(id, callback) {
       const cls = this;
+      
       async.waterfall([
         function(cb) {
           cls.getNext(id, cb);
@@ -711,7 +758,11 @@ var DocSchema = extendNodeSchema('Doc', {
           if (!next) {
             return cb(null, []);
           }
-          TEI.find({docs: next.ancestors.concat(next._id)}, cb);
+//          TEI.find({docs: next.ancestors.concat(next._id)}, cb);
+			TEI.find({docs: next.ancestors.concat(next._id)})
+			.then (function(found){
+				return (cb(null, found));
+			})
         },
         function(texts) {
           const cb = _.last(arguments);
@@ -726,11 +777,14 @@ var DocSchema = extendNodeSchema('Doc', {
             return cb('ok', []);
           }
           let node = _.first(orderedLeaves);
+//          console.log("failing here?")
           TEI.getAncestors(node._id, function(err, ancestors) {
+//          	console.log("got ancestors here?")
             cb(err, ancestors.concat(node));
           });
         },
       ], function(err, bound) {
+ //     	console.log("end rightext bounds")
         if (err === 'ok') {
           err = null;
         }
@@ -1037,14 +1091,15 @@ function filterEntities(docRoot, sourceTeis, updateTeis, community, elInfo, mast
 }
 
 function getTEIUpdates (teiID, callback) {
-  TEI.findOne({_id:teiID}, function (err, version) {
+  TEI.findOne({_id:teiID})
+  .then (function (version) {
     //populate with children from updateTeis; rest from stored version
     for (var j=0; j<origUpdateTeis.length; j++) {
       if (String(origUpdateTeis[j]._id)==String(version._id)) {
         version.children=origUpdateTeis[j].children;
       }
     }
-    callback(err, version);
+    callback(null, version);
   });
 }
 //when we have a LOT of teis thi will get VERY slow. May have to do 100K searches every call
@@ -1200,17 +1255,19 @@ function isEntity(thisTei) {
 }
 
 function deleteDocChildren(docid, callback) {
-  Doc.findOne({_id: docid}, function (err, document){
+  Doc.findOne({_id: docid})
+  .then(function (document){
     if (document) {
       var docChildren=document.children;
-      Doc.collection.remove({_id: docid}, function(err, result){
+      Doc.deleteOne({_id: docid})
+      .then (function(result){
         if (docChildren.length>0) {
           async.map(docChildren, deleteDocChildren, function (err, results) {
             callback(err);
           })
-        } else callback(err);
+        } else callback(null);
       })
-    } else callback(err);
+    } else callback(null);
   });
 }
 
@@ -1236,8 +1293,9 @@ function createPath(curPath, childEl) {
 }
 
 function getTeiAncestors (teiID, callback) {
-  TEI.findOne({_id:teiID}, function (err, version) {
-    callback(err, version);
+  TEI.findOne({_id:teiID})
+  .then (function (version) {
+    callback(null, version);
   });
 }
 
@@ -1263,13 +1321,14 @@ function getEntityPaths  (entityTEI, callback) {
     if (!entityTEI.isEntity || entityTEI.ancestorName=="") {
       callback(null, entityTEI);
     } else {
-      Entity.findOne({entityName: entityTEI.ancestorName}, function (err, entity) {
+      Entity.findOne({entityName: entityTEI.ancestorName})
+      .then (function (entity) {
         if (entity) {
           entityTEI.entityPath.push(entity.entityName);
           entityTEI.ancestorName=entity.ancestorName;
             //recurse up enti
           getEntityPaths(entityTEI, function (err, result) {
-            callback(err, result)
+            callback(null, result)
           });
         } else {
           callback("Failed to find ancestor entity. This is impossible", null)

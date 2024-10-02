@@ -5,7 +5,6 @@ var $ = require('jquery')
     , config = require('../config')
     , models = require('../models')
     , TEI = models.TEI
-    , DOMParser = require('xmldom').DOMParser
     , DualFunctionService = require('../public/app/services/dualfunctions')
 ;
 ;
@@ -99,7 +98,7 @@ function standardChar(source) {
 }
 
 function procTEIs (teiID, callback) {
-    TEI.findOne({_id:teiID}, function (err, version) {
+    TEI.findOne({_id:teiID}).then (function (version) {
       var tei={"content":""};
       FunctionService.loadTEIContent(version, tei).then(function (){
         //might here have to wrap element content in xml stuff?
@@ -115,7 +114,7 @@ function procTEIs (teiID, callback) {
           tei.content="<"+version.name+attrs+">"+tei.content+"</"+version.name+">";
         }
 //        console.log("adding the tei "+tei.content)
-        callback(err, tei.content);
+        callback(null, tei.content);
       });
     });
 }

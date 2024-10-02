@@ -81,7 +81,7 @@ var ViewerComponent = ng.core.Component({
     });
     this._uiService.changeMessage$.subscribe(function(message){
 //      console.log(message);
-      self._uiService.manageModal$.emit({type: 'info-message', source:'commit', header: "Committing page "+message.page+" in document "+message.docname, message:message.message});
+      self._uiService.manageModal$.emit({type: 'info-message', source:'commit', header: "Committing page  zzz "+message.page+" in document "+message.docname, message:message.message});
       if (message.type=="commit") self.commitFailed=true;
     });
   }],
@@ -614,8 +614,8 @@ var ViewerComponent = ng.core.Component({
         if (!state.doNotParse) {
          self._uiService.manageModal$.emit({
             type: 'info-message',
-            header:   "Committing page "+page.attrs.name+" in document "+self.state.document.attrs.name,
-            message: "Page validated. Now committing"
+            header:   "Committing page yyydddxxx  "+page.attrs.name+" in document "+self.state.document.attrs.name,
+            message: "Page validated xx. Now committing"
           });
         }
         docService.commit({
@@ -631,7 +631,7 @@ var ViewerComponent = ng.core.Component({
           //go get these from the db
           if (!state.doNotParse) {
             if (!self.commitFail)
-              self._uiService.manageModal$.emit({type: 'info-message', header: "Committing page "+page.attrs.name+" in document "+self.state.document.attrs.name, message: "Page successfully committed. Now updating all collatable entities in the database for this page."});
+              self._uiService.manageModal$.emit({type: 'info-message', header: "Committing page aaa "+page.attrs.name+" in document "+self.state.document.attrs.name, message: "Page successfully committed. Now updating all collatable entities in the database for this page."});
           }
           if (!self.commitFailed) revision.set('status', 'COMMITTED');
           self.commitFailed=false;

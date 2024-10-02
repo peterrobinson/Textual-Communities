@@ -2,9 +2,8 @@ var UIService = require('../services/ui')
 , config = require('../config')
 , async = require('async')
 , $ = require('jquery')
-, Router = ng.router.Router
-, sortBy = require('sort-array')
-;
+, Router = ng.router.Router;
+const sortArray = require('sort-array');
 
 var CommunityMembersComponent = ng.core.Component({
   selector: 'tc-community-members',
@@ -32,11 +31,11 @@ var CommunityMembersComponent = ng.core.Component({
 		  //now, get the tasks for each member..
 		  async.map(self.members, function(member, callback) {
 			$.post(config.BACKEND_URL+'getMemberTasks?'+'id='+member._id, function(result) {
-			  if (result.assigned.length) {adjustNumbers((result.assigned)); sortBy(result.assigned, ['docName', 'sortable']);}
-			  if (result.approved.length) {adjustNumbers((result.approved)); sortBy(result.approved, ['docName', 'sortable']);}
-			  if (result.inprogress.length) {adjustNumbers((result.inprogress)); sortBy(result.inprogress, ['docName', 'sortable']);}
-			  if (result.submitted.length) {adjustNumbers((result.submitted)); sortBy(result.submitted, ['docName', 'sortable']);}
-			  if (result.committed.length) {adjustNumbers((result.committed)); sortBy(result.committed, ['docName', 'sortable']);}
+			  if (result.assigned.length) {adjustNumbers((result.assigned)); sortArray(result.assigned, ['docName', 'sortable']);}
+			  if (result.approved.length) {adjustNumbers((result.approved)); sortArray(result.approved, ['docName', 'sortable']);}
+			  if (result.inprogress.length) {adjustNumbers((result.inprogress)); sortArray(result.inprogress, ['docName', 'sortable']);}
+			  if (result.submitted.length) {adjustNumbers((result.submitted)); sortArray(result.submitted, ['docName', 'sortable']);}
+			  if (result.committed.length) {adjustNumbers((result.committed)); sortArray(result.committed, ['docName', 'sortable']);}
 			  member.pageinstances=result;
 			  callback(null, res);
 			});

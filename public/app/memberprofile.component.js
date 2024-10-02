@@ -8,9 +8,9 @@ var CommunityService = require('./services/community')
   , Router = ng.router.Router
   , Location = ng.router.Location
   , joinCommunity = require('./joinCommunity')
-  , async = require('async')
-  , sortBy = require('sort-array')
-;
+  , async = require('async');
+const sortArray = require('sort-array');
+
     /* function example(communityService, community, user) {
       communityService.addMember(community, user, 'MEMBER')
         .subscribe(function(updatedUser){
@@ -61,11 +61,11 @@ var MemberProfileComponent = ng.core.Component({
           if (String(self.memberships[i]._id)==results[j].memberId) {
         //    adjustNumbers((results[j].assigned));
       //      var bill=sortBy(results[j].assigned, ['docName', 'sortable']);
-            if (results[j].assigned.length) {adjustNumbers((results[j].assigned)); sortBy(results[j].assigned, ['docName', 'sortable']);}
-            if (results[j].approved.length) {adjustNumbers((results[j].approved)); sortBy(results[j].approved, ['docName', 'sortable']);}
-            if (results[j].inprogress.length) {adjustNumbers((results[j].inprogress)); sortBy(results[j].inprogress, ['docName', 'sortable']);}
-            if (results[j].submitted.length) {adjustNumbers((results[j].submitted)); sortBy(results[j].submitted, ['docName', 'sortable']);}
-            if (results[j].committed.length) {adjustNumbers((results[j].committed)); sortBy(results[j].committed, ['docName', 'sortable']);}
+            if (results[j].assigned.length) {adjustNumbers((results[j].assigned)); sortArray(results[j].assigned, ['docName', 'sortable']);}
+            if (results[j].approved.length) {adjustNumbers((results[j].approved)); sortArray(results[j].approved, ['docName', 'sortable']);}
+            if (results[j].inprogress.length) {adjustNumbers((results[j].inprogress)); sortArray(results[j].inprogress, ['docName', 'sortable']);}
+            if (results[j].submitted.length) {adjustNumbers((results[j].submitted)); sortArray(results[j].submitted, ['docName', 'sortable']);}
+            if (results[j].committed.length) {adjustNumbers((results[j].committed)); sortArray(results[j].committed, ['docName', 'sortable']);}
             self.memberships[i].pageinstances=results[j];
           }
         }

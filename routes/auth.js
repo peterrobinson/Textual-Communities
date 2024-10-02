@@ -36,33 +36,36 @@ router.post('/login', function(req, res, next) {
    // find a user whose email is the same as the forms email
    // we are checking to see if the user trying to login already exists
     var url=req.query.url;
-    User.findOne({ 'local.email' :  req.body.email }, function(err, user) {
-     // if no user is found, return the message
-     if (!user) {
-       res.render('login.ejs', {message: "No user associated with the email '"+req.body.email+"' found.", email:req.body.email, url:url});
-       return;
-      }
-     // if the user is found but the password is wrong
-     if (!user.validPassword(req.body.password)) {
-        res.render('login.ejs', {message: "Oops! wrong password", email:req.body.email, url: url});
-        return;
-      }
-      //are we authenticated? if not...send email and return message
-      if (!isValidProfile(user)) {
-  //      console.log("inside authentication local")
-  //      console.log("config.host_url "+config.host_url);
-//        console.log("req.protocol "+req.protocol);
-//        console.log("req.get('host') "+req.get('host'));
-        authenticateUser (user.local.email, user, req);
-        res.render('authenticate.ejs', {context:"email", user: user});
-        req.logout();
-        return;
-      }
-     // all is well, log me in, return successful user
-     req.logIn(user, function (err) {
-       if (url=="") url="/app/home"
-       if (!err) {res.render('closemodal.ejs', {url: url} );} else {}
-     });
+    User.findOne({ 'local.email' :  req.body.email })
+    	.then (function (user) { 
+		 // if no user is found, return the message
+		 if (!user) {
+		   res.render('login.ejs', {message: "No user associated with the email '"+req.body.email+"' found.", email:req.body.email, url:url});
+		   return;
+		  }
+		 // if the user is found but the password is wrong
+		 if (!user.validPassword(req.body.password)) {
+			res.render('login.ejs', {message: "Oops! wrong password", email:req.body.email, url: url});
+			return;
+		  }
+//		  console.log(user);
+		  //are we authenticated? if not...send email and return message
+		  if (!isValidProfile(user)) {
+	//        console.log("inside authentication local")
+	 //       console.log("config.host_url "+config.host_url);
+	 //       console.log("req.protocol "+req.protocol);
+	 //       console.log("req.get('host') "+req.get('host'));
+			authenticateUser (user.local.email, user, req);
+			res.render('authenticate.ejs', {context:"email", user: user});
+			req.logout();
+			return;
+		  }
+		 // all is well, log me in, return successful user
+//		 console.log("I am in");
+		 req.logIn(user, function (err) {
+		   if (url=="") url="/app/home"
+		   if (!err) {res.render('closemodal.ejs', {url: url} );} else {}
+		 });
    });
 });
 
@@ -282,7 +285,7 @@ router.get('/profile', isLoggedIn, function(req, res) {
 // =====================================
 // route for facebook authentication and login
 router.get('/callfacebook', function(req, res) {
-  console.log("about to call FB")
+//  console.log("about to call FB")
     TCModalState.state=1;
     res.redirect('/auth/facebook');
   }
@@ -326,8 +329,8 @@ router.get('/facebook/callback', passport.authenticate('facebook', {
         } else { //got one.. link the google account to this already and tell the user
           user.facebook=req.user.facebook;
           //remove this account, to save duplication and log in as this user
-          req.user.remove({});
-          req.logout();
+          req.user.deleteOne({});
+          req.logout(function(){});
           user.save();
           req.logIn(user, function (err){
             res.redirect('/app?prompt=facebookassocemail')
@@ -650,7 +653,7 @@ router.post('/twitteremail', function(req, res) {
 //        console.log("here now")
         existingUser.twitter=req.user.twitter;
         //delete the one we just made...
-        req.user.remove({});
+        req.user.deleteOne({});
         req.logout();
         existingUser.save();
         req.logIn(existingUser, function (err) {
@@ -711,7 +714,7 @@ router.get('/google/callback', passport.authenticate('google', {
     //as for facebook -- if you have google you are IN!
     //we are not checking if there is already a user with this email. Ok, I know we should...
   //  res.redirect('/app?prompt=googleassocemail');
-     User.findOne({'local.email':  req.user.google.email }, function(err, user) {
+     User.findOne({'local.email':  req.user.google.email }).then(function(user) {
        if (!user) {
          if (config.env=="production") {res.redirect('/app?prompt=isproduction')} else {
             req.user.local.email= req.user.google.email;
@@ -725,13 +728,15 @@ router.get('/google/callback', passport.authenticate('google', {
         } else { //got one.. link the google account to this already and tell the user
           user.google=req.user.google;
           //remove this account, to save duplication and log in as this user
-          req.user.remove({});
-          req.logout();
+          req.user.deleteOne({});
+          req.logout(function(){});
           user.save();
           req.logIn(user, function (err){
             res.redirect('/app?prompt=googleassocemail')
           })
         }
+    }, function(err){
+    	throw(err);
     });
     /*
 
@@ -1004,8 +1009,10 @@ router.get('/unlink/google', function(req, res) {
 // LOGOUT ==============================
 // =====================================
 router.get('/logout', function(req, res) {
-  req.logout();
-  res.redirect('/app#/home');
+//  console.log("logging out")
+  req.logout(function(err){
+  	  res.redirect('/app#/home');
+  });
 });
 
 // route middleware to make sure a user is logged in
@@ -1024,8 +1031,10 @@ function isLoggedIn(req, res, next) {
 //also check here for fb, google?: is this new account linked to a user when it is already linked to another local user?
 //or do that later
 function isValidProfile(user) {
-//  console.log("who I am in authenticate: "+req.user);
+//   console.log("who I am in authenticate: "+user.local.email);
+//  console.log(Object.keys(user.local).length);
   if (Object.keys(user.local).length===0 || typeof user.local.email === "undefined" || user.local.authenticated=="0") return false;
+//  console.log("real user")
   return true;
 }
 
@@ -1040,7 +1049,7 @@ function randomStringAsBase64Url(size) {
 function authenticateUser (email, user, req) {
   //lets get the url right here, ignore what is coming in...
   var thisUrl=config.host_url;
-  console.log(thisUrl);
+//  console.log(thisUrl);
   var ejs = require('ejs'), fs = require('fs'), str = fs.readFileSync(__dirname + '/../views/authenticatemail.ejs', 'utf8');
   var hash=randomStringAsBase64Url(20);
 //  console.log("url "+thisUrl)

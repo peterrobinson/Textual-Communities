@@ -7,13 +7,21 @@ var express = require('express')
   , bodyParser = require('body-parser')
   , flash = require('connect-flash')
   , session = require('express-session')
-  , MongoStore = require('connect-mongo')(session)
+  , MongoStore = require('connect-mongo')
   , _ = require('./common/mixin')
   , config = require('./config')
   , passport = require('./passport')
   , app = express()
 ;
 var dburi = config.database.uri;
+
+const dbString = "mongodb://localhost:27017/db_name"
+
+const sessionStore = MongoStore.create({
+     mongoUrl: dbString,
+     collectionName: 'session'
+})
+
 if(config.database.username != '' && config.database.password != '')
 {
         dburi = 'mongodb://'+config.database.username+':'+config.database.password+'@'+config.database.host+'/'+config.database.database;
@@ -34,7 +42,7 @@ app.set('view engine', 'ejs');
 app.use(session({
   key: 'session',
   secret: 'ilovescotchscotchyscotchscotch',
-  store: new MongoStore({mongooseConnection: mongoose.connection}),
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
 }));

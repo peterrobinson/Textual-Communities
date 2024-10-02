@@ -37,6 +37,7 @@ _.assign(Resource.prototype, {
       ;
     }
     else {
+//     console.log("here too"+JSON.stringify(options))
       router.route(name)
         .get(this.list())
         .post(options.auth.create, this.create())
@@ -58,6 +59,7 @@ _.assign(Resource.prototype, {
     }
   },
   getQuery: function(req) {
+ // 	console.log("a query");
     var urlQuery = req.query || {}
       , find = _parseJSON(urlQuery.find)
       , select = _parseJSON(urlQuery.select)
@@ -67,6 +69,7 @@ _.assign(Resource.prototype, {
       , query
       , optFields
     ;
+//    console.log(JSON.stringify(urlQuery.find)+" find");
     query = model.find(find);
     if (select) {
       query = query.select(select);
@@ -75,6 +78,7 @@ _.assign(Resource.prototype, {
       query = query.sort(sort);
     }
     if (populate) {
+//    	console.log("populate")
       if (!_.isArray(populate)) {
         populate = [populate];
       }
@@ -82,15 +86,19 @@ _.assign(Resource.prototype, {
         query = query.populate(field);
       });
     }
+//    console.log("returning query")
+//    console.log(query)
     return query;
   },
   beforeCreate: function(req, res, next) {
+//   	console.log("help me out 1")   
     var obj = new this.model(req.body);
     return function(cb) {
       cb(null, obj);
     };
   },
   beforeUpdate: function(req, res, next) {
+//  	console.log("help me out")
     return function(obj, cb) {
       obj.set(req.body);
       cb(null, obj);
@@ -98,9 +106,13 @@ _.assign(Resource.prototype, {
   },
   execSave: function(req, res, next) {
     return function(obj, cb) {
-      obj.save(function(err, obj, numberAffected) {
+/*      obj.save(function(err, obj, numberAffected) {
         cb(err, obj);
-      });
+      }); */
+      obj.save().then(result=> {
+//        console.log("getting result back")
+      	cb(null, result);
+      }).catch(err=>callback(err));
     };
   },
   afterCreate: function(req, res, next) {
@@ -118,16 +130,21 @@ _.assign(Resource.prototype, {
     };
   },
   sendData: function(req, res, next) {
-//    console.log("sending stuff back")
-    var fields = _parseJSON(req.query.fields, [])
-      , optFields
-    ;
+ //    console.log("sending stuff back")
+//    console.log("this"+JSON.stringify(this));
+//    console.log("fields1 "+req.query.fields);
+    //this function _parseJSON seems to be failing... so replace .
+    var fields = _parseJSON(req.query.fields, []), optFields  ;
+//	var fields = JSON.parse(JSON.stringify(req.query.fields)), optFields  ;
+//	console.log("processing fields2 ")
+//    console.log("fields2 "+JSON.stringify(fields));
     if (!_.isArray(fields)) {
       fields = [fields];
     }
     function _sendData(err, data) {
-//      console.log("this is where it all goes back in _send  ")
-//      console.log(err);
+//       console.log("this is where it all goes back in _send  ")
+//       console.log("error xx? "+err);
+//       console.log("data " );
       if (err) {
 //        console.log("have error")
         res.json({'data':data,'error':err}); //this is really a horrid hack. But I can't see any other way of getting the error data back..
@@ -139,11 +156,26 @@ _.assign(Resource.prototype, {
     //ok... this goes somewhere wierd before coming back to subscription in viewer...
   //      res.json(data);
       } else {
+//      	console.log("returning data")
         res.json(data);
       }
     }
+//    console.log("do I have fields 1")
     fields = _.intersection(fields, this.model.optionalFields);
-    return function(err, data) {
+//    console.log("still do I have fields xxx "+fields.length );
+    return function(err, data) {  //for some reason: when committing a document the data is put in the first parameter, not the second
+/*      if (data=="undefined") { //somehow, the callback here is not sending back to paramenters, only one
+      	data=err;
+      	err=null;
+      } */
+//      console.log("do I have fields 2 data "+ + "error "+err)
+//      console.log("come back with error..."+err)
+//      console.log("come back with data ")
+      if (!data) {
+//      	console.log("switching values")
+      	data=err;
+      	err=null;
+      }
       if (fields.length > 0) {
         var isArray = _.isArray(data);
         async.map(isArray ? data : [data], function(doc, callback) {
@@ -154,23 +186,27 @@ _.assign(Resource.prototype, {
               cb(err);
             });
           }, function(err) {
+//          	console.log("what am I returning")
             callback(err, obj);
           });
         }, function(err, objs) {
+//          console.log("going from here")
           return _sendData(err, isArray ? objs : objs[0]);
         });
       } else {
+//      	console.log("right oh send data now ")
         _sendData(err, data);
       }
     };
   },
   list: function() {
-    return _.bind(function(req, res, next) {
-      var query = this.getQuery(req);
-      async.waterfall([
-        _.bind(query.exec, query),
-      ], this.sendData(req, res, next));
-    }, this);
+    return _.bind(function(req, res, next) {  //thanks to braza from Stackoverflow for sorting this out!!!
+		var query = this.getQuery(req);
+		const callback = this.sendData(req, res, next);
+		query.exec().then(result => {
+			callback(null, result);
+		}).catch(err => callback(err));
+	}, this)
   },
   create: function() {
     return _.bind(function(req, res, next) {
@@ -182,7 +218,17 @@ _.assign(Resource.prototype, {
     }, this);
   },
   detail: function() {
-    return _.bind(function(req, res, next) {
+  	   return _.bind(function(req, res, next) {  
+		var query = this.getQuery(req).findOne({
+		 _id: req.params[this.options.id]
+		});
+		const callback = this.sendData(req, res, next);
+		query.exec().then(result => {
+			callback(null, result);
+		}).catch(err => callback(err));
+	}, this)
+  },
+/*    return _.bind(function(req, res, next) {
       var query = this.getQuery(req).findOne({
         _id: req.params[this.options.id]
       });
@@ -190,14 +236,31 @@ _.assign(Resource.prototype, {
         _.bind(query.exec, query),
       ], this.sendData(req, res, next));
     }, this);
-  },
+  }, */
+  
   update: function() {
+  	
     return _.bind(function(req, res, next) {
       var query = this.getQuery(req).findOne({
         _id: req.params[this.options.id]
       });
+     const task1 = (callback) => {
+        query.exec()
+        .then(function(result){
+        	callback(null, result)
+        })
+ 	}
+/*      let fun=function () {
+      	  const callback=_.last(arguments);
+		   query.exec().then(function (result) {
+//			  console.log("calling back with "+result)
+			 return callback(result);
+		})
+	 }; */
+//	 console.log("here we are in updatevvvvv")
       async.waterfall([
-        _.bind(query.exec, query),
+  //       _.bind(query.exec, query),
+ 		task1,
         this.beforeUpdate(req, res, next),
         this.execSave(req, res, next),
         this.afterUpdate(req, res, next),

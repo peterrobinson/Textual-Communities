@@ -159,10 +159,12 @@ var DocService = ng.core.Injectable().Class({
     ;
   },
   getLinks: function(doc) {
+  	console.log("looking for links url ")
     var url = this.url({
       id: doc.getId(),
       func: 'links',
     });
+    console.log("looking for url "+url)
     return this.http.get(url, this.prepareOptions({})).map(function(res) {
       if (!res._body) return {};
       return res.json();
@@ -183,6 +185,7 @@ var DocService = ng.core.Injectable().Class({
   },
   json2xml: json2xml,
   commit: function(data, opts, callback) {
+    console.log("committing")
     var self = this
       , docRoot = _.defaults(data.doc, {children: []})
       , revisionId = data.revision
@@ -191,7 +194,7 @@ var DocService = ng.core.Injectable().Class({
     ;
     if (text) {
   //    self._uiService.changeMessage$.emit({type: 'commit', page: "document",   docname: docRoot.name, message: "Parsing the tree"});
-  //    console.log("function 10");
+      console.log("function 10");
       var xmlDoc = parseTEI(text || '')
         , docTags = ['pb', 'cb', 'lb']
         , docQueue = []
@@ -251,9 +254,10 @@ var DocService = ng.core.Injectable().Class({
           cur.doc = prevDoc._id;
         }
       });
-//      console.log("function 13");
+      console.log("function 13");
     }
     if (docRoot._id) {
+      console.log("change here?")
       return this.update(docRoot._id, {
         tei: teiRoot,
         doc: docRoot,
@@ -263,18 +267,19 @@ var DocService = ng.core.Injectable().Class({
 //        console.log("after commit update"+doc);  //second part of horrid hack...
         //I am deeply unproud of this. We are forced to pick up errors in parsing etc on the server here, not in the
         //callbacks to the calling function.  But OK. It works.
-        if (doc.attrs.error) {
+        //why is this coming back with an error? take this out until we know wh
+ /*       if (doc.attrs.error) {
   //        console.log("error!!!"); console.log(doc.attrs.error);
   //        alert(doc.attrs.error.message);
           self._uiService.changeMessage$.emit({type: 'commit', page: doc.attrs.data.name,   docname: self.state.document.attrs.name, message: doc.attrs.error.message});
           //send a message
           doc.attrs=(doc.attrs.data);
-        }
+        } 
         if (_.isEmpty(doc.attrs.ancestors)) {
           self.selectDocument(doc);
         } else {
           self.selectPage(doc);
-        }
+        } */
       });
     } else {
 //      console.log("add options "+opts)
@@ -289,6 +294,7 @@ var DocService = ng.core.Injectable().Class({
         if (doc.attrs.error) {
           alert(doc.attrs.error.message)
         }
+        console.log("about to create document")
         self._uiService.createDocument(doc);
         TCstate.lastDocCreated=doc;  //put it all here? necessary because we do NOT return the do
       });

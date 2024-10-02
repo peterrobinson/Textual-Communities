@@ -23,15 +23,19 @@ router.use(function(req, res, next) {
 });
 
 function _getDependency(req, doc, callback) {
+//  console.log("xxx");
   async.parallel([
     function(cb) {
+//       console.log("in _getDependency doc.js");
       if (req.body.parent) {
+//        console.log("in _getDependency doc.js");
         Doc.findOne({_id: req.body.parent}, cb);
       } else {
         cb(null);
       }
     },
     function(cb) {
+//       console.log("in _getDependency doc.js 2");
       if (req.body.after) {
         Doc.findOne({_id: req.body.after}, cb);
       } else {
@@ -39,13 +43,16 @@ function _getDependency(req, doc, callback) {
       }
     },
     function(cb) {
+//    console.log("in _getDependency doc.js 3");
       if (req.body.community) {
-        Community.findOne({_id: req.body.community}, cb);
+//        console.log("in _getDependency doc.js 3a");
+        Community.findOne({_id: req.body.community}).then(function(community){cb(null, community)});
       } else {
         cb(null);
       }
     },
     function(cb) {
+//      console.log("in _getDependency doc.js 4");
       if (req.body.revision) {
         let revision = new Revision({
           doc: doc._id,
@@ -60,6 +67,7 @@ function _getDependency(req, doc, callback) {
       }
     },
   ], function(err, results) {
+ //    console.log("in _getDependency doc.js 6 ");
     const parent = results[0]
       , after = results[1]
       , community = results[2]
@@ -70,6 +78,7 @@ function _getDependency(req, doc, callback) {
       return callback(new ParameterError(
         'should not use parent/after/community at same time'));
     } else {
+//      console.log("in _getDependency doc.js 5");
       callback(null, parent, after, community);
     }
   });
@@ -85,6 +94,7 @@ var DocResource = _.inherit(Resource, function(opts) {
   //    doc,  // should contain valid label and name
   //  }
   beforeCreate: function(req, res, next) {
+//    console.log("xxxx")
     const docData = req.body.doc
       , tei = req.body.tei
     ;
@@ -112,8 +122,8 @@ var DocResource = _.inherit(Resource, function(opts) {
                 community.addDocument(obj, cb1);
               },
               function(cb1) {
-                obj.save(function(err, doc) {
-                  cb1(err, doc);
+                obj.save().then(function(doc) {
+                  cb1(null, doc);
                 });
               },
             ], function(err, results) {
@@ -127,6 +137,7 @@ var DocResource = _.inherit(Resource, function(opts) {
     };
   },
   beforeUpdate: function(req, res, next) {
+//  	console.log("about to commit 2?");
     return function(obj, cb) {
       var body = req.body;
       // normal update can only update name/image
@@ -141,15 +152,16 @@ var DocResource = _.inherit(Resource, function(opts) {
     };
   },
   execSave: function(req, res, next) {
+//  	console.log("about to commit 1? ");
     if (!req.body.commit) {
-      return function(obj, callback) {
+       return function(obj, callback) {
         obj.save(function(err, obj) {
           callback(err, obj);
         });
       };
     }
+//    console.log("about to commit 1xxyy? ");
     return function(obj, callback) {
-  //      console.log("about to commit?")
         return async.waterfall([
         function(cb) {
             obj.commit({
@@ -163,16 +175,18 @@ var DocResource = _.inherit(Resource, function(opts) {
         function(doc) {
           const cb = _.last(arguments);
           if (req.body.revision) {
-            Revision.update({_id: req.body.revision}, {                                                                                                                                                                                                                                                    committed: new Date(),
+            Revision.updateOne({_id: req.body.revision}, {                                                                                                                                                                                                                                                    
+              committed: new Date(),
               status: 'COMMITTED', community: req.body.doc.community,
-            }, cb);
+            })
+            .then(cb);
           } else {
             doc.meta = {
               committed: new Date(),
               user: req.user._id,
             }
-  //          console.log("about to save again ");
-            doc.save(cb);
+//            console.log("about to save again ");
+            doc.save().then(cb);
           }
         },
         function() {
@@ -202,6 +216,7 @@ router.get('/:id/texts', function(req, res, next) {
 
 router.get('/:id/links', function(req, res, next) {
   var docId = req.params.id;
+//  console.log("getting links")
   Doc.getOutterTextBounds(docId, function(err, leftBound, rightBound) {
     if (err) {
       return next(err);

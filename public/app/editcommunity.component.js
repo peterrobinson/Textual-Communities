@@ -2,8 +2,8 @@ var CommunityService = require('./services/community')
   , UIService = require('./services/ui')
   , RESTService = require('./services/rest')
   , config = require('./config')
-  , Mongoose = require('mongoose')
-  , ObjectId = mongoose.Types.ObjectId
+//  , Mongoose = require('mongoose')
+//  , ObjectId = mongoose.Types.ObjectId
 ;
 
 

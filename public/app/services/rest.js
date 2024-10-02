@@ -56,7 +56,8 @@ var RESTService = ng.core.Injectable().Class({
     });
   },
   update: function(id, data, options) {
-    var self = this
+ 	 console.log("save us now")
+     var self = this
       , cls = self.modelClass()
       , err
     ;
@@ -70,6 +71,7 @@ var RESTService = ng.core.Injectable().Class({
         obs.error(err);
       });
     }
+    console.log("save us now")
     options = this.prepareOptions(options);
     return this.http.put(
       this.url({id: id}), JSON.stringify(data), options

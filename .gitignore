@@ -46,5 +46,19 @@ public/app/config/*.js
 # ignore user uploaded files
 upload
 
+#ignore MakeEdition files
+MakeEdition/BOD
+MakeEdition/CL
+commonOrig
+CTP2Orig
+MakeEdition/driver
+MakeEdition/KT
+MakeEdition/RE
+MakeEdition/SQ
+MakeEdition/TC22
+MakeEdition/teseida
+MakeEdition/WBP
+teststuff
+
 #ignore https cert folder
 cert

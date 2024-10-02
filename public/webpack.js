@@ -3,13 +3,14 @@ var _ = require('lodash')
   , ResolverPlugin = webpack.ResolverPlugin
   , ProvidePlugin = webpack.ProvidePlugin
   , IgnorePlugin = webpack.IgnorePlugin
-  , ExtractTextPlugin = require("extract-text-webpack-plugin")
+//  , ExtractTextPlugin = require("extract-text-webpack-plugin")
   , path = require('path')
   , clientRoot = path.resolve(__dirname)
   , bowerRoot = path.resolve(clientRoot, '..', 'bower_components')
   , nodeRoot = path.resolve(clientRoot, '..', 'node_modules')
   , devtool = 'eval-source-map'
   , debug = true
+  , MiniCssExtractPlugin = require("mini-css-extract-plugin")
 ;
 
 switch (process.env.NODE_ENV) {
@@ -25,9 +26,11 @@ switch (process.env.NODE_ENV) {
 
 var config = {
   context: clientRoot,
+  mode: "development",
   entry: {
     app: path.join(clientRoot, 'app/boot.js'),
-    t: path.join(clientRoot, 'app/t.js'),
+    vendor: path.join(clientRoot, 'app/app.component.js'),
+//	t: path.join(clientRoot, 'app/t.js'),  
   },
   output: {
     path: path.join(clientRoot, 'dist'),
@@ -45,74 +48,82 @@ var config = {
     'codemirror/mode/xml/xml': false,
   },
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.png(\?v=\d+\.\d+\.\d+)?$/,
-        loader: "url?limit=1000&minetype=image/jpg&prefix=dist/"
+        use: "url?limit=1000&minetype=image/jpg&prefix=dist/"
       }, {
         test: /\.jpg(\?v=\d+\.\d+\.\d+)?$/,
-        loader: "url?limit=1000&minetype=image/jpg&prefix=dist/"
+        use: "url?limit=1000&minetype=image/jpg&prefix=dist/"
       }, {
         test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
-        loader: "url?limit=1000&minetype=application/font-woff&prefix=dist/"
+        use: "url?limit=1000&minetype=application/font-woff&prefix=dist/"
       }, {
         test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/,
-        loader: "url?limit=1000&minetype=application/font-woff&prefix=dist/"
+        use: "url?limit=1000&minetype=application/font-woff&prefix=dist/"
       }, {
         test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-        loader: "url?limit=1000&minetype=application/octet-stream&prefix=dist/"
+        use: "url?limit=1000&minetype=application/octet-stream&prefix=dist/"
       }, {
         test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
-        loader: "url?limit=1000&minetype=application/vnd.ms-fontobject&prefix=dist/"
+        use: "url?limit=1000&minetype=application/vnd.ms-fontobject&prefix=dist/"
       }, {
         test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-        loader: "url?limit=1000&minetype=image/svg+xml&prefix=dist/"
+        use: "url?limit=1000&minetype=image/svg+xml&prefix=dist/"
       },
       {
-        test: /\.css$/, 
-        loader: ExtractTextPlugin.extract("style-loader", "css-loader"),
-        //loader: 'style!css'
+        test: /\.css$/i,
+        use: [MiniCssExtractPlugin.loader, "css-loader"],
       },
       {
-        test: /\.less$/,
-        //loader: 'style!css!less?sourceMap'
-        loader: ExtractTextPlugin.extract(
-          "style-loader", "css-loader!less-loader"),
-      },
-    ],
+    	test: /\.less$/,
+		use: [
+		  "style-loader",
+		  "css-loader",
+		  {
+			loader: "less-loader",
+			options: {
+			  lessOptions: {
+	//			javascriptEnabled: true,
+			  },
+			}, 
+		  },
+		],
+	  },
+    ], /*,
     noParse: [
-    ]
+    ] */
   },
   resolve: {
-    root: [clientRoot],
-    modulesDirectories: ['web_modules', 'node_modules', 'bower_components', ],
+ /*   root: [clientRoot], */
+    modules: [clientRoot, 'web_modules', 'node_modules', 'bower_components', ],
+    fallback: {
+		"fs": false,
+		"tls": false,
+		"net": false,
+		"path": false,
+		"zlib": false,
+		"http": false,
+		"https": false,
+		"stream": false,
+		"crypto": false,
+		"crypto-browserify": false, //if you want to use this module also don't forget npm i crypto-browserify 
+	  },
     alias: {
       bower: bowerRoot,
       node: nodeRoot,
     },
   },
   plugins: [
-    new webpack.DefinePlugin({
-      'process.env': {
-        NODE_ENV: JSON.stringify(process.env.NODE_ENV),
-      },
-    }),
-    new ResolverPlugin(new ResolverPlugin.DirectoryDescriptionFilePlugin(
-      'bower.json', ['main']
-    )), 
-    // prevent webpack accident include server security information
-    new IgnorePlugin(new RegExp('config\/production.*')),
-    new ExtractTextPlugin("app.css"),
-    new webpack.optimize.CommonsChunkPlugin({
+/*    new webpack.optimize.CommonsChunkPlugin({
       name: 'vendor', filename: 'vendor.bundle.js',
       chunks: ['app'],
       minChunks: function(module, count) {
         return module.resource && module.resource.indexOf(clientRoot) === -1;
       }
-    }),
-
+      }), */
+     new MiniCssExtractPlugin(), 
   ],
-  debug: debug,
   devtool: devtool,
 };
 
@@ -137,3 +148,5 @@ function handleError(err, stats) {
     cached: false,
   }));
 }
+
+//this should replace ExtractTextPlugin

@@ -13,7 +13,7 @@ var _ = require('lodash')
   , mongoose = require('mongoose')
   , config = require('../config')
   , gridfs = require('../utils/gridfs')
-  , libxml = require('libxmljs')
+  , Libxml = require('node-libxml').Libxml
   , defer = require("promise-defer")
   , Community = models.Community
   , Action = models.Action
@@ -50,15 +50,18 @@ router.use(function(req, res, next) {
 router.use('/docs', require('./doc'));
 
 var CommunityResource = _.inherit(Resource, function(opts) {
+//  console.log("here I am");
   Resource.call(this, Community, opts);
 }, {
   execSave: function(req, res, next) {
     return function(obj, cb) {
-      obj.save(function(err, obj, numberAffected) {
-        if (!err && req.body.dtd) {
+      obj.save().then (function(obj, numberAffected) {
+        if (req.body.dtd) {
           obj.setDTD(req.body.dtd);
         }
-        return cb(err, obj);
+        return cb(null, obj);
+      }, function(err){
+      	return cb(err, obj)
       });
     };
   },
@@ -74,7 +77,7 @@ var CommunityResource = _.inherit(Resource, function(opts) {
       }
       user.memberships.push(newmembership);
 //      console.log(user);
-      User.collection.update({_id: user._id}, {$push: {memberships: newmembership}},  function (err, result) {
+      User.updateOne({_id: user._id}, {$push: {memberships: newmembership}}).then  (function (result) {
       		 cb(result, community);
       });
 //      user.save(function(err, user) {
@@ -101,10 +104,10 @@ router.get('/communities/:id/memberships/', function(req, res, next) {
 router.post('/community/:id/members/', function(req, res, next) {
 //  console.log("in getting members "+req.params.id)
   var communityId = req.params.id;
-  Community.findOne({_id: ObjectId(communityId)}, function(err, community) {
+  Community.findOne({_id: new ObjectId(communityId)}).then (function(community) {
     async.mapSeries(community.members, function(member, callback) {
-      User.findOne({ _id: member}, function(err, user){
-        callback(err, user);
+      User.findOne({ _id: member}).then (function(user){
+        callback(null, user);
       });
     }, function(err, results) {
       res.json(results);
@@ -113,11 +116,11 @@ router.post('/community/:id/members/', function(req, res, next) {
 });
 
 router.post('/community/:id/fixMembers/', function(req, res, next) {
-//  console.log("in getting members "+req.params.id)
+//  console.log("in getting members")
   var communityId = req.params.id;
-  Community.findOne({_id: ObjectId(communityId)}, function(err, community) {
+  Community.findOne({_id: new ObjectId(communityId)}).then (function( community) {
     async.mapSeries(community.members, function(member, callback) {
-      User.findOne({ _id: member}, function(err, user){
+      User.findOne({ _id: member}).then (function(user){
       	//right. now look at all the memberships for this user. If we are missing id and creation date and accesses, put them in
       	async.mapSeries(user.memberships, function(membership, callback2) {
 			if (String(membership.community)==String(communityId)) {
@@ -126,7 +129,8 @@ router.post('/community/:id/fixMembers/', function(req, res, next) {
 //					console.log(membership);
 //					console.log(membership._id);
 //					console.log(membership._id==undefined);
-					User.collection.update({_id:member, memberships: {$elemMatch: {community: ObjectId(communityId)}}}, {$set:{'memberships.$._id': ObjectId(), 'memberships.$.created':community.created}}, function(err, result) {
+					User.collection.updateOne({_id:member, memberships: {$elemMatch: {community: new ObjectId(communityId)}}}, {$set:{'memberships.$._id': new ObjectId(), 'memberships.$.created':community.created}}).then (function(result) {
+//						console.log("did the update")
 						callback2(null);
 					});
 			   } else {
@@ -158,23 +162,29 @@ makeeditionResource.serve(router, 'makeeditions');
 
 router.post('/approveCommentary', function(req, res, next) {
 	var revisionID= req.query.revision;
-	Revision.collection.update({_id: ObjectId(revisionID)}, {$set: {status:"APPROVED", committed: new Date()}}, function(err, result){
-		if (!err) {
-			console.log("done for "+revisionID);
-			res.json({success: 1});
-		} else {
-			console.log("not done");
-			res.json({success: 0});
-		}
+	Revision.updateOne({_id: new ObjectId(revisionID)}, {$set: {status:"APPROVED", committed: new Date()}}).then  (function(result){
+		res.json({success: 1});
+	}, function(err){
+		res.json({success: 0});
 	});
 });
+
+router.post('/disApproveCommentary', function(req, res, next) {
+	var revisionID= req.query.revision;
+	Revision.updateOne({_id: new ObjectId(revisionID)}, {$set: {status:"IN_PROGRESS", committed: new Date()}}).then  (function(result){
+		res.json({success: 1});
+	}, function(err){
+		res.json({success: 0});
+	});
+});
+
 
 router.post('/writeMakeEdition', function(req, res, next) {
 	var makeedition=req.body; 
 	var communityID= makeedition.community;
 	var editionID= makeedition.id;
 	var editionHTML=makeedition.html;
-	console.log("here now2");
+//	console.log("here now2");
 	MakeEdition.collection.update({identifier:editionID}, {$set: {community:communityID, html:editionHTML}}, {upsert: true}, function(err, result){
 		if (!err) {
 			res.json({success: 1});
@@ -188,7 +198,7 @@ router.get('/getMakeEdition', function(req, res, next) {
 	var editionID= req.query.editionID;
 	MakeEdition.findOne ({identifier:editionID}, function(err, edition) {
 		if (edition) {
-			console.log("found an edition")
+//			console.log("found an edition")
 			res.json({success: 1, html: edition.html});
 		} else {
 			res.json({success: 0});
@@ -219,13 +229,10 @@ router.post('/writeCommentary', function(req, res, next) {
 	var commentary=req.body; 
 	var communityID= req.query.community;
 	var userID=commentary.user;
-	var newID=ObjectId();
-	Revision.collection.update({_id: newID}, {$set: {community:communityID, name: commentary.entity, text:commentary.commentary, user:ObjectId(userID), created: new Date(), status:"IN_PROGRESS"}}, {upsert: true}, function(err, result){
-		Commentary.collection.update({entity:commentary.entity, entityto: commentary.entityto}, {$set:{community: communityID}, $push:{revisions: newID}}, {upsert: true}, function(err){
-			if (!err) res.json({success: 1});
-			else {
+	var newID=new ObjectId();
+	Revision.updateOne({_id: newID}, {$set: {community: communityID, name: commentary.entity, text:commentary.commentary, user:new ObjectId(userID), created: new Date(), status:"IN_PROGRESS"}}, {upsert: true}).then (function(result){
+		Commentary.updateOne({entity:commentary.entity, entityto: commentary.entityto}, {$set:{community: communityID}, $push:{revisions: newID}}, {upsert: true}).then (function(result){
 				res.json({success: 0});
-			}
 		});
 	});
 });
@@ -233,69 +240,66 @@ router.post('/writeCommentary', function(req, res, next) {
 //returns array with all approved commentaries for 
 router.get('/getApprovedCommentaries', function(req, res, next) {
 	var entity=req.query.entity;
-	console.log("looking for "+entity)
+//	console.log("looking for "+entity)
 //	res.json({success: entity});
 //	return;
-	Commentary.find({entity: entity}, function(err, commentaries) {
-		if (err) {
-  			res.json({result: err});
-  		} else {
-  			if (commentaries.length>0) {
-  				var results=[];
-  				
-  				async.map(commentaries, function(commentary, cb) {
-  					console.log(commentary.revisions);
-  					async.mapSeries(commentary.revisions.reverse(), function(com_id, callback) {
-  						console.log(com_id);
-  						var found=results.filter(function(obj){return obj.entity == commentary.entity && obj.entityto == commentary.entityto});
-  						console.log(found.length)
-  						if (found.length==0) {
-							Revision.findOne({_id: com_id, status:"APPROVED"}, function(err, myRevision) {
-								if (myRevision) {  //only keep the latest one
-									User.findOne({_id:myRevision.user}, function(err,myUser) {
-										results.push({entity: commentary.entity, approver: myUser.local.name, entityto: commentary.entityto, text: myRevision.text, date: myRevision.committed});
-										callback(err, []);
-									});
-								}  else {
-									callback(err, []);
-								}
-							});
-						} else {
-							callback(err, []);
-						}
-  					}, function (err) {
-  						cb(null, []);
-  					});
-  				}, function () {
-  					res.json({result: results});
-  				});
-		 } else {
-			res.json({result: 0});
-		 }
-	  }
+	Commentary.find({entity: entity}).then (function(commentaries) {
+		if (commentaries.length>0) {
+			var results=[];	
+			async.map(commentaries, function(commentary, cb) {
+//  					console.log(commentary.revisions);
+				async.mapSeries(commentary.revisions.reverse(), function(com_id, callback) {
+//  						console.log(com_id);
+					var found=results.filter(function(obj){return obj.entity == commentary.entity && obj.entityto == commentary.entityto});
+//  						console.log(found.length)
+					if (found.length==0) {
+						Revision.findOne({_id: new ObjectId(com_id), status:"APPROVED"}).then (function(myRevision) {
+							if (myRevision) {  //only keep the latest one
+								User.findOne({_id: new ObjectId(myRevision.user)}).then (function(myUser) {
+									results.push({entity: commentary.entity, approver: myUser.local.name, entityto: commentary.entityto, text: myRevision.text, date: myRevision.committed});
+									callback(null, []);
+								});
+							}  else {
+								callback(null, []);
+							}
+						});
+					} else {
+						callback(err, []);
+					}
+				}, function (err) {
+					cb(null, []);
+				});
+			}, function () {
+				res.json({results: results});
+			});
+	 } else {
+		res.json({results: []});
+	 }
+  	}, function(err){
+  		res.json({error: err});
   	});
 });
 
 router.post('/getCommentaries', function(req, res, next) {
 	var entity=req.query.entity;
 	var entityTo=req.query.entityTo;
-	Commentary.findOne({entity: entity, entityto:entityTo}, function(err, myCommentary) {
+	Commentary.findOne({entity: entity, entityto:entityTo}).then (function(myCommentary) {
 		if (!myCommentary) {
 	 		res.json({success: false});
 	 	} else {	
 	 		//get all the commentaries on this line
 	 		async.map(myCommentary.revisions, function(com_id, callback) {
-	 			Revision.findOne({_id: com_id}, function(err, myRevision) {
+	 			Revision.findOne({_id: new ObjectId(com_id)}).then (function(myRevision) {
 	 				if (myRevision) {
-	 					User.findOne({_id:myRevision.user}, function(err,myUser) {
+	 					User.findOne({_id: new ObjectId(myRevision.user)}).then (function(myUser) {
 	 						if (myUser) {
-	 							callback(err, {text:myRevision.text, id: String(com_id), date:myRevision.created, status:myRevision.status, user:myUser.local.name });
+	 							callback(null, {text:myRevision.text, id: String(com_id), date:myRevision.created, status:myRevision.status, user:myUser.local.name });
 	 						} else {
-	 							callback(err);
+	 							callback(null);
 	 						}
 	 					});
 	 				} else {
-	 					callback(err);
+	 					callback(null);
 	 				}
 	 			})
 	 		}, function (err, results) {
@@ -326,7 +330,7 @@ router.post('/saveVMap', function(req, res, next) {
 
 router.post('/isEntity',  function(req, res, next) {
 	var entity=req.query.entity;
-	Entity.findOne({entityName: entity}, function(err, myEntity) {
+	Entity.findOne({entityName: entity}).then (function(myEntity) {
 	 	if (!myEntity) {
 	 		res.json({success: false});
 	 	} else {	
@@ -387,12 +391,10 @@ vBaseResource.serve(router, 'vbases');
 
 
 router.post('/community/:abbr/vbases/', function(req, res, next) {
+  console.log("getting vBases");
   var community = req.params.abbr;
-   VBase.find({community: community}, function(err, vbases) {
-  	if (err) {
-  		res.json({result: err});
-  	} else {
-		if (vbases.length) {
+   VBase.find({community: community}).then (function(vbases) {
+     if (vbases.length) {
 			 var VBases=[];
 			 vbases.forEach(function(vbase, index){
 			 	var nVars=vbase.varsites.length;
@@ -405,8 +407,9 @@ router.post('/community/:abbr/vbases/', function(req, res, next) {
 		 } else {
 			 res.json({result:"success", nvars:0});
 		 }
-	  }
-	}); 
+	  }, function(err) {
+ 		res.json({result: err});
+  	}); 
 });
 
 router.post('/saveVBName', function (req, res, next){ //new search saved
@@ -553,8 +556,11 @@ var RevisionResource = _.inherit(Resource, function(opts) {
   },
   afterCreate: function(req, res, next) {
     return function(revision, cb) {
-      Revision.findOne({_id: revision._id}).populate('user').exec(cb);
-    };
+//      Revision.findOne({_id: revision._id}).populate('user').exec(cb);
+       Revision.findOne({_id: revision._id}).populate('user').exec().then(function(text) {
+       		cb(null, text);
+       	});
+   };
   }
 });
 var revisionResource = new RevisionResource({id: 'revision'});
@@ -841,7 +847,7 @@ router.post('/SUgetAllUsers', function(req, res, next){
 router.post('/getSubEntities', function(req, res, next) {
 //  console.log("looking for entities with ancestor "+req.query.ancestor)
   var foundEntities=[];
-  Entity.find({"ancestorName":req.query.ancestor}, function(err, children) {
+  Entity.find({"ancestorName":req.query.ancestor}).then (function(children) {
     foundEntities=children;
     res.json({foundEntities});
   });
@@ -875,7 +881,8 @@ router.post('/getDocEntities', function(req, res, next) {
 
 //get all pages with tasks for this id, return info so we can create links to each page
 router.post('/getMemberTasks', function(req, res, next) {
-  Doc.find({"tasks.memberId":req.query.id}, function (err, docs){
+//  console.log("getting member tasks");
+  Doc.find({"tasks.memberId":req.query.id}).then (function (docs){
 //    console.log("tasks found: "+docs.length)
     var assigned=[], inprogress=[], submitted=[], approved=[], committed=[];
     if (docs.length) {
@@ -892,8 +899,8 @@ router.post('/getMemberTasks', function(req, res, next) {
       })
     }
     //update count of lengths in memberships pages
-    console.log(req.query.id)
-    User.collection.update({ "memberships._id":ObjectId(req.query.id)}, {$set:{"memberships.$.pages.inprogress":inprogress.length, "memberships.$.pages.submitted":submitted.length, "memberships.$.pages.approved":approved.length, "memberships.$.pages.committed":committed.length}}, function(err, result){
+//    console.log(req.query.id)
+    User.collection.updateOne({ "memberships._id":new ObjectId(req.query.id)}, {$set:{"memberships.$.pages.inprogress":inprogress.length, "memberships.$.pages.submitted":submitted.length, "memberships.$.pages.approved":approved.length, "memberships.$.pages.committed":committed.length}}, function(result){
       res.json({memberId:req.query.id, assigned:assigned, inprogress:inprogress, submitted:submitted, approved:approved, committed:committed});
     })
   })
@@ -1008,7 +1015,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
     async.waterfall([
       function(cb) {
         Doc.findOne({_id: docroot}, function(err, document) {
-    //      console.log(document);
+          console.log("starting out in deletoindocument");
           pages=document.children;
           globalDoc=document;
           npages=document.children.length;
@@ -1019,7 +1026,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
       function(argument, cb) {
         //get all the teis in this document
         TEI.find({docs: {$in: pages}}, function(err, teis) {
-//          console.log("number of teis "+teis.length)
+          console.log("number of teis "+teis.length)
           nTeis=teis.length;
           if (nTeis<3000) {
             teis.forEach(function(teiEl){
@@ -1142,47 +1149,47 @@ router.post('/deleteDocument', function(req, res, next) {
   var npages=0, nodocels=0, nallels=0, npagetrans=0, deleteTeiEntities=[], pages=[], deleteTeis=[], nTeis=0;
   var docroot=req.query.id;
   globalCommAbbr=req.query.community;
-//  console.log("starting deletion for "+docroot+" in community "+globalCommAbbr);
+   console.log("starting deletion for "+docroot+" in community "+globalCommAbbr);
   //delete all docs all entitiees all revisions...
     async.waterfall([
       function(cb) {
-        Doc.findOne({_id: ObjectId(docroot)}, function(err, document) {
-    //      console.log(document);
+        Doc.findOne({_id: new ObjectId(docroot)}).then (function(document) {
+	      console.log("document");
           pages=document.children;
           globalDoc=document;
           npages=document.children.length;
-  //        console.log("pages "); console.log(pages);
-          cb(err, []);
+          console.log("pages "); 
+          cb(null, []);
         });
       },
       function(argument, cb) {
         //find the tei  which is ancestor text of this doc
-        TEI.findOne({docs: docroot}, function (err, deleteRoot) {
+        TEI.findOne({docs: docroot}).then (function (deleteRoot) {
           if (!deleteRoot) {
-  //           console.log("did not find root") //could happen if this doc is the result of an error in writing a large doc
+             console.log("did not find root") //could happen if this doc is the result of an error in writing a large doc
              //in this case: delete the doc, remove from community, return...
-             Community.update({'abbr': globalCommAbbr}, { $pull: { documents: docroot } }, function(err){
-               Doc.collection.remove({_id: ObjectId(docroot)}, function(err) {
-  //               console.log("destroy")
+             Community.updateOne({'abbr': globalCommAbbr}, { $pull: { documents: docroot } }).then (function(err){
+               Doc.deleteOne({_id: new ObjectId(docroot)}).then (function(result) {
+                 console.log("destroy")
                  cb({error:"doc vestige here only"}, []);
                });
              });
           } else {
             if (deleteRoot.name=="text") {
               deleteTeis.push(deleteRoot._id);
-              cb(err, deleteRoot._id);
+              cb(null, deleteRoot._id);
             } else {
               deleteTeis.push(deleteRoot.ancestors[0]);
-    //          console.log("after finding text"+deleteTeis);
+               console.log("after finding text");
     //          console.log(deleteRoot);
-              cb(err, deleteRoot.ancestors[0]);
+              cb(null, deleteRoot.ancestors[0]);
             }
           }
         });
       },
       function(textid, cb) {
         //find the body for the text of this doc
-        TEI.findOne({_id: ObjectId(textid)}, function (err, body) {
+        TEI.findOne({_id: new ObjectId(textid)}).then (function ( body) {
           if (!body) {
   //          console.log("cant find body")
              cb(null, []);
@@ -1195,9 +1202,9 @@ router.post('/deleteDocument', function(req, res, next) {
       },
       function(argument, cb) {
         //get all the entities in this document
-        TEI.find({docs: {$in: pages}}, function(err, teis) {
+        TEI.find({docs: {$in: pages}}).then (function(teis) {
           nTeis=teis.length;
-  //        console.log("about to delete document teis "+nTeis)
+          console.log("about to delete document teis "+nTeis)
           if (nTeis<3000) {
             teis.forEach(function(teiEl){
               if (teiEl.isEntity) {
@@ -1208,7 +1215,7 @@ router.post('/deleteDocument', function(req, res, next) {
             });
           }
   //        console.log("entities to delete"); console.log(deleteTeiEntities);
-          cb(err, []);
+          cb(null, []);
         });
       },
 /*      function getDeleteEntityPaths (argument, cb) {
@@ -1228,16 +1235,17 @@ router.post('/deleteDocument', function(req, res, next) {
       function deleteTEIs (argument, cb) {
   //      console.log("about to delete"+deleteTeis)
         if (deleteTeis.length > 0) {
-          TEI.collection.remove({
+          TEI.deleteMany({
             $or: [
               {ancestors: {$in: deleteTeis}},
               {_id: {$in: deleteTeis}},
-              {docs: ObjectId(docroot)},
+              {docs: new ObjectId(docroot)},
             ]
-          }, function(err, result) {
-            nallels+=result.result.n;
+          }).then (function(result) {
+           	console.log(JSON.stringify(result))
+            nallels+=result.deletedCount;
   //          console.log('delete teis done');
-            cb(err, []);
+            cb(null, []);
           });
         } else {
            cb(null, []);
@@ -1245,11 +1253,11 @@ router.post('/deleteDocument', function(req, res, next) {
       },
       function deleteDocs (argument, cb) {
 //          console.log("about to delete docs"+docroot);
-        Doc.collection.remove({$or: [{_id: ObjectId(docroot)}, {ancestors: ObjectId(docroot)}]}, function(err, result) {
+        Doc.deleteMany({$or: [{_id: new ObjectId(docroot)}, {ancestors: new ObjectId(docroot)}]}).then (function(result) {
 //            console.log(err);
-            nodocels+=result.result.n;
+            nodocels+=result.deletedCount;
 //            console.log('delete docs done'+nodocels);
-            cb(err, []);
+            cb(null, []);
           });
       },
 /*      function deleteDeadEntities (argument, cb) {  //this routine is very destructive of performance. Skip it. Let's make a separate tool for doing this
@@ -1269,13 +1277,13 @@ router.post('/deleteDocument', function(req, res, next) {
             const cb2 = _.last(arguments);
 //            console.log(thisPage);
             if (thisPage) {
-              Revision.collection.remove({doc:thisPage}, function (err, result){
+              Revision.deleteMany({doc:thisPage}).then (function (result){
 //                  console.log("err"); console.log(err);
       //            console.log("result"); console.log(result);
-                  npagetrans+=result.result.n;
-                  cb2(err);
+                  npagetrans+=result.deletedCount;
+                  cb2(null);
               });
-            } else {cb2(err)}
+            } else {cb2(null)}
           }, function(err){
             cb(err, []);
           });
@@ -1299,8 +1307,8 @@ router.post('/deleteDocument', function(req, res, next) {
       function updateDocCommunity(argument, cb) {
 //        console.log(globalCommAbbr);
 //        console.log(docroot)
-        Community.update({'abbr': globalCommAbbr}, { $pull: { documents: docroot } }, function(err){
-          cb(err, []);
+        Community.updateOne({'abbr': globalCommAbbr}, { $pull: { documents: docroot } }).then (function(result){
+          cb(null, []);
         });
       }
     ], function(err, results) {
@@ -1538,57 +1546,59 @@ router.post('/changeTranscriptStatus', function(req, res, next) {
   var pageId=req.query.pageId;
   var docId=req.query.docId;
   var status=req.query.status;
-//  console.log("community "+communityId+" user "+userId+" page "+pageId);
-  async.parallel([
-        function(cb1) {
-          Doc.collection.update({_id:ObjectId(pageId), "tasks.userId":userId}, {$set: {"tasks.$.status":status, "tasks.$.date":new Date()}}, function(err, result){
-            if (result.result.n==0) { //no page task.. page not assigned, changed by leader eg.. make a task
-              var witname, username, memberid;
-              async.waterfall([
-                function(cb3){
-                  Doc.findOne({_id:ObjectId(docId)}, function(err, thisDoc) {witname=thisDoc.name[0];
-                    cb3(err);})
-                },
-                function(cb3){User.findOne({_id:ObjectId(userId)}, function(err, thisUser){ username=thisUser.local.name;
-                    for (var i=0; i<thisUser.memberships.length; i++) { if (String(thisUser.memberships[i].community)==communityId) memberid=String(thisUser.memberships[i]._id);}
-                    cb3(err);})
-                },          
-                function(cb3) { //could be that tasks is null -- fix this here
-                	Doc.findOne({_id:ObjectId(pageId)}, function(err, thisDoc) {
-                		if (thisDoc.tasks==null) {
-                			console.log("trump talks bullshit");
-                			Doc.collection.update({_id:ObjectId(pageId)}, {$set: {"tasks":[]}}, function(err, result) {
-                				cb3(err);
-                			});
-                		} else cb3(err);
-                	});
-                }
-              ], function (err, result){
-                  if (!err) {
-                   //("about to add new object")	
-                    Doc.collection.update({_id:ObjectId(pageId)}, {$push: {"tasks": {userId:userId, name:username, status:"IN_PROGRESS", memberId:memberid, date:new Date(), witname:witname}}}, function (err, result){
-                      if (!err) res.json({error:"none"})
-                      else res.json({error:err});
-                    })
-                  } else {
-                     res.json({error: err});
-                  }
-              }
-            )
-          } else {cb1(err)}
-         });
-       },
-      function(cb1){
-        if (status=="IN_PROGRESS") {
+//  console.log("community xxx "+communityId+" user "+userId+" page "+pageId);
+  var witname, username, memberid;
+  async.waterfall([  //we do these in sequence now. First get some information
+  		function(cb1) {
+  			Doc.findOne({_id: new ObjectId(docId)})
+  			.then( function(thisDoc) {
+				witname=thisDoc.name;
+				cb1(null);
+			})
+  		},
+  		function(cb1){
+  			User.findOne({_id: new ObjectId(userId)})
+  			.then(function(thisUser){ 
+                username=thisUser.local.name;
+                cb1(null);
+            });
+        },
+  		function(cb1) {  //first, tasks is empty or there is no task for this user
+  			Doc.findOne({_id: new ObjectId(pageId)})
+  			.then(function(result){
+  				if (!result.tasks || result.tasks.length==0 || result.tasks.filter(task=>task.userId==userId).length==0) {
+//  					console.log("right no tasks at all!!! or no task for this user")
+  					Doc.updateOne({_id:new ObjectId(pageId)}, {$push: { "tasks":{userId: userId, name:username, status: status, date: new Date(), witname:witname,  } }})
+  					.then (function(success){
+//  						console.log("added our user to tasks")
+  						cb1(null);
+  					})
+  				} else { //we got a task for this user for this page. update to status, time etc. We update status and time now for this user
+  					 Doc.updateOne({_id:new ObjectId(pageId), "tasks.userId":userId}, {$set: {"tasks.$.status":status, "tasks.$.date":new Date()}})
+  					 .then(function(result){
+//  					 	console.log("updated a document "+result)
+  					 	cb1(null);
+  					 })
+  				}
+  			}, function(err) {
+//  				console.log("we don't got a document? "+err);
+  				cb1(null);
+  			})
+  		},
+  /*    function(cb1){
+        if (status=="IN_PROGRESS") { //this is set when we make the page
+           console.log("hope")
           //decrement assigned, increment IN_PROGRESS
-          User.collection.update({_id:ObjectId(userId), "memberships.community":ObjectId(communityId)}, {$inc: {"memberships.$.pages.inprogress":1}}, function(err, result){
-            cb1(err);
+          User.updateOne({_id:new ObjectId(userId), "memberships.community":new ObjectId(communityId)}, {$inc: {"memberships.$.pages.inprogress":1}})
+          .then (function(result){
+            console.log("working")
+            cb1(null);
           });
        } else cb1(null);
-     },
+     }, */
      function(cb1){
        if (status=="SUBMITTED") {
-         //decrement assigned, increment IN_PROGRESS
+         //decrement assigned, increment submitted
          User.collection.update({_id:ObjectId(userId), "memberships.community":ObjectId(communityId)}, {$inc: {"memberships.$.pages.inprogress":-1, "memberships.$.pages.submitted":1}}, function(err, result){
            cb1(err);
          });
@@ -1598,21 +1608,23 @@ router.post('/changeTranscriptStatus', function(req, res, next) {
         if (status=="APPROVED") {
           //this one is more complex. We need to update page status for the original transcriber, and update page counts for him/her too
           var assignedUser="";
-          User.collection.update({_id:ObjectId(userId), "memberships.community":ObjectId(communityId)}, {$inc: {"memberships.$.pages.approved":1}}, function(err, result){
+          User.updateOne({_id:new ObjectId(userId), "memberships.community":new ObjectId(communityId)}, {$inc: {"memberships.$.pages.approved":1}})
+          .then (function(result){
             //locate the page and the original user...
             //the original user: will be the whose approverid == current user id
             //so: go through tasks, check each membership
-            if (!err) {
-              Doc.findOne({_id: ObjectId(pageId)}, function(err, myDoc){
+              Doc.findOne({_id: new ObjectId(pageId)})
+              .then(function (myDoc){
       //          console.log(myDoc);
                 async.map(myDoc.tasks, function(task, callback){
                   if (task.userId!=userId) {
                     //find the user for this task
-                      User.findOne({_id:ObjectId(task.userId)}, function(err, myUser){
+                      User.findOne({_id: new ObjectId(task.userId)})
+                      .then (function(myUser){
                       //is there a membership for this user which has the current user as approver?
-                      for (var i=0; i<myUser.memberships.length; i++) {
-                        if (myUser.memberships[i].approverid==userId) assignedUser=task.userId;
-                      }
+						  for (var i=0; i<myUser.memberships.length; i++) {
+							if (myUser.memberships[i].approverid==userId) assignedUser=task.userId;
+						  }
                       callback(err,[]);
                     });
                   } else callback(null, []);
@@ -1621,13 +1633,15 @@ router.post('/changeTranscriptStatus', function(req, res, next) {
                   //we need to update the date here so it shows the date now
                   async.waterfall([
                     function(cb2){
-                      Doc.collection.update({_id:ObjectId(pageId), "tasks.userId":assignedUser}, {$set: {"tasks.$.status":status, "tasks.$.date":new Date()}}, function(err, result){
-                        cb2(err);
+                      Doc.updateOne({_id: new ObjectId(pageId), "tasks.userId":assignedUser}, {$set: {"tasks.$.status":status, "tasks.$.date":new Date()}})
+                      .then (function(result){
+                        cb2(null);
                       });
                     },
                     function(cb2){
-                      User.collection.update({_id:ObjectId(assignedUser), "memberships.community":ObjectId(communityId)}, {$inc: {"memberships.$.pages.submitted":-1, "memberships.$.pages.approved":1}}, function(err, result){
-                        cb2(err);
+                      User.updateOne({_id:ObjectId(assignedUser), "memberships.community":ObjectId(communityId)}, {$inc: {"memberships.$.pages.submitted":-1, "memberships.$.pages.approved":1}})
+                      .then (function(err, result){
+                        cb2(null);
                       });
                     }
                   ], function(err, results){
@@ -1635,32 +1649,24 @@ router.post('/changeTranscriptStatus', function(req, res, next) {
                   })
                 });
               });
-            }
-            else cb1(err);
-          });
-       } else cb1(null);
-     },
-     function(cb1){
+          }, function(err) {
+        	cb1(null);
+       	  });
+       } else {
+       	cb1(null);
+    }},
+     function(cb1){  //
        if (status=="COMMITTED") {
-         var witname, username, memberid;
-         async.waterfall([
-           function(cb3){
-             Doc.findOne({_id:ObjectId(docId)}, function(err, thisDoc){
-               witname=thisDoc.name[0];
-               cb3(err);
-             })
-           },
-           function(cb3){
-             User.findOne({_id:ObjectId(userId)}, function(err, thisUser){
-               username=thisUser.local.name;
-               for (var i=0; i<thisUser.memberships.length; i++) {
-                 if (String(thisUser.memberships[i].community)==communityId) memberid=String(thisUser.memberships[i]._id);
-               }
-               cb3(err);
-             })
-           }
-         ], function (err, results) {
-           Doc.findOne({_id: ObjectId(pageId)}, function (err, thisDoc){
+        User.updateOne({_id:new ObjectId(userId), "memberships.community":new ObjectId(communityId)}, {$inc: {"memberships.$.pages.committed":1}})
+            .then (function(result){
+//            	console.log("working")
+            	cb1(null);
+          });
+
+ //        var witname, username, memberid;
+/*         async.waterfall([], function (err, results) {
+           Doc.findOne({_id: new ObjectId(pageId)})
+           .then (function (err, thisDoc){
              var tasks=[];
              var foundCommitter=false;
              for (var i=0; i<thisDoc.tasks.length; i++) {
@@ -1674,7 +1680,7 @@ router.post('/changeTranscriptStatus', function(req, res, next) {
                cb1(err);
              })
            });
-         });
+//         }); */
        } else cb1(null);
     }
   ], function(err){
@@ -1690,36 +1696,35 @@ router.post('/statusTranscript', function(req, res, next) {
   async.waterfall([
    function findDoc(cb) {
 //      console.log("looking for "+req.query.docid);
-      Doc.findOne({_id: ObjectId(req.query.docid)}, function(err, document){
-        if (!document) {
-          cb("no document",[]);
-        } else {
-          docFound=true;
-          cb(err, document);
-        }
-      })
+      Doc.findOne({_id: new ObjectId(req.query.docid)})
+      	.then (function(document){
+			 if (!document) {
+			   cb("no document",[]);
+			} else {
+//			  console.log("got document")
+			  docFound=true;
+			  cb(null, document);
+			}
+      	})
     },
     function(document, cb) {  //get the text element. If no textel with these children -- then must have transcripts
-//      console.log("looking for text el for"+req.query.docid);
-      TEI.findOne({name:"pb", docs: ObjectId(req.query.docid)}, function (err, pbEl){
-        //top level ancestor of pbEl by definition will be the text elements
-        if (err) cb(err, []);
-        else {
-          TEI.findOne({_id: ObjectId(pbEl.ancestors[0]), name:"text"}, function (err, textEl) {
-            if (err) cb(err, []);
-            else {
-              globalTextEl=textEl;
-//              if (!globalTextEl) console.log("no text el???");
-//              console.log("got text el "+globalTextEl)
-              cb(null, document);
-            }
-          });
-        }
+//      console.log("looking for text el for "+req.query.docid);
+      TEI.findOne({name:"pb", docs: new ObjectId(req.query.docid)})
+      	.then(function (pbEl) {
+			//top level ancestor of pbEl by definition will be the text elements
+//			  console.log("get the TEI for pbel")
+			  TEI.findOne({_id: new ObjectId(pbEl.ancestors[0]), name:"text"})
+			  	.then (function (textEl) {
+				  globalTextEl=textEl;
+//	              if (!globalTextEl) console.log("no text el???");
+//	              console.log("got global text el ")
+				  cb(null, document);
+			  });
       })
     },
     function hasPrevPageText (document, cb) {
       //is first page
-//      console.log("testing doc children"+document);
+//      console.log("testing doc children");
       if (document.children.length>1) isMultiPages=true;
       if (document.children[0]==req.query.pageid) {
         isPrevPageText=false;
@@ -1734,34 +1739,37 @@ router.post('/statusTranscript', function(req, res, next) {
             i=document.children.length;
           }
         }
-  //      console.log("looking for "+document.children[foundN-1]+" at offset "+foundN);
+//       console.log("looking for doc at offset "	);
         //possibly, this could be out of sync and return null
-        TEI.findOne({name:"pb", docs: ObjectId(document.children[foundN-1])}, function (err, pbTei){
-//          console.log("got the pbtei "+pbTei)
-          if (!globalTextEl) {
-                //how can this happpen? dunno
-            isPrevPageText=isThisPageText=isMultiPages=false;
-            cb("no global", []);
-          } else {
-            var prevPbInText=globalTextEl.children.filter(function(obj){return String(obj) == String(pbTei._id);})[0];
-            if (prevPbInText) isPrevPageText=false;
-            else isPrevPageText=true;
-            i=document.children.length;
-            cb(null, document);
-          }
-        });
+        TEI.findOne({name:"pb", docs: new ObjectId(document.children[foundN-1])})
+        	.then (function (pbTei){
+//        	  console.log("got the pbtei ")
+			  if (!globalTextEl) {
+					//how can this happpen? dunno
+				isPrevPageText=isThisPageText=isMultiPages=false;
+				cb("no global", []);
+			  } else {
+				var prevPbInText=globalTextEl.children.filter(function(obj){return String(obj) == String(pbTei._id);})[0];
+				if (prevPbInText) isPrevPageText=false;
+				else isPrevPageText=true;
+				i=document.children.length;
+				cb(null, document);
+			  }
+          });
       }
   },  //ok, settled prev page status. What about this page? Again: if direct child of the text element, no text
   function hasThisPageText (document, cb) {
 //    console.log("looking for page text now"); console.log(req.query.pageid);
     //find the TEI for this pb
-    TEI.findOne({name:"pb", docs:ObjectId(req.query.pageid)}, function (err, pbTei){
+    TEI.findOne({name:"pb", docs: req.query.pageid})
+    	.then (function (pbTei){
       //note...there might be no children of the
       if (!globalTextEl) {
             //how can this happpen? dunno
             isThisPageText=true;
             cb(null,[]);
       } else {
+//        console.log("in pbTEI")
         var thisPbInText=globalTextEl.children.filter(function(obj){return String(obj) == String(pbTei._id);})[0];
         if (thisPbInText) isThisPageText=false;
         else isThisPageText=true;
@@ -1770,7 +1778,7 @@ router.post('/statusTranscript', function(req, res, next) {
     });
   }
  ], function(err, results) {
-//    console.log("about to stop..")
+ //   console.log("about to stop..")
     res.json({isPrevPageText: isPrevPageText, isThisPageText: isThisPageText, isMultiPages: isMultiPages, docFound: docFound})
   });
 });
@@ -1791,16 +1799,20 @@ router.post('/getDocumentPage', function(req, res, next){
 
 router.post('/getDocPages', function(req, res, next){
   var myPagesOrder;
-  console.log("starting search"+req.query.document);
+//  console.log("starting search"+req.query.document);
   async.parallel([
     function(cb) {
-      Doc.findOne({_id: ObjectId(req.query.document)}, cb);
+      Doc.findOne({_id: new ObjectId(req.query.document)}). then(function(doc){
+      	cb(null, doc)
+      });
     },
     function(cb) {
-      Doc.find({ancestors: ObjectId(req.query.document), label:"pb"}, cb);
-    },
+      Doc.find({ancestors: new ObjectId(req.query.document), label:"pb"}).then (function(ancestors){
+    	cb(null, ancestors);
+   	 });
+   	}
   ], function(err, results) {
-//      console.log(results[0]);
+      console.log(results[0]);
       res.json({children: results[0].children, pages: results[1]});
   });
 });
@@ -1928,11 +1940,12 @@ router.post('/saveAssignPages', function(req, res, next) {
   var membership=selected[0].record.memberId;
   var doc_id=selected[0].pageId;
   var user=selected[0].record.userId;
+//  console.log("in saveassignpages "+membership+" "+selected.lenth)
   //found a bug.. somehow if tasks: null  not tasks: [] then insert failes
   //so get the doc back, test for null, if it is null set to []
   async.map(selected, saveAP, function (err) {
-	User.collection.update({_id: ObjectId(user), "memberships._id": ObjectId(membership)}, {$inc: {"memberships.$.pages.assigned":selected.length}}, function (err, result){
-	  res.json({error: err});
+	  User.updateOne({_id: new ObjectId(user), "memberships._id": new ObjectId(membership)}, {$inc: {"memberships.$.pages.assigned":selected.length}}).then (function (result){
+	  	res.json({result: result});
 	})
   });
 });
@@ -1941,17 +1954,17 @@ function saveAP (addAP, callback) {
 //  console.log(addAP);
 // check for each page. Is tasks set to null? fix! are there incomplete records? fix!
 //fix get the page and inspect it
-	Doc.findOne({_id:ObjectId(addAP.pageId)}, function (err, page) {
+	Doc.findOne({_id:new ObjectId(addAP.pageId)}).then (function (page) {
 	  if (page.tasks==null) {
-	  	Doc.collection.update({_id:ObjectId(addAP.pageId)}, {$set: {tasks: []}}, function(err, mydoc){
-		   Doc.collection.update({_id: ObjectId(addAP.pageId)},{$push:{"tasks":{userId:addAP.record.userId, name: addAP.record.name, status: addAP.record.status, memberId: addAP.record.memberId, date: new Date(), witname:addAP.record.witname}}}, function (err) {
-			 callback(err)
+	  	Doc.updateOne({_id: new ObjectId(addAP.pageId)}, {$set: {tasks: []}}).then (function(mydoc){
+		   Doc.updateOne({_id: ObjectId(addAP.pageId)},{$push:{"tasks":{userId:addAP.record.userId, name: addAP.record.name, status: addAP.record.status, memberId: addAP.record.memberId, date: new Date(), witname:addAP.record.witname}}}).then (function (err) {
+			 callback(null)
 		  });
 	  	})
 	  } else {
-	  	Doc.collection.update({_id:ObjectId(ObjectId(addAP.pageId))}, {$pull: {tasks: {status: {$exists: false }}}}, function(err, result) {
-		   Doc.collection.update({_id: ObjectId(addAP.pageId)},{$push:{"tasks":{userId:addAP.record.userId, name: addAP.record.name, status: addAP.record.status, memberId: addAP.record.memberId, date: new Date(), witname:addAP.record.witname}}}, function (err) {
-			 callback(err)
+	  	Doc.collection.updateOne({_id:new ObjectId(new ObjectId(addAP.pageId))}, {$pull: {tasks: {status: {$exists: false }}}}).then (function(result) {
+		   Doc.collection.updateOne({_id: new ObjectId(addAP.pageId)},{$push:{"tasks":{userId:addAP.record.userId, name: addAP.record.name, status: addAP.record.status, memberId: addAP.record.memberId, date: new Date(), witname:addAP.record.witname}}}).then (function (result) {
+			 callback(null)
 		  });
 		});
 	  }
@@ -2112,37 +2125,33 @@ router.post('/sendInvitation', function(req, res, next) {
   var leaderName=req.body.leaderName;
 //  console.log("email "+email+" name "+name+" community "+communityId+" letter "+letter+" communityName "+communityName+" leaderEmail "+leaderEmail+" leaderName "+leaderName);
   //first, we check: is there a member with this name??
-  User.findOne({"local.email":email}, function(err, user){
+  User.findOne({"local.email":email}).then (function(user){
     if (user) {
       //already member of this community?
       var is_member=user.memberships.filter(function(obj){return String(obj.community) == communityId;})[0];
       if (is_member) res.json({result: name+" is registered with the email "+email+" and is already a member of this community."})
       else {
         //add membership to user, and member to community
-        User.collection.update({_id: user._id}, {$push: {memberships:{community:ObjectId(communityId), role: role, pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, created: new Date(), _id: ObjectId()}}}, function(err, result){
-          if (!err) {
-              Community.collection.update({_id:ObjectId(communityId)}, {$push:{members:user._id}}, function(err, result){
-                if (!err) {
+        User.collection.updateOne({_id: user._id}, {$push: {memberships:{community:ObjectId(communityId), role: role, pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, created: new Date(), _id: ObjectId()}}}).then (function(result){
+              Community.collection.updateOne({_id:ObjectId(communityId)}, {$push:{members:user._id}}).then (function(err, result){
                   res.json({result: name+" is already registered in Textual Communities with the email "+email+", and has been added to the membership of this community"})
-                } else {res.json({error:err})}
+                }, function (err ) {
+                	res.json({error:err})
+                })
               })
-          } else {res.json({error: err})}
-        })
-      }
-    } else {
+          } 
+        } else {
       //make a new user, then send an email
       var newUser= new User();
       newUser.local.email = email;
-      newUser._id=ObjectId();
+      newUser._id=new ObjectId();
       newUser.local.created= new Date();
       newUser.local.name =  name;
       newUser.local.password = newUser.generateHash("default");
-      newUser.memberships.push({community:ObjectId(communityId), role: role, pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, created: new Date(), _id: ObjectId()})
+      newUser.memberships.push({community: new ObjectId(communityId), role: role, pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, created: new Date(), _id: new ObjectId()})
       newUser.local.authenticated= "1";
-      newUser.save(function(err) {
-        if (!err) {
-          Community.collection.update({_id:ObjectId(communityId)}, {$push:{members:newUser._id}}, function(err, result){
-            if (!err) {
+      newUser.save().then(function(result) {
+          Community.collection.updateOne({_id:new ObjectId(communityId)}, {$push:{members:newUser._id}}).then (function(result){
               //right. Do the emailCMailer.localmailer.sendMail
               TCMailer.localmailer.sendMail({
                 from: TCMailer.addresses.from,
@@ -2157,9 +2166,9 @@ router.post('/sendInvitation', function(req, res, next) {
                   res.json({result: "An email has been sent to "+name+", who is now registered in Textual Communities with the email "+email+", and added as a "+role+" of this community"});
                 } else {res.json({error: err})};
               });
-           } else {res.json({error: err})};
-         });
-       } else {res.json({error: err})}
+           }), function (err){
+         	res.json({error: err})
+         }
       })
     }
   });
@@ -2653,10 +2662,12 @@ router.post('/deletePage', function(req, res, next) {
 
 //just find a text element in this document
 router.post('/isDocTranscript', function(req, res, next) {
-  TEI.findOne({name:"#text", "docs.0": ObjectId(req.query.docid)}, function(err, thistei) {
+  TEI.findOne({name:"#text", "docs.0": new ObjectId(req.query.docid)}).then (function(thistei) {
 //    console.log(thistei);
     if (thistei) res.json({"isDocText": true});
     else res.json({"isDocText": false});
+  }, function (err){
+  	 res.json({"isDocText": false});
   });
 });
 
@@ -2665,36 +2676,45 @@ var globalTextEl=null;
 
 router.post('/updateDbJson', function(req, res, next) {
   var collection=req.query.collection;
-//  console.log("changing json1")
-  var param1=req.body[0];
+//  console.log("changing json1");
+//  console.log("our body "+req.body);
+ var param1=req.body[0];
   var param2=req.body[1];
 //  console.log("changing json")
-//  console.log(param1._id);
+//  console.log("first param "+param1);
+//  console.log("first param 2 "+param2)
+//  console.log("collection  "+collection)
+//  console.log("paramid  "+param1._id)
   if (param1.hasOwnProperty('_id')) {
-//    console.log("updating");
+//      console.log("updating");
 //    param1={_id:}
-    param1._id=ObjectId(param1._id);
+    param1._id=new ObjectId(param1._id);
 //    console.log(param1);
 //    console.log(param2);
   }
   if (collection=="Community") {
-      Community.collection.update(param1, param2, function(err, result){
-        if (err) res.json("fail");
-        else res.json("success");
-      })
-  }
-  if (collection=="Document") {
-    Doc.collection.update(param1, param2, function(err, result){
-      console.log(result.result);
-      if (err) res.json({success:false});
-      else res.json({success:true});
-    })
-  }
-});
+      Community.updateOne(param1, param2).then (function(result) {
+	   res.json("success");
+	 }, function(err) {
+		res.json("fail")
+	 })
+   }
+   if (collection=="Document") {
+//    console.log("success in changing json1???")
+    Doc.updateOne(param1, param2).then (function(result){
+//         console.log("success in changing json1")
+     	res.json({success:true});
+      }, function(err) {
+//        console.log("failure in changing json1")
+         res.json("fail")
+     })
+   }
+})
 
 router.post('/validate', function(req, res, next) {
   var xmlDoc, parseDoc, errors;
   parseDoc=req.body.xml;
+//  console.log("xml "+parseDoc);
   //if there is no body.. then add one...
   if (parseDoc.includes("<front") && !parseDoc.includes("<body")) {
     parseDoc=parseDoc.replace("</front>", "</front><body><div></div></body>")
@@ -2702,33 +2722,77 @@ router.post('/validate', function(req, res, next) {
   if (parseDoc.includes("<back") && !parseDoc.includes("<body")) {
     parseDoc=parseDoc.replace("<back", "<body><div></div></body><back")
   }
-  Community.findOne({_id: req.query.id}, function(err, community) {
-    if (err) return next(err);
-    let dtdPath = community.getDTDPath();
-    try {
-      fs.statSync(dtdPath);
-    } catch (e) {
-      dtdPath = './data/TEI-transcr-TC.dtd';
-    }
-    try {
-      xmlDoc = libxml.parseXml(parseDoc);
-      xmlDoc.setDtd('TEI', 'TEI-TC', dtdPath);
-      xmlDoc = libxml.parseXml(xmlDoc.toString(), {
-        dtdvalid: true,
-      })
-      errors = xmlDoc.errors;
-    } catch (err) {
-      errors = [err];
-    }
-    res.json({
-      error:   _.map(errors, function(err) {
-        return _.assign({}, err, {
-          message: err.message,
-        });
-      }),
-    });
-  });
-});
+  Community.findOne({_id: req.query.id})
+	.then (function(community) {
+/*		let dtdPath = community.getDTDPath();
+		try {
+		  fs.statSync(dtdPath);
+		} catch (e) {
+		  dtdPath = './data/TEI-transcr-TC.dtd';
+		}
+		try {
+		  xmlDoc = libxml.parseXml(parseDoc);
+		  xmlDoc.setDtd('TEI', 'TEI-TC', dtdPath);
+		  xmlDoc = libxml.parseXml(xmlDoc.toString(), {
+			validateEntities: true,
+		  })
+		  errors = xmlDoc.errors;
+		} catch (err) {
+		  errors = [err];
+		}
+		res.json({
+		  error:   _.map(errors, function(err) {
+			return _.assign({}, err, {
+			  message: err.message,
+			});
+		  }),
+		});
+ 	 });*/ 
+ 	    let libxml = new Libxml();
+ 		let xmlIsWellformedStr = libxml.loadXmlFromString(parseDoc);
+		if (!xmlIsWellformedStr) {
+			errors=libxml.wellformedErrors;
+			res.json({
+		  		error:   _.map(errors, function(err) {
+				return _.assign({}, err, {
+			  		message: err.message,
+			  	});
+			  }),
+		  });
+		} else {
+			let dtdPath='public/app/data/default.dtd';
+			libxml.loadDtds([dtdPath]);
+			if (typeof libxml.dtdsLoadedErrors!="undefined" && libxml.dtdsLoadedErrors.length>0) {
+				errors=libxml.dtdsLoadedErrors;
+				res.json({
+		  			error:   _.map(errors, function(err) {
+						return _.assign({}, err, {
+							message: err.message,
+						});
+			 	 	}),
+			 	})	
+			} else {
+				let xmlIsValid = libxml.validateAgainstDtds();
+				console.log("is this valid "+xmlIsValid);
+				console.log("errors "+JSON.stringify(libxml.validationDtdErrors));
+				if (typeof libxml.validationDtdErrors!="undefined") {
+					errors=libxml.validationDtdErrors[dtdPath];
+					console.log(JSON.stringify(errors));
+					res.json({
+						error:   _.map(errors, function(err) {
+							return _.assign({}, err, {
+								message: err.message,
+							});
+						}),
+					})	
+				} else {
+					console.log("All parsed!");
+					res.json({error:[]});
+				}
+			}
+		}
+ 	 });
+ });
 
 router.use(function(err, req, res, next) {
   if (err) {
@@ -2936,33 +3000,33 @@ router.get('/getTranscriptRecord',  function(req, res, next) {
   async.map(periods, function(period, cb1) {
     async.parallel([
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"IN_PROGRESS", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"IN_PROGRESS", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.inprogress=docs.length;
-          cb2(err);
+          cb2(null);
         })
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"SUBMITTED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"SUBMITTED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.submitted=docs.length;
-          cb2(err);
+          cb2(null);
         })
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"COMMITTED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"COMMITTED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.committed=docs.length;
-          cb2(err);
+          cb2(null);
         })
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"APPROVED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"APPROVED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.approved=docs.length;
-          cb2(err);
+          cb2(null);
         })
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"ASSIGNED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"ASSIGNED", "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function( docs){
           period.assigned=docs.length;
-          cb2(err);
+          cb2(null);
         })
       }
     ], function(err){
@@ -2979,52 +3043,45 @@ router.get('/getCommunityInf', function(req, res, next) {
   var numOfPages=0, numOfPagesTranscribed=0, assigned=0, submitted=0, inprogress=0, approved=0, committed=0, revisions=0;
   async.parallel([
     function(cb) {
-      Doc.find({label:"pb", community:req.query.community}, function (err, docs){
-        if (!err)
+      Doc.find({label:"pb", community:req.query.community}).then (function (docs){
           numOfPages=docs.length;
-        cb(err);
+          cb(null);
       })
     },
     function(cb) {
-      Doc.find({label:"pb", community:req.query.community, "tasks.status":"ASSIGNED"}, function (err, docs){
-        if (!err)
+      Doc.find({label:"pb", community:req.query.community, "tasks.status":"ASSIGNED"}).then (function (docs){
           assigned=docs.length;
-        cb(err);
+          cb(null);
       })
     },
     function(cb) {
-      Doc.find({label:"pb", community:req.query.community, "tasks.status":"SUBMITTED"}, function (err, docs){
-        if (!err)
-          submitted=docs.length;
-        cb(err);
+      Doc.find({label:"pb", community:req.query.community, "tasks.status":"SUBMITTED"}).then (function (docs){
+        submitted=docs.length;
+        cb(null);
       })
     },
     function(cb) {
-      Doc.find({label:"pb", community:req.query.community, "tasks.status":"IN_PROGRESS"}, function (err, docs){
-        if (!err)
-          inprogress=docs.length;
-        cb(err);
+      Doc.find({label:"pb", community:req.query.community, "tasks.status":"IN_PROGRESS"}).then (function (docs){
+        inprogress=docs.length;
+        cb(null);
       })
     },
     function(cb) {
-      Doc.find({label:"pb", community:req.query.community, "tasks.status":"APPROVED"}, function (err, docs){
-        if (!err)
-          approved=docs.length;
-        cb(err);
+      Doc.find({label:"pb", community:req.query.community, "tasks.status":"APPROVED"}).then (function (docs){
+        approved=docs.length;
+        cb(null);
       })
     },
     function(cb) {
-      Doc.find({label:"pb", community:req.query.community, "tasks.status":"COMMITTED"}, function (err, docs){
-        if (!err)
-          committed=docs.length;
-        cb(err);
+      Doc.find({label:"pb", community:req.query.community, "tasks.status":"COMMITTED"}).then (function (docs){
+        committed=docs.length;
+        cb(null);
       })
     },
     function(cb) {
-      Revision.find({community:req.query.community}, function (err, myrevisions){
-        if (!err)
-          revisions=myrevisions.length;
-        cb(err);
+      Revision.find({community:req.query.community}).then (function (myrevisions){
+        revisions=myrevisions.length;
+        cb(null);
       })
     }
   ], function(err) {
@@ -3034,18 +3091,27 @@ router.get('/getCommunityInf', function(req, res, next) {
 
 router.get('/getDocNames', function(req, res, next) {
   var community=req.query.community;
-  Community.findOne({_id: ObjectId(community)}, function(err, myCommunity){
-    if (!myCommunity) res.json({});
-    else {
-      async.map(myCommunity.documents, function(myDoc, cb){
-        Doc.findOne({_id: myDoc}, function (err, thisDoc){
-          cb(err, {name: thisDoc.name, npages: thisDoc.children.length, control: thisDoc.control });
-        })
-      }, function (err, results){
-      	if (err) res.json({error:"failure in get docnames routine"})
-        res.json(results);
-      })
-    }
+//  console.log("searching now "+community);
+  Community.findOne({_id: new ObjectId(community)})
+  	.then ( function(myCommunity){
+		if (!myCommunity) {
+//			console.log("not got community")
+			res.json({});
+		} else {
+//		  console.log("got community")
+		  async.map(myCommunity.documents, function(myDoc, cb){
+			Doc.findOne({_id: myDoc})
+				.then (function (thisDoc){
+			  	 cb(null, {name: thisDoc.name, npages: thisDoc.children.length, control: thisDoc.control });
+		    })
+		  }, function (err, results){
+			if (err) res.json({error:"failure in get docnames routine"})
+	//		console.log("home")
+			res.json(results);
+	      })
+		}
+ 	 }, function (err){
+ // 		console.log("failsed")
   });
 });
 
@@ -3069,11 +3135,15 @@ router.get('/getDocNamesCommunity', function(req, res, next) {
 
 router.get('/getRevisions', function(req, res, next) {
   var docid=req.query.page;
-  Revision.find({doc: ObjectId(docid)}, function(err, revisions) {
+//  console.log("inside revisions "+docid);
+  Revision.find({doc: new ObjectId(docid)}).then (function(revisions) {
+//  	console.log("found how many "+revisions.length)
 	revisions.sort(function compare(a, b) {
 	  return b.created - a.created;
 	});
   	res.json(revisions);
+  }, function(err){
+  	res.json({error: err})
   });
 });
 
@@ -3081,18 +3151,14 @@ function getWitness (witness, community, entity, base, override, recallback) {
   	var thisDoc, errorMessage="";
 	async.waterfall([
 		function (cb) {
-		  Doc.findOne({_id: {$in: community.documents}, name: witness}, function (err, aDoc) {
-			if (err) cb(err, []);
-			else {
+		  Doc.findOne({_id: {$in: community.documents}, name: witness}).then ( function (aDoc) {
 			  thisDoc=aDoc;
 			  cb(null, aDoc);
-			}
 		  })
 		},
 		function (myDoc, cb) {
-			TEI.find({docs: myDoc._id, entityName: entity}, function(err, teis){
-			  if (err) cb(err, []);
-			  else {  //have to deal with case where this entity is absent from the document
+			TEI.find({docs: myDoc._id, entityName: entity}).then (function(teis){
+			 //have to deal with case where this entity is absent from the document
 				if (teis.length==0) {
 				  cb({error:"no witness"}, []);
 				} else if (override=="false" && teis[0].collateX && teis[0].collateX!="") {
@@ -3121,7 +3187,7 @@ function getWitness (witness, community, entity, base, override, recallback) {
 				    	}
 				    }
 				  }
-	              console.log("versions "+teis.length); console.log(teis);
+//	              console.log("versions "+teis.length); console.log(teis);
 				  var content='{"_id": "'+witness+'_'+entity+'", "context": "'+entity+'","tei":"", "transcription_id": "'+witness+'","transcription_siglum": "'+witness+'","siglum": "'+witness+'"';
 				  var teiContent={"content":""}; //make this a loop if more than one wit here
 				  //put third line back
@@ -3143,7 +3209,7 @@ function getWitness (witness, community, entity, base, override, recallback) {
 							   function () {return nextTEI!=null},
 							   function(callback) {
 								 //find the next tei and add it to children of thisTei
-								 TEI.findOne({"attrs.xml:id":nextTEI}, function (err, version) {
+								 TEI.findOne({"attrs.xml:id":nextTEI}).then (function (version) {
 //								   console.log("got next"); console.log(version);
 								   if (!version) {
 								   	 errorMessage+="Cannot find next element with xml:id '"+nextTEI+"' in witness '"+witness+"' \r";
@@ -3181,7 +3247,7 @@ function getWitness (witness, community, entity, base, override, recallback) {
 							async.whilst (
 							  function () {return nextDocId!=null},
 							  function(callback) {
-								  Doc.findOne({_id: nextDocId}, function(err, thisDoc) {
+								  Doc.findOne({_id: nextDocId}).then (function(thisDoc) {
 									if (depth==1) thisWitness=witness+"("+thisDoc.name;
 									else {
 									  if (typeof thisDoc.name!= "undefined") {
@@ -3222,7 +3288,7 @@ function getWitness (witness, community, entity, base, override, recallback) {
 //	//						  	console.log("TEI content for witness "+witness+": "+teiContent.content)
 //								what comes back is a series of raw elements for a JSON array. Make it an array now to handle it
 								var thisCollation="["+DualFunctionService.makeJsonList(teiContent.content, thisWitness)+"]";
-								console.log(thisCollation);
+//								console.log(thisCollation);
 								var myWitCollation=JSON.parse(thisCollation);
 	//							console.log(myWitCollation.tokens);
 								for (let x=0; x<myWitCollation.length; x++) {
@@ -3257,7 +3323,7 @@ function getWitness (witness, community, entity, base, override, recallback) {
 									    myWitCollation.splice(1, myWitCollation.length-1);
 									}
 								}
-						 		console.log(JSON.stringify(myWitCollation));
+//						 		console.log(JSON.stringify(myWitCollation));
 								for (let x=0; x<myWitCollation.length; x++) {
 									if (counter>1) {
 									  content+=","+JSON.stringify(myWitCollation[x]);
@@ -3278,12 +3344,11 @@ function getWitness (witness, community, entity, base, override, recallback) {
 						content+=']}';
 						cb(null, content);
 					});
-				  }
 				}
 			});
 		  }
 	  ], function(err, result) {
-	console.log(errorMessage);
+//	console.log(errorMessage);
   	recallback(err, result, thisDoc, errorMessage);
   });
 }
@@ -3297,15 +3362,12 @@ router.post('/getCEWitnesses', function(req, res, next) {
 	var override=req.body.override;
 	var results=[];
 	var errorMessage="";
-	console.log("base "+base)
+//	console.log("base "+base)
 	async.waterfall([
 		function (cb) {
-		  Community.findOne({'abbr':community}, function (err, myCommunity) {
-			if (err) cb(err, []);
-			else {
+		  Community.findOne({'abbr':community}).then ( function (myCommunity) {
 				thisCommunity=myCommunity;
 				cb(null, myCommunity.documents);
-			}
 		  });
 		}
 	], function (err) {
@@ -3313,7 +3375,7 @@ router.post('/getCEWitnesses', function(req, res, next) {
 			getWitness (witness, thisCommunity, entity, base, override, function(err, result, thisDoc, errorRead ){
 				errorMessage+=errorRead;
 				if (!err) {
-				   TEI.update({docs: thisDoc._id, entityName: entity}, {$set: {collateX: result}}, function (err, written){
+				   TEI.updateOne({docs: thisDoc._id, entityName: entity}, {$set: {collateX: result}}).then (function (written){
 					 results.push(result);
 					 callback(null);
 				   });
@@ -3427,29 +3489,33 @@ router.post('/restoreCommDocs', function(req, res, next) {
 
 
 router.post('/isAlreadyCommunity', function(req, res, next) {
-  Community.findOne({$or: [{abbr: req.query.abbr}, {name: req.query.name}]}, function(err, community) {
+  Community.findOne({$or: [{abbr: req.query.abbr}, {name: req.query.name}]}).then (function(community) {
 //    console.log("checking for community")
     if (!community) {
       res.json({success: 1});
     } else {
-//        console.log(community);
+ //       console.log(community);
         var message="There is already a community with the name \""+req.query.name+"\" and/or abbreviation \""+req.query.abbr+"\"."
         res.json({success:0, message: message});
-      }
+     }
   });
 });
 
 router.post('/baseHasEntity', function(req, res, next) {
-  TEI.findOne({docs: ObjectId(req.query.docid), entityName: req.query.entityName}, function(err, tei){
+//   console.log(req.query.docid+" "+req.query.entityName);
+  TEI.findOne({docs: new ObjectId(req.query.docid), entityName: req.query.entityName})
+   .then ( function(tei){
 //    console.log(tei);
     if (!tei) res.json({success: 0})
     else res.json({success: 1})
+  }, function(err){
+//  console.log(err);
   });
 });
 
 router.post('/markEntityCollated', function(req, res, next){
 //  console.log("mark collation for "+req.query.entity);
-  Entity.update({entityName:req.query.entity, isTerminal:true}, {$set:{hasCollation:true}}, function (err, result){
+  Entity.updateOne({entityName:req.query.entity, isTerminal:true}, {$set:{hasCollation:true}}).then (function (result){
 //    console.log(err);
     res.json({status:true});
   })
@@ -3457,7 +3523,7 @@ router.post('/markEntityCollated', function(req, res, next){
 
 router.post('/unMarkEntityCollated', function(req, res, next){
 //  console.log("mark collation for "+req.query.entity);
-  Entity.update({entityName:req.query.entity, isTerminal:true}, {$set:{hasCollation:false}}, function (err, result){
+  Entity.updateOne({entityName:req.query.entity, isTerminal:true}, {$set:{hasCollation:false}}).then (function (err, result){
 //    console.log(err);
     res.json({status:true});
   })
@@ -3470,7 +3536,7 @@ router.post('/putCollation', function(req, res, next){
 //  console.log(req.body);
   if (req.query.adjusted) {var adjusted=req.query.adjusted}
   else {var adjusted=false};
-  Collation.update({community:req.query.community, entity:req.query.entity, id:req.query.community+'/'+req.query.entity+'/'+req.query.status, model:"collation", status:req.query.status}, {$set: {ce: req.body.collation.ce, approved:req.query.approved, adjusted:adjusted}}, {upsert: true}, function(err) {
+  Collation.updateOne({community:req.query.community, entity:req.query.entity, id:req.query.community+'/'+req.query.entity+'/'+req.query.status, model:"collation", status:req.query.status}, {$set: {ce: req.body.collation.ce, approved:req.query.approved, adjusted:adjusted}}, {upsert: true}).then (function(err) {
 //    console.log(err);
     if (!err) res.json({success:true}) ;
     else res.json({success:false});
@@ -3492,7 +3558,7 @@ router.post('/getRulesByIds', function(req, res, next){
 
 router.get('/isAlreadyCollation', function(req, res, next) {
 //  console.log("entity "+req.query.entity+" status "+req.query.status+" commiunity "+req.query.community);
-  Collation.find({entity:req.query.entity, model:"collation", status: req.query.status, community: req.query.community}, function(err, found){
+  Collation.find({entity:req.query.entity, model:"collation", status: req.query.status, community: req.query.community}).then (function(found){
 //    console.log(err);
     if (found.length>0) res.json({status:true});
     else res.json({status:false});
@@ -3501,7 +3567,8 @@ router.get('/isAlreadyCollation', function(req, res, next) {
 
 //for this verse, pull everu case of an exception in the global rules..ie find all globals, check if this verse is an exception
 router.get('/getRuleExceptions', function(req, res, next){
-  Collation.find({community:req.query.community, scope: 'always'}, function(err, rules) {
+ // console.log("looking at rules "+req.query.community);
+  Collation.find({community:req.query.community, scope: 'always'}).then (function(rules) {
     if (rules.length) {
       var ruleExceptions=[];;
       rules.forEach(function(rule) {
@@ -3517,13 +3584,16 @@ router.get('/getRuleExceptions', function(req, res, next){
 //      console.log(ruleExceptions);
       res.json(ruleExceptions);
     }
-    else res.json([]);
+    else {
+//        console.log("no rules")
+    	res.json([]);
+    }
   })
 });
 
 router.get('/loadSavedCollation', function(req, res, next) {
-  Collation.findOne({id:req.query.id}, function(err, result) {
-    if (!err) res.json({"status": true, "result": result.ce});
+  Collation.findOne({id:req.query.id}).then (function(result) {
+    if (result) res.json({"status": true, "result": result.ce});
     else res.json({"status":false});
   });
 });
@@ -3531,7 +3601,7 @@ router.get('/loadSavedCollation', function(req, res, next) {
 router.get('/getRegularizationRules', function(req, res, next){
     //we don't want to get
     var rulesFound=[];
-    Collation.find({community:req.query.community, model:"regularization",$or:  [ { entity: req.query.entity }, { scope: 'always' } ]}, function(err, rules){
+    Collation.find({community:req.query.community, model:"regularization",$or:  [ { entity: req.query.entity }, { scope: 'always' } ]}).then (function(rules){
       if (rules.length) {
          rules.forEach(function(rule) {
            // exceptions handled back in calling function (coould do here; might slightly reduce network traffic)
@@ -3546,7 +3616,7 @@ router.get('/getRegularizationRules', function(req, res, next){
 // this removes BOTH global and local regularization rules
 
 router.post('/deleteRules', function (req, res, next) {
-  Collation.remove({id: {$in:req.body.delete}, community:req.query.community, model:"regularization"}, function(result){
+  Collation.deleteMany({id: {$in:req.body.delete}, community:req.query.community, model:"regularization"}).then (function(result){
     res.json({success:0});
   })
 });
@@ -3554,12 +3624,13 @@ router.post('/deleteRules', function (req, res, next) {
 router.post('/deleteAllRules', function (req, res, next) {
 //is this person a leader or creator? if not, don't do it...
   var user=req.query.user, abbr=req.query.community, entity=req.query.entity;
-  Community.findOne({abbr: abbr}, function(err, community) {
-  	if (!community || err) {
+  Community.findOne({abbr: abbr}).then (function(community) {
+  	if (!community) {
   		res.json({success:0, message:"No community "+abbr+" found."})
   	} else {//we got a community. Now find the user, check is leader or creator
-  		User.findOne({_id:ObjectId(user)}, function(err, myUser){
-  			if (!myUser || err) {
+  		User.findOne({_id: new ObjectId(user)}).then (function(myUser){
+ // 			console.log("deleting");
+  			if (!myUser) {
   				res.json({success:0, message:"No user id "+user+" found."});
   			} else {
 //  			console.log(myUser)
@@ -3568,12 +3639,13 @@ router.post('/deleteAllRules', function (req, res, next) {
   					if (String(myUser.memberships[i].community)==String(community._id) && (myUser.memberships[i].role=="CREATOR" || myUser.memberships[i].role=="LEADER")) {
 //  					console.log("this user a creator or leader be!")
 						isLeader=true;
-						Collation.remove({entity: entity, community:req.query.community}, function(err, result){
-							if (err) {
+						Collation.deleteMany({entity: entity, community:req.query.community}).then (function(result){
+//							console.log("removed "+result.n)
+							if (!result) {
 								res.json({success:0, message:"Collation rules removal for entity \""+entity+"\" failed. (Perhaps none were set?)"});
 								return;
 							} else {
-								res.json({success:1, message:"Collation rules removal for entity \""+entity+"\" succeeded. "+result.result.n+" records removed. "});
+								res.json({success:1, message:"Collation rules removal for entity \""+entity+"\" succeeded. "+result.deletedCount+" records removed. "});
   								return;
   							}
 					  	})
@@ -3636,7 +3708,7 @@ router.post('/putCERuleSet', function(req, res, next) {
       });
     });
   } else {
-    Collation.insertMany(req.body.ruleSet, function(result){
+    Collation.insertMany(req.body.ruleSet).then (function(result){
       res.json({success: 0});
     });
   }
@@ -3673,7 +3745,7 @@ router.get('/repairEntities', function(req, res, next) {
 //now: use what is in ceconfig witnesses
 //NOTE if we get an error here it is because there is a document in the witness list which no longer exists
 router.get('/ceconfig', function(req, res, next) {
-  Community.findOne({abbr: req.query.community}, function(err, community) {
+  Community.findOne({abbr: req.query.community}).then ( function(community) {
     //now get the witnesses
 //    console.log("looking for ce "+community)
 //  if ceconfig.witnesses is not empty -- use it!!!
@@ -3681,9 +3753,9 @@ router.get('/ceconfig', function(req, res, next) {
     else {
       async.mapSeries(community.documents, function(mydocument, callback) {
 //        console.log(mydocument)
-        Doc.findOne({_id: ObjectId(mydocument)}, function(err, myDoc){
+        Doc.findOne({_id: new ObjectId(mydocument)}).then ( function(myDoc){
   //        console.log(myDoc.name)
-          return callback(err, myDoc.name)
+          return callback(null, myDoc.name)
         })
       }, function(err, results) {
   //do we have a witness which corresponds to the selected base? if so, no problem

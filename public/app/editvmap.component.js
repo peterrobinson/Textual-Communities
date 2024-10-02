@@ -33,8 +33,8 @@ var EditVmapComponent = ng.core.Component({
     this.chosen={name:"", left:"", top:""};
     this.addwit={name:"", left:50, top:50};
     this.success="";
-    this.pdfjsLib = window['pdfjs-dist/build/pdf'];
-	this.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
+//    this.pdfjsLib = window['pdfjs-dist/build/pdf'];
+//	this.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
 	$( window ).resize(function() {
 		$('#manageModal').width($(window).width()-15);
     	$('#manageModal').height($(window).height()-15);
@@ -47,7 +47,7 @@ var EditVmapComponent = ng.core.Component({
     $('#manageModal').width($(window).width()-15);
     $('#manageModal').height($(window).height()-15);
     var pdf1=atob(this.vMap.pdfunlabelled.src);
-    var loadingTask = this.pdfjsLib.getDocument({data: pdf1});
+    var loadingTask = pdfjsLib.getDocument({data: pdf1});
     loadingTask.promise.then(function(pdf) {
     	pdf.getPage(1).then(function(page) {
     		var viewport = page.getViewport({scale: 1});

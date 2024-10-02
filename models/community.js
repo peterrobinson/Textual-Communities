@@ -74,8 +74,9 @@ _.assign(CommunitySchema.methods, {
   },
   addDocument: function(doc, callback) {
     this.documents.push(doc._id);
-    this.save(function(err, community) {
-      callback(err, community);
+//    console.log("add our document");
+    this.save().then(function(community) {
+      callback(null, community);
     });
   },
   getstatus: function(callback) {
