@@ -1,0 +1,94 @@
+<html lang="en">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+         <!-- Global site tag (gtag.js) - Google Analytics -->
+         <meta name="viewport" content="width=device-width, initial-scale=1"/>
+         <meta charset="UTF-8"/>	
+         <title id="title"></title>
+	<script src="/app/data/makeEdition/common/core/js/jquery.min.js"></script>
+    <script src="/app/data/makeEdition/common/core/js/openseadragon.js" type="text/javascript"></script>
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/async.js"></script> 
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/split.js"></script> 
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/clay.js"></script> 
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_event.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_viewport.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_tooltip.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_tooltip_aux.js" type="text/javascript"></script>
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/palette.js"></script>
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/banner.js"></script>
+	<script  type="text/javascript" src="/app/data/makeEdition/common/core/js/common.js"></script>
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/common.css" type="text/css">
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/banner.css" type="text/css">
+        	 	   <!-- used by many editions. You can customize  -->
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_regular_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+  	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_bold_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_italic_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_bolditalic_macroman/stylesheet.css" type="text/css" charset="utf-8" />  
+      	  		                  <!-- custom stuff  -->
+      		<!--script> const view="index", splash="/app/data/makeEdition/common/core/images/splash.jpg", universalBannerLocation="/app/data/makeEdition/common/CTP2/RE/xml/universalbanner.xml", isstandalone=true, shortTitle="Tales of the Reeve and Cook", longTitle="The Book of the Tales of Canterbury by Geoffrey Chaucer. <br/>The Tales of the Reeve and Cook", firstTranscript="Hg/50r"</script>
+      		<script>const hasVBase=false, ssSearch = false</script>
+      		<script  type="text/javascript" src="/app/data/makeEdition/common/core/driver/driverindex.js"></script-->
+      		<script id="placeholder"></script> 			
+      </head>
+   <body onload="initIndex()">
+         <div id="whole">
+           <div id="page-head">
+            	<div id="grp1" style="width: 100%;">
+					<div id="logos"><a href="http://www.inklesseditions.com">
+						<img src="../../../common/core/images/inklesslogo.png" height="33px" /></a>
+					</div>
+					<div id="title"><a style="color:white" href="../../../index.html" id="shortTitle">The Tales of the Reeve and Cook</a></div>
+					<div id="infoLinks">
+					  <span id="aboutLink"><a style="color:white; font-size:100%;" href="../../../html/editorial/menu/About.html"> About </a></span>
+					</div>
+					<div>
+					  <a href="../../../html/editorial/menu/Copyright.html">
+						<img src="../../../common/core/images/copyright.png" height="18px" />
+					  </a>
+					</div>
+					<div id="VBase">
+					  <a style="color:white; font-size:100%" href="../../../vBase.html">VBase</a>&nbsp;&nbsp;
+					</div>
+					<div id="Search" class="outline" style="text-align:center">
+					  <div id="staticSearch">
+							<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssSearch-debug.js'></script>
+							<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssInitialize.js'></script>
+							<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssHighlight.js'></script>
+							<form xmlns='http://www.w3.org/1999/xhtml' accept-charset='UTF-8' id='ssForm'  
+								data-allowphrasal='yes' data-allowwildcards='yes' data-minwordlength='2' data-scrolltotextfragment='no' data-maxkwicstoshow='5' data-resultsperpage='5'  onsubmit='return false;' data-versionstring='' data-ssfolder='../../../staticSearch' data-kwictruncatestring='...' data-resultslimit='2000'>
+								<span class='ssQueryAndButton'>
+								   <input type='text' id='ssQuery' style='height: 21px' aria-label='Search'/>
+								   <button id='ssDoSearch' style='background-image: url("../../../common/core/images/searchicon.png")'/>Search
+								</span>
+							 </form>
+							<div xmlns='http://www.w3.org/1999/xhtml' id='ssSearching'></div>
+							<div xmlns='http://www.w3.org/1999/xhtml' id='ssResults'></div>
+					  </div>
+					</div>
+				</div>
+				<div id="grp2"> <!-- contents of editorial and entity menus. Editorial menu ex bootstrap first -->
+					<div id="editorialMenu"></div>
+					<div id="entityMenu"></div>
+				</div>
+           </div>
+            <div id="rTable" style="display:none"> <!-- needed to display search results-->
+				<div id="panel-left"> <!-- image goes here -->
+				</div>
+				<div id="panel-right">
+				</div>  <!-- end panelRight -->
+			</div>  <!-- end rTable -->
+            <div id="splash">
+				<div id="splashInner" style="margin:auto">
+					 <div>
+					 	<p id="longTitle"></p>
+						<p style="font-size: larger; margin: 0px 0px 8px 15px"><a class="splash" id="transcriptLink" href="">Transcript</a> • <a class="splash" id="collationLink" href="">Collation</a> • <a class="splash" id="compareLink" href="">Compare</a><a class="splash" id="VBaseLink" href="vBase.html"> • VBase</a></p>
+						<a id="imageLink" href="">
+							<img id="imageSplash" src="" height="560px"/>
+						</a>
+					</div>
+					<div style="height: 84px"> </div>
+			   </div>
+             </div>
+	       </div> <!-- end whole -->
+      </body>
+   </html>
