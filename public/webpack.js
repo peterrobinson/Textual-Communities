@@ -96,7 +96,7 @@ var config = {
   },
   resolve: {
  /*   root: [clientRoot], */
-    modules: [clientRoot, 'web_modules', 'node_modules', 'bower_components', ],
+    modules: [clientRoot, 'node_modules', 'bower_components', ],
     fallback: {
 		"fs": false,
 		"tls": false,

@@ -1,0 +1,13 @@
+{
+  "name": "bson",
+  "homepage": "https://github.com/mongodb/js-bson",
+  "_release": "7085279469",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "70852794697af3ff6c08f922b6961e80af94e9f0"
+  },
+  "_source": "git://github.com/mongodb/js-bson.git",
+  "_target": "*",
+  "_originalSource": "bson"
+}
