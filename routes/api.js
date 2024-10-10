@@ -546,7 +546,7 @@ var RevisionResource = _.inherit(Resource, function(opts) {
 }, {
   beforeCreate: function(req, res, next) {
     var obj = new this.model(req.body);
-//    console.log(req.body);
+    console.log("in revsion resource");
     if (!obj.user) {
       obj.user = req.user;
     }
@@ -2370,12 +2370,12 @@ router.post('/saveIIIFDoc', function(req, res, next){
   var nPages=0;
   //just save them all
   async.map(pages, function(page, callback) {
-    Doc.update({_id:ObjectId(page._id)}, {$set: {image:page.image}}, function(err, doc){
+    Doc.updateOne({_id:new ObjectId(page._id)}, {$set: {image:page.image}}).then (function(doc){
       nPages+=1;
-      callback(err);
+      callback(null);
     })
   }, function(err) {
-    Doc.findOne({_id:ObjectId(doc_id)}, function(err, doc){
+    Doc.findOne({_id:new ObjectId(doc_id)}).then (function(doc){
       res.json({npages:nPages,document:doc});
     })
   });
@@ -2387,58 +2387,70 @@ router.post('/saveManyPagesDoc', function(req, res, next) {
    var community=req.query.community;
    var user=req.user;
    var myDoc={};
+   console.log("saving lots of pages"+pages+" for doc "+doc_id)
    async.waterfall([
      function(cb) {
        var page_ids=[];
+       console.log("how many pages "+pages.length)
        for (var i=0; i<pages.length; i++) {
-         var p_id=ObjectId();
+         var p_id=new ObjectId();
          pages[i]._id=p_id;
          page_ids.push(p_id);
        };
-       Doc.update({_id:ObjectId(doc_id)}, {$set: {children: page_ids}}, function(err, doc){
-           cb(err);
+       console.log("update saveManyPagesDoc 0 "+doc_id);
+       Doc.updateOne({_id: new ObjectId(doc_id)}, {$set: {children: page_ids}}).then (function(result){
+           console.log("update saveManyPagesDoc");
+           cb(null);
+       }, function(err){
+       		console.log("failure saveManyPagesDoc");
        });
      },
      function(cb) {
        for (var i=0; i<pages.length; i++) {
-         pages[i]._id=ObjectId(pages[i]._id);
+         pages[i]._id= new ObjectId(pages[i]._id);
          pages[i].tasks=pages[i].entities=pages[i].children=[];
-         pages[i].ancestors=[ObjectId(doc_id)];
-         pages[i].meta={user:ObjectId(user._id), committed: new Date()};
+         pages[i].ancestors=[new ObjectId(doc_id)];
+         pages[i].meta={user:new ObjectId(user._id), committed: new Date()};
        }
-       Doc.insertMany(pages, function(result){
+       Doc.insertMany(pages).then (function(result){
+        console.log("update saveManyPagesDoc 2");
          cb(null);
        })
      },
      function(cb) {  //find parent tei
-       TEI.findOne({"docs.0": ObjectId(doc_id), name:"text"}, function(err, tei){
-           cb(err, tei._id);
+       TEI.findOne({"docs.0": new ObjectId(doc_id), name:"text"}).then (function(tei){
+       	  console.log("update saveManyPagesDoc 3");
+           cb(null, tei._id);
        });
      },
      function(text_id, cb) { //create the teis for this Document
        var teis=[];
        var tei_ids=[];
        for (var i=0; i<pages.length; i++) {
-         var tei_id=ObjectId();
-         teis.push({_id:tei_id, name:"pb", attrs:{n: pages[i].name}, community:community, docs:[ObjectId(doc_id), pages[i]._id], entityChildren:[], children:[], ancestors:[text_id]});
+         var tei_id=new ObjectId();
+         teis.push({_id:tei_id, name:"pb", attrs:{n: pages[i].name}, community:community, docs:[new ObjectId(doc_id), pages[i]._id], entityChildren:[], children:[], ancestors:[text_id]});
          tei_ids.push(tei_id);
        }
-       TEI.insertMany(teis, function(result) {
+       TEI.insertMany(teis).then (function(result) {
+       	  console.log("update saveManyPagesDoc 4");
          cb(null,tei_ids);
        })
      },
      function(tei_ids, cb) {
-       TEI.update({"docs.0": ObjectId(doc_id), name:"text"}, {$set: {children: tei_ids}}, function(err, doc){
-           cb(err);
+       TEI.updateOne({"docs.0": new ObjectId(doc_id), name:"text"}, {$set: {children: tei_ids}}).then (function(result){
+       	  console.log("update saveManyPagesDoc 5");
+           cb(null);
        });
      },
      function(cb) {
-       Doc.findOne({_id:ObjectId(doc_id)}, function(err, doc){
+       Doc.findOne({_id:new ObjectId(doc_id)}).then (function(doc){
+       	 console.log("update saveManyPagesDoc 6");
          myDoc=doc;
-         cb(err);
+         cb(null);
        });
      }
    ], function (err) {
+   	 console.log("update saveManyPagesDoc 7");
      if (err) res.json({"success":false, error:err});
      else res.json({document:myDoc, npages: pages.length});
    });
@@ -2459,8 +2471,8 @@ router.post('/saveDocPages', function(req, res, next) {
     function(argument, cb) {
       if (order.length>0) {
         //replace each order val by ObjectId
-        var neworder=order.map(function(page){return ObjectId(page)});
-        var neworigchildren=origchildren.map(function(page){return ObjectId(page)});
+        var neworder=order.map(function(page){return new ObjectId(page)});
+        var neworigchildren=origchildren.map(function(page){return new ObjectId(page)});
         var origchildrenteis=[], neworderteis=[];
         async.waterfall([
          function (cb1) {
@@ -2470,19 +2482,19 @@ router.post('/saveDocPages', function(req, res, next) {
               });
           },
           function (argument, cb1) {
-                async.mapSeries(neworder, getTeiDoc, function (err, teipbs) {
+             async.mapSeries(neworder, getTeiDoc, function (err, teipbs) {
                 neworderteis=teipbs;
                 cb1(err, []);
               });
           },
           function (argument, cb1) {
-              Doc.collection.update({_id: ObjectId(req.query.document)}, {$set: {children: neworder}}, function (err, result) {
-                cb1(err, []);
+              Doc.updateOne({_id: new ObjectId(req.query.document)}, {$set: {children: neworder}}).then (function (result) {
+                cb1(null, []);
               });
           },
           function (argument, cb1) {
-              TEI.collection.update({children:origchildrenteis}, {$set: {children:neworderteis}}, function (err, result){
-                cb1(err, []);
+              TEI.updateMany({children:origchildrenteis}, {$set: {children:neworderteis}}).then (function (result){
+                cb1(null, []);
             });
           }
         ], cb);
@@ -2495,9 +2507,8 @@ router.post('/saveDocPages', function(req, res, next) {
 });
 
 function getTeiDoc(page, callback) {
-  TEI.findOne({docs: ObjectId(page), name:"pb"}, function(err, pageTei){
-    if (err) callback(err);
-    else callback(null, ObjectId(pageTei._id));
+  TEI.findOne({docs: new ObjectId(page), name:"pb"}).then (function(pageTei){
+	 callback(null, new ObjectId(pageTei._id));
   })
 }
 
@@ -2509,13 +2520,11 @@ function getTeiEl(page, callback) {
 }
 
 function replaceVals(replace, callback) {
-    Doc.collection.update({_id: ObjectId(replace.id)}, {$set: {name: replace.name, facs: replace.facs}}, function (err, result) {
-      if (!err) {
-//        console.log("replacing in TEI"); console.log(replace);
-        TEI.collection.update({docs: ObjectId(replace.id), name:"pb"}, {$set: {"attrs.n": replace.name, "attrs.facs": replace.facs}}, function (err, result){
-          callback(err);
+    Doc.updateOne({_id: new ObjectId(replace.id)}, {$set: {name: replace.name, facs: replace.facs}}).then (function (result) {
+        console.log("replacing in TEI");
+        TEI.updateMany({docs: new ObjectId(replace.id), name:"pb"}, {$set: {"attrs.n": replace.name, "attrs.facs": replace.facs}}).then (function (result){
+          callback(null);
         });
-      } else {callback(err)};
     });
 };
 

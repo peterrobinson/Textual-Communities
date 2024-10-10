@@ -91,7 +91,7 @@ _.assign(Resource.prototype, {
     return query;
   },
   beforeCreate: function(req, res, next) {
-//   	console.log("help me out 1")   
+   	console.log("help me out 1")   
     var obj = new this.model(req.body);
     return function(cb) {
       cb(null, obj);
@@ -110,7 +110,7 @@ _.assign(Resource.prototype, {
         cb(err, obj);
       }); */
       obj.save().then(result=> {
-//        console.log("getting result back")
+        console.log("getting result back in exec save for object "+obj.name)
       	cb(null, result);
       }).catch(err=>callback(err));
     };

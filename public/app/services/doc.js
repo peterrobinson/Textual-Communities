@@ -23,7 +23,7 @@ var DocService = ng.core.Injectable().Class({
     this._revisionService = revisionService;
     this.resourceUrl = 'docs';
     this.state=uiService.state;
-
+	console.log("here is where we update the doc");
     uiService.docService$.subscribe(function(event) {
       switch (event.type) {
         case 'refreshDocument':

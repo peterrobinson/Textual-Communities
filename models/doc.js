@@ -25,8 +25,9 @@ var otherAncestorTeisAA= new Map();
 var inProcess=false;
 var calledBack=false;
 
+//very proud of the adjustment for name: at some point in TC we shifted from string to [ ] for this one
 var DocSchema = extendNodeSchema('Doc', {
-  name: { type: String, index: true },
+  name: {oneOf: [{ type: String, index: true },[]]},
   label: String,
   facs: String,
   docinf: String,
@@ -54,7 +55,7 @@ var DocSchema = extendNodeSchema('Doc', {
         , topEntities = []
         , communityAbbr = docRoot.community
       ;
-//      if (config.localDevel)  console.log("function 0")
+	  console.log("function 0 in commit")
       if (self.ancestors.length === 0) {
         docEl = {name: 'text'};
       } else {
@@ -71,23 +72,27 @@ var DocSchema = extendNodeSchema('Doc', {
 
 //     console.log(	.children[0].children[1].children[0].children);
 //      console.log("teiRoot");
-      if (_.isEmpty(teiRoot)) {
+      if (_.isEmpty(teiRoot)) { //if we are adding from IIIF manifesto??
         let loop = true;
-//		console.log("shit happens")
+		console.log("shit happens. We are adding from a manifest? maybe")
         return async.whilst(
-          function() {
-            return loop;
+          function(cb) {
+          	console.log("lets loop "+loop)
+            cb(null, loop);
           },
           function(cb) {
-            return TEI.collection.remove({
+            console.log("here we have to remove...");
+            return TEI.deleteMany({
               docs: self._id,
               children: [],
-            }, function(err, result) {
-              loop = !err && result.result.ok === 1 && result.result.n > 0;
+            }).then (function(result) {
+              console.log("deletion!"+JSON.stringify(result));
+              loop = result.acknowledged && result.deletedCount > 0;  //new Mongoose changes so much...
               cb(null);
             });
           },
           function(err) {
+          	console.log("dealing with emoty document");
             let tei = new TEI({
               name: self.label,
               docs: self.ancestors.concat(self._id),
@@ -104,7 +109,7 @@ var DocSchema = extendNodeSchema('Doc', {
                 TEI.insertAfter(_.last(leftBound), tei, callback);
               }
             } else {
-              tei.save(callback);
+              tei.save().then(callback);
             }
           }
         );
@@ -573,6 +578,7 @@ var DocSchema = extendNodeSchema('Doc', {
     commit: function(data, callback) {
 //      if (config.localDevel) console.log("function comm 1");
 //      if (config.localDevel) console.log(inProcess);
+	  console.log("here we commit "+inProcess)
       var self = this
         , teiRoot = data.tei || {}
         , docRoot = _.defaults(data.doc, self.toObject())
@@ -586,16 +592,19 @@ var DocSchema = extendNodeSchema('Doc', {
 //       return;
       }
       inProcess=true;
-
+	   console.log("here we commit xxx")
       async.waterfall([
         function(cb1) {
+          console.log("here we commit xxx xxxx")
           Doc.getOutterTextBounds(self._id, cb1);
         },
         function(leftBound, rightBound) {
-          const cb = _.last(arguments)
+          console.log("here we commit xxx xxxx yyyy")
+         const cb = _.last(arguments)
           if (!_.isEmpty(teiRoot)) {
+             console.log("we have a teiRoot")
             _.dfs([teiRoot], function(el) {
-  //            console.log("element"); console.log(el);
+//              console.log("element"); // console.log(el);
               if (el.children.length>0) { // changed.. blank space between elements matters! reduce to single space at element ends
                 if (el.children[0].name=== '#text' && (el.children[0].text || '').trim() === '') {  el.children[0].text=" ";}
                 if (el.children.length>0)  {if (el.children[el.children.length-1].name=== '#text' && (el.children[el.children.length-1].text || '').trim() === '') el.children[el.children.length-1].text=" " };
@@ -607,18 +616,22 @@ var DocSchema = extendNodeSchema('Doc', {
                 );
               }); */
             });
-          } else {inProcess=false}
+          } else {
+          	console.log("empty teiRoot")
+          	inProcess=false
+          }
+          console.log("here we commit xxx xxxx yyyy zzzz")
           self._commit(
             teiRoot, docRoot, leftBound, rightBound, callback,
             function(err) {
- //              console.log("ending it all now error "+err)
+               console.log("ending it all now error "+err)
                return cb(err, self);
             }
           );
         },
       ], function (err) {//for reasons I don't understand: when loading a XML document this returns "self, undefined" to the callback, and hence to sendData in resource.js
- //       console.log("returning... error "+err)
- //       console.log("returning .. self "+self)
+        console.log("returning... error "+err)
+        console.log("returning .. self "+self)
       	callback(null, self);
 //		callback("bruce","fred")
       });

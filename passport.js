@@ -233,9 +233,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
         user.facebook.name  = profile.name.givenName + ' ' + profile.name.familyName;
         user.facebook.email = profile.emails[0].value;
 
-        user.save(function(err) {
-          if (err)
-            throw err;
+        user.save().then (function(result) {
+  //        if (err)
+  //          throw err;
           return done(null, user);
         });
 
