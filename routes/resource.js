@@ -112,7 +112,7 @@ _.assign(Resource.prototype, {
       obj.save().then(result=> {
         console.log("getting result back in exec save for object "+obj.name)
       	cb(null, result);
-      }).catch(err=>callback(err));
+      }).catch(err=>cb(err));
     };
   },
   afterCreate: function(req, res, next) {

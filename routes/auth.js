@@ -4,6 +4,7 @@ var express = require('express')
   , User = require('../models/user')
   , TCMailer=require('../localmailer')
   , TCAddresses=TCMailer.addresses
+  , TCLocalmailer=TCMailer.localmailer
   , config=require('../config')
 ;
 
@@ -57,15 +58,19 @@ router.post('/login', function(req, res, next) {
 	 //       console.log("req.get('host') "+req.get('host'));
 			authenticateUser (user.local.email, user, req);
 			res.render('authenticate.ejs', {context:"email", user: user});
-			req.logout();
+			req.logout(function(err) {
+   			 if (err) { return next(err); }
+// 		    res.redirect('/');
 			return;
-		  }
+  			});
+		  } else {
 		 // all is well, log me in, return successful user
-//		 console.log("I am in");
-		 req.logIn(user, function (err) {
-		   if (url=="") url="/app/home"
-		   if (!err) {res.render('closemodal.ejs', {url: url} );} else {}
-		 });
+	//		 console.log("I am in");
+			 req.logIn(user, function (err) {
+			   if (url=="") url="/app/home"
+			   if (!err) {res.render('closemodal.ejs', {url: url} );} else {}
+			 });
+		}
    });
 });
 
@@ -91,8 +96,8 @@ router.get('/signup', function(req, res) {
 
 // process the signup form
 router.post('/signup', function(req, res) {
-
-  User.findOne({'local.email': req.body.email}, function(err, existingUser) {
+//  console.log("doing the sign up")
+  User.findOne({'local.email': req.body.email}).then (function(existingUser) {
     // if there are any errors, return the error
     // check to see if there's already a user with that email
     if (existingUser) {
@@ -110,34 +115,39 @@ router.post('/signup', function(req, res) {
     }
     //  If we're logged in, we're connecting a new local account.
     if(req.user) {
+//      console.log("inside authentication 1 ");
       var user            = req.user;
       user.local.email    = email;
       user.local.password = user.generateHash(password);
       user.local.name = req.body.name;
       user.local.created=Date.now();
       user.local.authenticated= "0";
-      user.save(function(err) {
-        if (err)
-          throw err;
+      user.save().then(function(err) {
         return done(null, user);
       });
     }
     //  We're not logged in, so we're creating a brand new user.
     else {
       // create the user
+//      console.log("inside authentication 2 ");
       var newUser            = new User();
       newUser.local.email    = req.body.email;
       newUser.local.name =  req.body.name;
       newUser.local.password = newUser.generateHash(req.body.password);
       newUser.local.authenticated= "0";
       newUser.local.created=Date.now();
-      newUser.save(function(err) {
-        if (err) {}
-//        console.log("inside authentication local 2 "+config.host_url);
-        authenticateUser (newUser.local.email, newUser, req);
-        res.render('authenticate.ejs', {context:"email", user: newUser})
-        req.logout();
-        return;
+      newUser.save().then (function(result) {
+//      	   console.log("inside authentication local 2 "+config.host_url);
+			authenticateUser (newUser.local.email, newUser, req);
+			res.render('authenticate.ejs', {context:"email", user: newUser})
+			req.logout(function(err) {
+   				 if (err) {}
+ //		   		 res.redirect('/');
+  			});
+      	}, function(err) {
+			if (err) {
+//				res.redirect('/');
+			}
       });
     }
   });
@@ -153,7 +163,10 @@ router.get('/sendauthenticate', function(req, res) {
   authenticateUser (req.user.local.email, req.user, req);
   // render the page and pass in any flash data if it exists
   res.render('authenticate.ejs', {user: user, context: req.query.context} );
-  req.logout();
+  req.logout(function(err) {
+		 if (err) { return next(err); }
+		 res.redirect('/');
+   });
 });
 
 router.get('/authlinkExpired', function(req, res) {
@@ -166,7 +179,7 @@ router.get('/authlinkNotFound', function(req, res) {
 
 router.get('/authenticateTC', function(req, res) {
   // find the user with this hash; check datestamp; authenticate and save
-  User.findOne({ 'local.hash' :  req.query.hash }, function(err, user) {
+  User.findOne({ 'local.hash' :  req.query.hash }).then (function(user) {
     if (user) {
       //check the time stamp. If more than one hour ago, ask for redo
       var timeNow= new Date().getTime();
@@ -206,8 +219,10 @@ router.get('/forgot', function(req, res) {
 });
 
 router.get('/resetpwExpired', function(req, res) {
-  req.logout();
-  res.render('forgothourpassed.ejs', {greeting: 'Reset password link expired', greeting2: 'For security, links to reset passwords expire after one hour.', authenticate:"0"});
+  req.logout(function(err) {
+   	 if (err) { return next(err); }
+ 	 res.render('forgothourpassed.ejs', {greeting: 'Reset password link expired', greeting2: 'For security, links to reset passwords expire after one hour.', authenticate:"0"});
+  });
 });
 
 router.get('/resetpw', function(req, res) {
@@ -268,9 +283,11 @@ router.post('/forgot', passport.authenticate('local-forgot', {
 
 router.get('/resetpwmsg', function(req, res) {
   // render the page and pass in any flash data if it exists
-  req.logout();
-  res.render('resetpwmsg.ejs');
-});
+  req.logout(function(err) {
+   	 if (err) { return next(err); }
+ 	 else res.render('resetpwmsg.ejs');
+ 	});
+ });
 
 // =====================================
 // PROFILE SECTION =====================
@@ -447,12 +464,18 @@ router.post('/facebooklinkemail', function(req, res) {
 //          console.log("inside authentication local 4")
           authenticateUser (existingUser.local.email, existingUser, req);
           res.render('authenticate.ejs', {context:"email", user: existingUser})
-          req.logout();
+          req.logout(function(err) {
+   			 if (err) { return next(err); }
+ 		     res.redirect('/');
+  			});
           return;
         }
         //do we need this? yes...
           //log out current user; log in existingUser
-        req.logout();
+        req.logout(function(err) {
+   			 if (err) { return next(err); }
+ 		    res.redirect('/');
+  		});
         req.logIn(existingUser, function (err) {
           //ok, we are all logged in, close the dialog, call the base url, put up profile screen
           //put up the profile screen then
@@ -490,12 +513,13 @@ router.get('/facebooknew', function(req, res) {
   thisUser.local.name=thisUser.facebook.name;
   thisUser.local.password=thisUser.generateHash("X"); //place holder
   thisUser.local.authenticated= "0";
-  thisUser.save(function(err) {
-    if (err) {}
-//    console.log("inside authentication local 5")
+  thisUser.save().then (function(err) {
     authenticateUser (thisUser.local.email, thisUser, req);
     res.render('authenticate.ejs', {context:"facebook", user: thisUser});
-    req.logout();
+    req.logout(function(err) {
+	 	if (err) { return next(err); }
+		//res.redirect('/');
+	});
   });
 });
 
@@ -522,7 +546,10 @@ router.get('/removeSurplusSM', isLoggedIn, function(req, res) {
     });
   }
   if (req.user.local.authenticated=="0" || req.user.local.name== undefined) {
-      req.logout();
+      req.logout(function(err) {
+		 if (err) { return next(err); }
+//		res.redirect('/');
+		});
       if (context=="outside") res.render('closemodal.ejs', {url: "/app/home"} );
       else res.redirect('/app#/home');
   } else  {
@@ -607,9 +634,15 @@ router.post('/twitterlinklocal', function(req, res) {
 //        console.log("inside authentication local 7")
         authenticateUser (existingUser.local.email, existingUser, req);
         res.render('authenticate.ejs', {user: existingUser, context: "twitter"} );
-        req.logout();
+        req.logout(function(err) {
+	 	 if (err) { return next(err); }
+//		 res.redirect('/');
+		});
       } else {
-        req.logout();
+        req.logout(function(err) {
+   			 if (err) { return next(err); }
+// 		    res.redirect('/');
+  		});
         req.logIn(existingUser, function (err) {
           if(!err){
             res.render('closemodal.ejs', {url: "/app/home?prompt=showprofile"});
@@ -654,7 +687,10 @@ router.post('/twitteremail', function(req, res) {
         existingUser.twitter=req.user.twitter;
         //delete the one we just made...
         req.user.deleteOne({});
-        req.logout();
+        req.logout(function(err) {
+		 if (err) { return next(err); }
+//		res.redirect('/');
+		});
         existingUser.save();
         req.logIn(existingUser, function (err) {
 //          console.log(err);
@@ -798,12 +834,18 @@ router.post('/googlelinkemail', function(req, res) {
 //          console.log("inside authentication local 8")
           authenticateUser (existingUser.local.email, existingUser, req);
           res.render('authenticate.ejs', {context:"google", user: existingUser})
-          req.logout();
+          req.logout(function(err) {
+   			 if (err) { return next(err); }
+ //		    res.redirect('/');
+  			});
           return;
         }
         //do we need this? yes...
           //log out current user; log in existingUser
-        req.logout();
+        req.logout(function(err) {
+   			 if (err) { return next(err); }
+// 		    res.redirect('/');
+  			});
         req.logIn(existingUser, function (err) {
           //ok, we are all logged in, close the dialog, call the base url, put up profile screen
           //put up the profile screen then
@@ -843,7 +885,10 @@ router.get('/googleemail', function(req, res) {
           deleteUser.remove({});
         });
         user.save();
-        req.logout();
+        req.logout(function(err) {
+   			 if (err) { return next(err); }
+ 		//    res.redirect('/');
+  			});
         req.logIn(user, function (err) {
           if(!err){ res.redirect('/auth/profile'); }else {		//handle error
           } });
@@ -883,7 +928,10 @@ router.post('/googlelinkemail', function(req, res) {
         });
         existingUser.save();
         //log out current user; log in existingUser
-        req.logout();
+        req.logout(function(err) {
+   			 if (err) { return next(err); }
+ 		   // res.redirect('/');
+  			});
         req.logIn(existingUser, function (err) {
           if(!err){ res.redirect('/auth/profile'); } else{		//handle error
           } });
@@ -917,12 +965,13 @@ router.get('/googlenew', function(req, res) {
   thisUser.local.password=thisUser.generateHash("default"); //place holder
   thisUser.local.created=Date.now();
   thisUser.local.authenticated= "0";
-  thisUser.save(function(err) {
-    if (err) {}
-//    console.log("inside authentication local 9")
+  thisUser.save().then (function(err) {
     authenticateUser (thisUser.local.email, thisUser, req);
     res.render('authenticate.ejs', {context:"google", user: thisUser});
-    req.logout();
+    req.logout(function(err) {
+   			 if (err) { return next(err); }
+ 		   // res.redirect('/');
+  			});
   });
   //now we send the email from here and here alone
 });
@@ -982,7 +1031,7 @@ router.get('/connect/google/callback', passport.authorize('google', {
 router.get('/unlink/facebook', function(req, res) {
   var user            = req.user;
   user.facebook = undefined;
-  user.save(function(err) {
+  user.save().then(function(err) {
     res.redirect('/auth/profile');
   });
 });
@@ -991,7 +1040,7 @@ router.get('/unlink/facebook', function(req, res) {
 router.get('/unlink/twitter', function(req, res) {
   var user           = req.user;
   user.twitter = undefined;
-  user.save(function(err) {
+  user.save().then (function(err) {
     res.redirect('/auth/profile');
   });
 });
@@ -1000,7 +1049,7 @@ router.get('/unlink/twitter', function(req, res) {
 router.get('/unlink/google', function(req, res) {
   var user          = req.user;
   user.google.token = undefined;
-  user.save(function(err) {
+  user.save().then(function(err) {
     res.redirect('/auth/profile');
   });
 });
@@ -1046,30 +1095,37 @@ function randomStringAsBase64Url(size) {
   return base64url(crypto.randomBytes(size));
 }
 
-function authenticateUser (email, user, req) {
+async function authenticateUser (email, user, req) {
   //lets get the url right here, ignore what is coming in...
   var thisUrl=config.host_url;
+//  console.log( TCAddresses.replyto+" "+TCAddresses.from);
+//  console.log(TCMailer);
 //  console.log(thisUrl);
   var ejs = require('ejs'), fs = require('fs'), str = fs.readFileSync(__dirname + '/../views/authenticatemail.ejs', 'utf8');
   var hash=randomStringAsBase64Url(20);
-//  console.log("url "+thisUrl)
+//  console.log("user "+user);
+  if (typeof user=="undefined") {
+  	//no user logged -- might have been deleted. Just return
+ // 	req.logout(function(err) {});
+//  	res.redirect('/');
+  	return;
+  }
   var rendered = ejs.render(str, {email:email, hash:hash, username:user.local.name, url: thisUrl});
-  //console.log( TCAddresses.replyto+" "+TCAddresses.from);
 //  console.log("here 2 "+user)
   user.local.timestamp=new Date().getTime();
   user.local.hash=hash;
   user.save();
-  TCMailer.localmailer.sendMail({
-    from: TCAddresses.from,
+  const info = await TCLocalmailer.sendMail({
+    from: '"Do not reply to this email" <peter@sd-editions.com>',
     to: email,
     subject: 'Authenticate your Textual Communities account',
-    'h:Reply-To': TCAddresses.replyto,
+    replyTo: TCAddresses.replyto,
     html: rendered,
     text: rendered.replace(/<[^>]*>/g, '')
-  }, function (err, info) {
-    if (err) {console.log('Error: ' + err);}
   });
+//  console.log("Message sent: %s", info.messageId);
 }
 
+authenticateUser().catch(console.error);
 
 module.exports = router;

@@ -1,5 +1,5 @@
 //emailer ======================================================================
-var nodemailer = require('nodemailer');
+/* var nodemailer = require('nodemailer');
 var mg = require('nodemailer-mailgun-transport');
 var auth = {
   auth: {
@@ -15,3 +15,8 @@ exports.addresses = {
 	from: 'peter@sd-editions.com',
 	replyto: 'peter@sd-editions.com'
 };
+*/
+
+//using free mailer from brevo.com. Logged in using google peter@sd-editions
+
+ 

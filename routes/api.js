@@ -9,7 +9,9 @@ var _ = require('lodash')
   , router = express.Router()
   , Resource = require('./resource')
   , models = require('../models')
-  , TCMailer = require('../localmailer')
+  , TCMailer=require('../localmailer')
+  , TCAddresses=TCMailer.addresses
+  , TCLocalmailer=TCMailer.localmailer
   , mongoose = require('mongoose')
   , config = require('../config')
   , gridfs = require('../utils/gridfs')
@@ -34,7 +36,7 @@ var _ = require('lodash')
 ;
 
 
-if (config.localDevel) TCMailer = require('../TCMailer');
+//if (config.localDevel) TCMailer = require('../TCMailer');
 
 //res.set or res.header? trying header now .. see https://medium.com/@dtkatz/3-ways-to-fix-the-cors-error-and-how-access-control-allow-origin-works-d97d55946d9
 
@@ -92,12 +94,10 @@ router.get('/communities/:id/memberships/', function(req, res, next) {
     memberships: {
       $elemMatch: {community: req.params.id},
     },
-  }).exec(function(err, users) {
-    if (err) {
-      next(err);
-    } else {
+  }).exec().then (function (users) {
       res.json(users);
-    }
+  }, function(err){
+  	 next(err);
   });
 });
 
@@ -391,7 +391,7 @@ vBaseResource.serve(router, 'vbases');
 
 
 router.post('/community/:abbr/vbases/', function(req, res, next) {
-  console.log("getting vBases");
+//  console.log("getting vBases");
   var community = req.params.abbr;
    VBase.find({community: community}).then (function(vbases) {
      if (vbases.length) {
@@ -508,10 +508,10 @@ router.post('/communities/:id/add-member', function(req, res, next) {
 //  console.log("about to add this member")
   async.parallel([
     function(cb) {
-      Community.findOne({_id: communityId}).exec(cb);
+      Community.findOne({_id: communityId}).then (function(community){cb(null, community)});
     },
     function(cb) {
-      User.findOne({_id: userId}).exec(cb);
+      User.findOne({_id: userId}).then(function(user){cb(null, user)});
     },
   ], function(err, results) {
     if (err) {
@@ -526,15 +526,9 @@ router.post('/communities/:id/add-member', function(req, res, next) {
         role: role,
         pages: {"assigned":0,"inprogress":0,"submitted":0,"committed":0, "approved":0}
       });
-      user.save(function(err, user) {
-        if (err) {
-          return next(err);
-        };
-        community.save(function(err, community){
-          if (err) {
-            return next(err);
-          };
-          res.json(user);
+      user.save().then (function(user) {
+        community.save().then(function(community){
+           res.json(user);
         })
       });
     }
@@ -546,7 +540,7 @@ var RevisionResource = _.inherit(Resource, function(opts) {
 }, {
   beforeCreate: function(req, res, next) {
     var obj = new this.model(req.body);
-    console.log("in revsion resource");
+//    console.log("in revsion resource");
     if (!obj.user) {
       obj.user = req.user;
     }
@@ -618,31 +612,34 @@ function requestMembership(action, callback) {
 //  console.log("jere")
   async.parallel([
     function(cb) {
-      User.findOne({_id: payload.user}, cb);
+      User.findOne({_id: new ObjectId(payload.user)}).then (function(user){cb(null, user)});
     },
     function(cb) {
-      Community.findOne({_id: payload.community}, cb);
+      Community.findOne({_id: new ObjectId(payload.community)}).then (function(community){cb(null, community)});
     },
     function(cb) {
       User.find({
         'memberships.community': payload.community,
         'memberships.role': User.CREATOR,
-      }, cb);
-    },
-    function(cb) {
-      new Action(action).save(function(err, obj) {
-        cb(err, obj);
+      }).then (function(leader){
+      	cb(null, leader);
       });
     },
+    function(cb) {
+      new Action(action).save(). then (function(action2){cb(null, action2)});
+    },
   ], function(err, results) {
+//    console.log("results 2"+results[2]);
+//    console.log("user"+results[0]);
     var user = results[0]
       , community = results[1]
       , leader = results[2][0]
       , action = results[3]
       , message
     ;
+//    console.log("action is"+action);
     if (!err) {
-//      console.log("config"); console.log(config);
+//      console.log("leader "+leader);
       message = ejs.render(
       fs.readFileSync(
         __dirname + '/../views/joinletternotifyleader.ejs', 'utf8'),
@@ -650,23 +647,24 @@ function requestMembership(action, callback) {
           username: user.local.name,
           hash: action.payload.hash,
           url: `${config.BACKEND_URL}actions/${action._id}`,
-          communityemail: leader.email,
+          communityemail: leader.local.email,
           useremail: user.local.email,
           communityname: community.name,
-          communityowner: leader.name
+          communityowner: leader.local.name
         }
       );
-      TCMailer.localmailer.sendMail({
-        from: TCMailer.addresses.from,
+      TCLocalmailer.sendMail({
+        from:TCAddresses.from,
         to: leader.local.email,
+        replyTo: TCAddresses.replyto,
         subject: `
           Application from ${user.local.name} to join Textual Community`,
         html: message,
         text: message.replace(/<[^>]*>/g, '')
       });
-      var obj = action.toObject();
-      delete obj.payload.hash;
-      callback(err, obj);
+//      var obj = action.toObject();
+      delete action.payload.hash;
+      callback(err, action);
     } else {
       callback(err);
     }
@@ -678,17 +676,18 @@ function validateAction(action) {
 }
 
 router.get('/actions/:id', function(req, res, next) {
-  Action.findOne({_id: req.params.id}, function(err, action) {
+//  console.log("confirming membership");
+  Action.findOne({_id: new ObjectId(req.params.id)}).then (function(action) {
     var payload = action.payload
       , role = payload.role
     ;
     if (payload.hash && payload.hash === req.query.hash) {
       async.parallel([
         function(cb) {
-          User.findOne({_id: payload.user}, cb);
+          User.findOne({_id: new ObjectId(payload.user)}).then(function(user){cb(null, user)});
         },
         function(cb) {
-          Community.findOne({_id: payload.community}, cb);
+          Community.findOne({_id: new ObjectId(payload.community)}).then (function(community){cb(null, community)});
         },
       ], function(err, results) {
         var user = results[0]
@@ -702,19 +701,19 @@ router.get('/actions/:id', function(req, res, next) {
         });
         async.parallel([
           function(cb) {
-            user.save(function(err, obj) {
-              cb(err, obj);
+            user.save().then (function(obj) {
+              cb(null, obj);
             });
           },
           function(cb) {
-            community.save(function(err, obj) {
-              cb(err, obj);
+            community.save().then (function( obj) {
+              cb(null, obj);
             });
           },
           function(cb) {
             payload.hash = '';
-            action.save(function(err, obj) {
-              cb(err, obj);
+            action.save().then (function(obj) {
+              cb(null, obj);
             });
           },
         ], function(err) {
@@ -732,8 +731,9 @@ router.get('/actions/:id', function(req, res, next) {
 });
 
 router.post('/actions', function(req, res, next) {
-//  console.log("we should be in here");
+//  console.log("we should not be in here");
   var action = req.body;
+//  console.log(action)
   if (!validateAction(action)) {
     return next({error: 'Action format error'});
   }
@@ -742,8 +742,8 @@ router.post('/actions', function(req, res, next) {
   switch (action.type) {
     case 'request-membership':
       requestMembership(action, function(err, _action) {
-//      console.log('requestMembership finish');
-//        console.log(err);
+ //       console.log('requestMembership finish '+_action);
+ //       console.log(err);
         if (err) {
           next(err);
         } else {
@@ -1015,7 +1015,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
     async.waterfall([
       function(cb) {
         Doc.findOne({_id: docroot}, function(err, document) {
-          console.log("starting out in deletoindocument");
+ //         console.log("starting out in deletoindocument");
           pages=document.children;
           globalDoc=document;
           npages=document.children.length;
@@ -1026,7 +1026,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
       function(argument, cb) {
         //get all the teis in this document
         TEI.find({docs: {$in: pages}}, function(err, teis) {
-          console.log("number of teis "+teis.length)
+ //         console.log("number of teis "+teis.length)
           nTeis=teis.length;
           if (nTeis<3000) {
             teis.forEach(function(teiEl){
@@ -1149,16 +1149,16 @@ router.post('/deleteDocument', function(req, res, next) {
   var npages=0, nodocels=0, nallels=0, npagetrans=0, deleteTeiEntities=[], pages=[], deleteTeis=[], nTeis=0;
   var docroot=req.query.id;
   globalCommAbbr=req.query.community;
-   console.log("starting deletion for "+docroot+" in community "+globalCommAbbr);
+//   console.log("starting deletion for "+docroot+" in community "+globalCommAbbr);
   //delete all docs all entitiees all revisions...
     async.waterfall([
       function(cb) {
         Doc.findOne({_id: new ObjectId(docroot)}).then (function(document) {
-	      console.log("document");
+//	      console.log("document");
           pages=document.children;
           globalDoc=document;
           npages=document.children.length;
-          console.log("pages "); 
+//           console.log("pages "); 
           cb(null, []);
         });
       },
@@ -1166,11 +1166,11 @@ router.post('/deleteDocument', function(req, res, next) {
         //find the tei  which is ancestor text of this doc
         TEI.findOne({docs: docroot}).then (function (deleteRoot) {
           if (!deleteRoot) {
-             console.log("did not find root") //could happen if this doc is the result of an error in writing a large doc
+//             console.log("did not find root") //could happen if this doc is the result of an error in writing a large doc
              //in this case: delete the doc, remove from community, return...
              Community.updateOne({'abbr': globalCommAbbr}, { $pull: { documents: docroot } }).then (function(err){
                Doc.deleteOne({_id: new ObjectId(docroot)}).then (function(result) {
-                 console.log("destroy")
+//                 console.log("destroy")
                  cb({error:"doc vestige here only"}, []);
                });
              });
@@ -1180,7 +1180,7 @@ router.post('/deleteDocument', function(req, res, next) {
               cb(null, deleteRoot._id);
             } else {
               deleteTeis.push(deleteRoot.ancestors[0]);
-               console.log("after finding text");
+  //             console.log("after finding text");
     //          console.log(deleteRoot);
               cb(null, deleteRoot.ancestors[0]);
             }
@@ -1204,7 +1204,7 @@ router.post('/deleteDocument', function(req, res, next) {
         //get all the entities in this document
         TEI.find({docs: {$in: pages}}).then (function(teis) {
           nTeis=teis.length;
-          console.log("about to delete document teis "+nTeis)
+//          console.log("about to delete document teis "+nTeis)
           if (nTeis<3000) {
             teis.forEach(function(teiEl){
               if (teiEl.isEntity) {
@@ -1242,7 +1242,7 @@ router.post('/deleteDocument', function(req, res, next) {
               {docs: new ObjectId(docroot)},
             ]
           }).then (function(result) {
-           	console.log(JSON.stringify(result))
+ //          	console.log(JSON.stringify(result))
             nallels+=result.deletedCount;
   //          console.log('delete teis done');
             cb(null, []);
@@ -1812,7 +1812,7 @@ router.post('/getDocPages', function(req, res, next){
    	 });
    	}
   ], function(err, results) {
-      console.log(results[0]);
+//      console.log(results[0]);
       res.json({children: results[0].children, pages: results[1]});
   });
 });
@@ -2387,22 +2387,22 @@ router.post('/saveManyPagesDoc', function(req, res, next) {
    var community=req.query.community;
    var user=req.user;
    var myDoc={};
-   console.log("saving lots of pages"+pages+" for doc "+doc_id)
+//   console.log("saving lots of pages"+pages+" for doc "+doc_id)
    async.waterfall([
      function(cb) {
        var page_ids=[];
-       console.log("how many pages "+pages.length)
+//       console.log("how many pages "+pages.length)
        for (var i=0; i<pages.length; i++) {
          var p_id=new ObjectId();
          pages[i]._id=p_id;
          page_ids.push(p_id);
        };
-       console.log("update saveManyPagesDoc 0 "+doc_id);
+//       console.log("update saveManyPagesDoc 0 "+doc_id);
        Doc.updateOne({_id: new ObjectId(doc_id)}, {$set: {children: page_ids}}).then (function(result){
-           console.log("update saveManyPagesDoc");
+ //          console.log("update saveManyPagesDoc");
            cb(null);
        }, function(err){
-       		console.log("failure saveManyPagesDoc");
+ //      		console.log("failure saveManyPagesDoc");
        });
      },
      function(cb) {
@@ -2413,13 +2413,13 @@ router.post('/saveManyPagesDoc', function(req, res, next) {
          pages[i].meta={user:new ObjectId(user._id), committed: new Date()};
        }
        Doc.insertMany(pages).then (function(result){
-        console.log("update saveManyPagesDoc 2");
+//        console.log("update saveManyPagesDoc 2");
          cb(null);
        })
      },
      function(cb) {  //find parent tei
        TEI.findOne({"docs.0": new ObjectId(doc_id), name:"text"}).then (function(tei){
-       	  console.log("update saveManyPagesDoc 3");
+//       	  console.log("update saveManyPagesDoc 3");
            cb(null, tei._id);
        });
      },
@@ -2432,25 +2432,25 @@ router.post('/saveManyPagesDoc', function(req, res, next) {
          tei_ids.push(tei_id);
        }
        TEI.insertMany(teis).then (function(result) {
-       	  console.log("update saveManyPagesDoc 4");
+//       	  console.log("update saveManyPagesDoc 4");
          cb(null,tei_ids);
        })
      },
      function(tei_ids, cb) {
        TEI.updateOne({"docs.0": new ObjectId(doc_id), name:"text"}, {$set: {children: tei_ids}}).then (function(result){
-       	  console.log("update saveManyPagesDoc 5");
+//       	  console.log("update saveManyPagesDoc 5");
            cb(null);
        });
      },
      function(cb) {
        Doc.findOne({_id:new ObjectId(doc_id)}).then (function(doc){
-       	 console.log("update saveManyPagesDoc 6");
+//       	 console.log("update saveManyPagesDoc 6");
          myDoc=doc;
          cb(null);
        });
      }
    ], function (err) {
-   	 console.log("update saveManyPagesDoc 7");
+//   	 console.log("update saveManyPagesDoc 7");
      if (err) res.json({"success":false, error:err});
      else res.json({document:myDoc, npages: pages.length});
    });
@@ -2521,7 +2521,7 @@ function getTeiEl(page, callback) {
 
 function replaceVals(replace, callback) {
     Doc.updateOne({_id: new ObjectId(replace.id)}, {$set: {name: replace.name, facs: replace.facs}}).then (function (result) {
-        console.log("replacing in TEI");
+//        console.log("replacing in TEI");
         TEI.updateMany({docs: new ObjectId(replace.id), name:"pb"}, {$set: {"attrs.n": replace.name, "attrs.facs": replace.facs}}).then (function (result){
           callback(null);
         });
@@ -2782,11 +2782,11 @@ router.post('/validate', function(req, res, next) {
 			 	})	
 			} else {
 				let xmlIsValid = libxml.validateAgainstDtds();
-				console.log("is this valid "+xmlIsValid);
-				console.log("errors "+JSON.stringify(libxml.validationDtdErrors));
+//				console.log("is this valid "+xmlIsValid);
+//				console.log("errors "+JSON.stringify(libxml.validationDtdErrors));
 				if (typeof libxml.validationDtdErrors!="undefined") {
 					errors=libxml.validationDtdErrors[dtdPath];
-					console.log(JSON.stringify(errors));
+//					console.log(JSON.stringify(errors));
 					res.json({
 						error:   _.map(errors, function(err) {
 							return _.assign({}, err, {
@@ -2795,7 +2795,7 @@ router.post('/validate', function(req, res, next) {
 						}),
 					})	
 				} else {
-					console.log("All parsed!");
+//					console.log("All parsed!");
 					res.json({error:[]});
 				}
 			}

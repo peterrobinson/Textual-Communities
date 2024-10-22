@@ -37,11 +37,11 @@ tmp
 npm-debug.log
 
 # ignore production config to avoid accident commit
-#config/production.js
+config/production.js
 
 # ignore all config files
-#config/*.js
-#public/app/config/*.js
+config/*.js
+public/app/config/*.js
 
 # ignore user uploaded files
 upload
