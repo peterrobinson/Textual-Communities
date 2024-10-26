@@ -7,7 +7,6 @@ var $ = require('jquery')
     , TEI = models.TEI
     , DualFunctionService = require('../public/app/services/dualfunctions')
 ;
-;
 
 var FunctionService = {
   loadTEIContent: function(version, content) {

@@ -4,6 +4,7 @@ var _ = require('lodash')
   , DocService = require('./services/doc')
   , CommunityService = require('./services/community')
   , config = require('./config')
+  , DualFunctionService = require('./services/dualfunctions')
 ;
 
 var HeaderComponent = ng.core.Component({
@@ -88,6 +89,7 @@ var HeaderComponent = ng.core.Component({
   },
   logout: function() {
     this._authService.logout();
+    DualFunctionService.setCookie("TCUser", JSON.stringify({}), 30);
   },
   loadModal: function(which) {
     if (which === 'add-document-page') {

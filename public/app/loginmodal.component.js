@@ -1,6 +1,9 @@
 var $ = require('jquery');
 var URI = require('urijs')
   , UIService = require('./services/ui')
+  , config = require('./config')
+  , $ = require('jquery')
+  , DualFunctionService = require('./services/dualfunctions')
 ;
 //require('jquery-ui/draggable');
 //require('jquery-ui/resizable');
@@ -95,7 +98,20 @@ var LoginModalComponent = ng.core.Component({
     this.loginFrame = '/auth?url=';
     this.loginFrameHeight = 233;
     $('#myModal').modal('hide');
-    if (url) window.location=url;
+    //our url might have a tcuser id added to it. If so, strip it, find it, write a cookie
+    let qString=url.slice(url.indexOf("?")+1);
+    let origStr=url.slice(0, url.indexOf("?"));
+    let urlParams = new URLSearchParams(qString);
+	let myParam = urlParams.get('TCUser');
+	if (myParam) {
+		$.post(config.BACKEND_URL+'getUser/'+myParam, function(user) {
+			//create a cookie here for this user
+			DualFunctionService.setCookie("TCUser", JSON.stringify(user), 30);
+			window.location=origStr;
+		});
+	} else {
+    	if (url) window.location=url;
+    }
   },
   showLogProf: function showLogProf (){
     this.loginFrame = '/auth/profile';

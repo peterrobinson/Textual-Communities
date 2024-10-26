@@ -45,7 +45,7 @@
                 <li role="separator" class="divider"></li>
                 <li *ngFor="#membership of state.authUser.attrs.memberships">
                   <a class="dropdown-item" [routerLink]="['Community',
-                    {id: membership.community.getId(), route: 'view'}]" style="display:block">
+                    {id: membership.community.attrs._id, route: 'view'}]" style="display:block">
                     {{membership.community.attrs.name}}
                   </a>
                  </li>

@@ -65,9 +65,10 @@ router.post('/login', function(req, res, next) {
   			});
 		  } else {
 		 // all is well, log me in, return successful user
-	//		 console.log("I am in");
+//			 console.log("I am in with user "+user);
 			 req.logIn(user, function (err) {
 			   if (url=="") url="/app/home"
+			   url+="?TCUser="+user._id.toString();
 			   if (!err) {res.render('closemodal.ejs', {url: url} );} else {}
 			 });
 		}
