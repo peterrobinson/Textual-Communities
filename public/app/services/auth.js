@@ -44,7 +44,7 @@ var AuthService = ng.core.Class({
         //read the cookie here!
         //begin rewritten code
         let authUser2=JSON.parse(DualFunctionService.getCookie("TCUser"));
-        if (Object.keys(authUser2).length!=0) { // we have a cookie. rewrite authUser with values from the cookie
+        if (authUser2 && Object.keys(authUser2).length!=0) { // we have a cookie. rewrite authUser with values from the cookie
         	authUser.attrs.local=authUser2.local;
         	authUser.attrs.memberships=authUser2.memberships;
         	if (authUser2.hasOwnProperty("google")) {

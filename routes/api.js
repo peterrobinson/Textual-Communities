@@ -112,7 +112,7 @@ router.post('/getCommunity/:id', function(req, res, next) {
 
 router.post('/getUser/:id', function(req, res, next) {
  var userId = req.params.id;
-// console.log("looking for ..."+userId)
+ console.log("looking for ..."+userId)
  User.findOne({ _id: new ObjectId(userId)}).then (function(user){
   	res.json(user);
   })
