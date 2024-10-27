@@ -5,6 +5,7 @@ var _ = require('lodash')
   , CommunityService = require('../services/community')
   , UIService = require('../services/ui')
   , config = require('../config')
+  , AuthService = require('../services/auth')
 ;
 
 var CommunityComponent = ng.core.Component({
@@ -27,9 +28,9 @@ var CommunityComponent = ng.core.Component({
   ],
 }).Class({
   constructor: [
-    RouteParams, Router, Location, CommunityService, UIService,
+    AuthService, RouteParams, Router, Location, CommunityService, UIService, 
   function(
-    routeParams, router, location, communityService, uiService
+    authService, routeParams, router, location, communityService, uiService
   ) {
     this._routeParams = routeParams;
     this._router = router;
@@ -41,7 +42,6 @@ var CommunityComponent = ng.core.Component({
       , route = this._routeParams.get('route')
     ;
     this.state = uiService.state;
-
   }],
   ngOnInit: function() {
     var self = this
@@ -50,7 +50,7 @@ var CommunityComponent = ng.core.Component({
       , uiService = this._uiService
     ;
     //but we might not be logged in at all
-    if (this.state.authUser._id) {
+    if (this.state.authUser && this.state.authUser._id) {
       for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
         if (this.state.authUser.attrs.memberships[i].community.attrs._id==id)
           this.role=this.state.authUser.attrs.memberships[i].role;
@@ -59,14 +59,13 @@ var CommunityComponent = ng.core.Component({
       this.role="NONE";
     }
     
-    
     //so superuser can see it and edit it too
 
-    if (this.state.authUser.attrs.local && this.state.authUser.attrs.local.email=="peter.robinson@usask.ca") this.role="LEADER";
+    if (this.state.authUser && this.state.authUser.attrs.local && this.state.authUser.attrs.local.email=="peter.robinson@usask.ca") this.role="LEADER";
     this.route = route;
     //now, could be refresh after we deleted a community. in that case...don't try and select it!
     //this one causes a problem when superuser wants to look at any community...
-    if (this.state.authUser.attrs.local && this.state.authUser.attrs.local.email=="peter.robinson@usask.ca") {
+    if (this.state.authUser && this.state.authUser.attrs.local && this.state.authUser.attrs.local.email=="peter.robinson@usask.ca") {
       this._communityService.selectCommunity(id);
       if (!this.state.community.attrs.control) {
         var clone=_.clone(this.state.community.attrs);

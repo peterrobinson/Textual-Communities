@@ -99,19 +99,21 @@ var LoginModalComponent = ng.core.Component({
     this.loginFrameHeight = 233;
     $('#myModal').modal('hide');
     //our url might have a tcuser id added to it. If so, strip it, find it, write a cookie
-    let qString=url.slice(url.indexOf("?")+1);
-    let origStr=url.slice(0, url.indexOf("?"));
-    let urlParams = new URLSearchParams(qString);
-	let myParam = urlParams.get('TCUser');
-	if (myParam) {
-		$.post(config.BACKEND_URL+'getUser/'+myParam, function(user) {
-			//create a cookie here for this user
-			DualFunctionService.setCookie("TCUser", JSON.stringify(user), 30);
-			window.location=origStr;
-		});
-	} else {
-    	if (url) window.location=url;
-    }
+    if (typeof url!="undefined") {
+		let qString=url.slice(url.indexOf("?")+1);
+		let origStr=url.slice(0, url.indexOf("?"));
+		let urlParams = new URLSearchParams(qString);
+		let myParam = urlParams.get('TCUser');
+		if (myParam) {
+			$.post(config.BACKEND_URL+'getUser/'+myParam, function(user) {
+				//create a cookie here for this user
+				DualFunctionService.setCookie("TCUser", JSON.stringify(user), 30);
+				window.location=origStr;
+			});
+		} else { 
+			if (url) window.location=url;
+		} 
+	}
   },
   showLogProf: function showLogProf (){
     this.loginFrame = '/auth/profile';

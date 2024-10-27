@@ -208,18 +208,20 @@ var EditCommunityComponent = ng.core.Component({
     }
     else $.post(config.BACKEND_URL+'isAlreadyCommunity?'+'abbr='+this.edit.abbr+'&name='+this.edit.name, function(res) {
       if (res.success=="1")   {
+       	//start original block 
           communityService.createCommunity(self.edit).subscribe(function(community) {
             self.success='Community "'+self.edit.name+'" saved';
             if ($('#PreviewImg')) $('#PreviewImg').remove();
             self.initEdit(community);
             document.getElementById("ECSuccess").scrollIntoView(true);
-            //change to view this Community
+            //change to view this Community. Doesn't work now
             window.location="/app/community/?id="+community.attrs.data._id+"&route=view"
             //switch to view community
           }, function(err) {
             self.message = err.json().message;
             document.getElementById("ECMessage").scrollIntoView(true);
-          });
+          }); //original block 
+          
       } else {
         self.message = res.message;
         document.getElementById("ECMessage").scrollIntoView(true);

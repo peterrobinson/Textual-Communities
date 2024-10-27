@@ -105,9 +105,10 @@ var AuthService = ng.core.Class({
 			}
 			uiService.setState('authUser', authUser); 
 		}
-        
     	//end rewritten code
-/*        if (authUser) {  //original here
+    	//start original code
+    	/*
+        if (authUser) {  //original here
           var memberships = _.get(authUser, 'attrs.memberships', []);
           if (memberships.length === 1) {
             communityService.selectCommunity(_.get(memberships, '0.community'));
@@ -119,10 +120,11 @@ var AuthService = ng.core.Class({
             })
           );
         }
-        uiService.setState('authUser', authUser); */
-      } else {
-      	return authUser;
-      }
+        uiService.setState('authUser', authUser);  
+        */
+        //end original code
+      } 
+      return authUser;
     });
   },
   refresh: function() {

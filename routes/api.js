@@ -103,16 +103,16 @@ router.get('/communities/:id/memberships/', function(req, res, next) {
 
 router.post('/getCommunity/:id', function(req, res, next) {
  var communityId = req.params.id;
- console.log("looking for ..."+communityId)
+// console.log("looking for ..."+communityId)
  Community.findOne({ _id: new ObjectId(communityId)}).then (function(community){
-    console.log("found it? "+community.name)
+ //   console.log("found it? "+community.name)
   	res.json(community);
   })
 });
 
 router.post('/getUser/:id', function(req, res, next) {
  var userId = req.params.id;
- console.log("looking for ..."+userId)
+// console.log("looking for ..."+userId)
  User.findOne({ _id: new ObjectId(userId)}).then (function(user){
   	res.json(user);
   })

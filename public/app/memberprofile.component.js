@@ -74,6 +74,12 @@ var MemberProfileComponent = ng.core.Component({
     this.joinableCommunities = _.filter(publicCommunities, function(community) {
       return communityService.canJoin(community, authUser);
     });
+    for (let i=0; i<this.joinableCommunities.length; i++) {
+    	if (this.memberships.filter(member=>member.community.attrs.abbr==this.joinableCommunities[i].attrs.abbr).length>0) {
+    		this.joinableCommunities.splice(i);
+    		i--;
+    	}
+    }
   },
   getHistory: function(user, community) {
     this.uiService.manageModal$.emit ({type:'transcriber-history', userid: user._id, username: user.attrs.local.name, community: community});
