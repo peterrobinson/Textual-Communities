@@ -1101,7 +1101,7 @@ async function authenticateUser (email, user, req) {
   var thisUrl=config.host_url;
 //  console.log( TCAddresses.replyto+" "+TCAddresses.from);
 //  console.log(TCMailer);
-//  console.log(thisUrl);
+  console.log("authenticate to " +thisUrl);
   var ejs = require('ejs'), fs = require('fs'), str = fs.readFileSync(__dirname + '/../views/authenticatemail.ejs', 'utf8');
   var hash=randomStringAsBase64Url(20);
 //  console.log("user "+user);
