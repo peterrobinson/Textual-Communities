@@ -314,7 +314,7 @@ var ViewerComponent = ng.core.Component({
                 text: dbRevision,
                 user: meta.user,
                 name: String(page.attrs.name),
-            	parent: self.document.attrs.name,
+            	parent: String(self.document.attrs.name),
                 community: community,
                 committed: meta.committed,
                 status: 'IN_PROGRESS',
@@ -365,8 +365,8 @@ var ViewerComponent = ng.core.Component({
         doc: page.getId(),
         text: newText,
         user: meta.user,
-        name: page.attrs.name,
-        parent: self.document.attrs.name,
+        name: String(page.attrs.name),
+        parent: String(self.document.attrs.name),
         community: community,
         committed: meta.committed,
         status: 'CONTINUEPAGE',
@@ -463,8 +463,8 @@ var ViewerComponent = ng.core.Component({
       doc: page.getId(),
       text: text,
       community: community,
-      name: page.attrs.name,
-      parent: self.document.attrs.name,
+      name: String(page.attrs.name),
+      parent: String(self.document.attrs.name),
       status: status,
     }).subscribe(function(revision) {
       self.revisions.unshift(revision);
@@ -526,8 +526,8 @@ var ViewerComponent = ng.core.Component({
         docService.addRevision({
           doc: page.getId(),
           text: contentText,
-          name: page.attrs.name,
-          parent: self.document.attrs.name,
+          name: String(page.attrs.name),
+          parent: String(self.document.attrs.name),
           community: community,
           status: status,
         }).subscribe(function(revision) {
@@ -569,8 +569,8 @@ var ViewerComponent = ng.core.Component({
         docService.addRevision({
           doc: page.getId(),
           text: contentText,
-          name: page.attrs.name,
-          parent: self.document.attrs.name,
+          name: String(page.attrs.name),
+          parent: String(self.document.attrs.name),
           community: community,
           status: status,
         }).subscribe(function(revision) {

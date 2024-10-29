@@ -74,14 +74,14 @@ var CommunityComponent = ng.core.Component({
         });
       }
     } else {
-      if (this._uiService.state.myCommunities[this._uiService.state.myCommunities.findIndex(x => x._id == id)]
-        || this._uiService.state.publicCommunities[this._uiService.state.publicCommunities.findIndex(x => x._id == id)])
+      if ((this._uiService.state.hasOwnProperty("myCommunities") && this._uiService.state.myCommunities[this._uiService.state.myCommunities.findIndex(x => x._id == id)])
+        || (this._uiService.state.hasOwnProperty("publicCommunities") && this._uiService.state.publicCommunities[this._uiService.state.publicCommunities.findIndex(x => x._id == id)]))
         this._communityService.selectCommunity(id);
         //if we are a viewer.. add access to access field
         if (this.role=="VIEWER") {
           $.post(config.BACKEND_URL+'updateViewerAccess?community='+id+'&user='+this.state.authUser._id, function(res){});
         }
-        if (!this.state.community.attrs.control) { //set up default for legacy communities
+        if (this.state.community && !this.state.community.attrs.control) { //set up default for legacy communities
           var clone=_.clone(this.state.community.attrs);
           clone.control={transcripts:"ALL", tmsg:"", images:"ALL", imsg:"", collations:"ALL", cmsg:""};
           this._communityService.createCommunity(clone).subscribe(function(community) {

@@ -190,7 +190,7 @@ var DocResource = _.inherit(Resource, function(opts) {
           const cb = _.last(arguments);
           if (req.body.revision) {
 //          	console.log("we have a revision "+req.body.revision)
-            Revision.updateOne({_id: new ObjectId(req.body.revision)}, {                                                                                                                                                                                                                                                    
+            Revision.updateOne({_id: req.body.revision}, {                                                                                                                                                                                                                                                    
               committed: new Date(),
               status: 'COMMITTED', community: req.body.doc.community,
             })
