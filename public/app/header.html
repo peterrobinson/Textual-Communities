@@ -21,7 +21,7 @@
             <ul class="dropdown-menu">
               <li *ngFor="#community of state.publicCommunities">
                 <a class="dropdown-item" [routerLink]="['Community',
-                  {id: community.getId(), route: 'view'}]"  style="display:block">
+                  {id: community.attrs._id, route: 'view'}]"  style="display:block">
                   {{community.attrs.name}}
                 </a>
               </li>
@@ -46,7 +46,7 @@
                 <li *ngFor="#membership of state.authUser.attrs.memberships">
                   <a class="dropdown-item" [routerLink]="['Community',
                     {id: membership.community.attrs._id, route: 'view'}]" style="display:block">
-                    {{membership.community.attrs.name}}
+                    {{membership.community.attrs.name}} {{membership.community.attrs._id}}
                   </a>
                  </li>
                </ul>
@@ -141,6 +141,7 @@
     </div -->
   </nav>
 </div>
+<div>What is going on showTop {{state.showTop}} user {{state.authUser}} create or join {{showCreateOrJoin()}} show doc {{showAddDocument()}} community {{getCommunity()}} </div>
 <div *ngIf="state.showTop" style="margin-right:auto; font: 15px/26px 'Open Sans', Helvetica, Helvetica Neue, Arial; margin-left:auto; width:100%; padding-top: 10px;   padding-bottom: 1px; background-color: #00446d">
   <p style="font-size:200%; text-align: center; margin-bottom: 5px; margin-top: 10px; padding-bottom:0px; color: white">Textual Communities</p>
   <p *ngIf="state.authUser" style=" text-align: center; margin-bottom: 5px; padding-bottom:0px;" class="wizardp">

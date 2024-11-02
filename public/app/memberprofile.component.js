@@ -8,6 +8,7 @@ var CommunityService = require('./services/community')
   , Router = ng.router.Router
   , Location = ng.router.Location
   , joinCommunity = require('./joinCommunity')
+  , BrowserFunctionService = require('./services/functions')
   , async = require('async');
 const sortArray = require('sort-array');
 
@@ -40,11 +41,22 @@ var MemberProfileComponent = ng.core.Component({
     this.state = uiService.state;
     this.environment=config.env;
     this.authUser = this.state.authUser;
+    this.isReady=false;
   }],
-  ngOnInit: function() {
+  ngOnInit: async function() {
     var publicCommunities = state.publicCommunities
     , communityService = this.communityService
     , authUser = this.state.authUser, self=this;
+    //do a timeout while we wait for authUser...
+//    console.log('Done');
+	let timer=0;
+	if (!this.state.authUser) {
+		while (!this.state.authUser && timer<5000) {
+			timer+=100
+			await sleep(100);
+		}
+		authUser=this.authUser=this.state.authUser;
+	}
     this.nmemberships=authUser.attrs.memberships.length;
     this.memberships=authUser.attrs.memberships;
     for (var i=0; i<this.memberships.length; i++) {
@@ -72,7 +84,7 @@ var MemberProfileComponent = ng.core.Component({
       }
     })
     this.joinableCommunities = _.filter(publicCommunities, function(community) {
-      return communityService.canJoin(community, authUser);
+      return BrowserFunctionService.canJoin(self.state, community);
     });
     for (let i=0; i<this.joinableCommunities.length; i++) {
     	if (this.memberships.filter(member=>member.community.attrs.abbr==this.joinableCommunities[i].attrs.abbr).length>0) {
@@ -80,6 +92,21 @@ var MemberProfileComponent = ng.core.Component({
     		i--;
     	}
     }
+  },
+  isAuthUser: async function(){
+/*    if (!this.state.authUser) {
+    	let timer=0;
+		while (!this.state.authUser && timer<5000) {
+			timer+=100
+			await sleep(100);
+		}
+		this.authUser=this.state.authUser;
+	} */
+	if (this.state.authUser) {
+		return(true) ;
+	} else {
+		return(false);
+	}
   },
   getHistory: function(user, community) {
     this.uiService.manageModal$.emit ({type:'transcriber-history', userid: user._id, username: user.attrs.local.name, community: community});
@@ -106,13 +133,13 @@ var MemberProfileComponent = ng.core.Component({
   },
   navigate: function(community, route) {
     var instruction = this._router.generate([
-      'Community', {id: community.getId(), route: route}
+      'Community', {id: community.attrs._id, route: route}
     ]);
     window.location=instruction.toRootUrl();
   },
   showPage: function(community, document, page) {
     var instruction = this._router.generate([
-      'Community', {id: community.getId(), route: 'view', document:document, page:page}
+      'Community', {id: community.attrs._id, route: 'view', document:document, page:page}
     ]);
     window.location=instruction.toRootUrl();
   }
@@ -140,5 +167,10 @@ function adjustNumbers(sourceArray) {
     } else sourceArray[i].sortable=sourceArray[i].name;
   }
 }
+
+function sleep(timer) {
+    return new Promise(resolve => setTimeout(resolve, timer));
+}
+
 
 module.exports = MemberProfileComponent;

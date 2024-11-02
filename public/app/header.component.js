@@ -5,6 +5,7 @@ var _ = require('lodash')
   , CommunityService = require('./services/community')
   , config = require('./config')
   , DualFunctionService = require('./services/dualfunctions')
+  , BrowserFunctionService = require('./services/functions')
 ;
 
 var HeaderComponent = ng.core.Component({
@@ -23,9 +24,7 @@ var HeaderComponent = ng.core.Component({
     this._docService = docService;
     this._communityService = communityService;
     this.uiService = uiService;
-
     this.loginFrame = '/auth?url=/index.html';
-
     this.source="default";
     this.show=true;
     this.environment=config.env
@@ -49,6 +48,13 @@ var HeaderComponent = ng.core.Component({
   showCreateOrJoin: function() {
     return this.isAuthenticated() && _.isEmpty(this.getMemberships());
   },
+  getCommunity: function() {
+  	if (!this.state.community) {
+  		return ("none")
+  	} else {
+  		return this.state.community.attrs.abbr;
+  	}
+  },
   createNotChosenF: function() {
     return this.createNotChosen;
   },
@@ -70,15 +76,17 @@ var HeaderComponent = ng.core.Component({
     var community = this.state.community
       , authUser = this.state.authUser
     ;
-    return this._communityService.canAddDocument(community, authUser) &&
+    if (!community || !authUser) return false;
+    let result= BrowserFunctionService.canAddDocument(community, authUser) &&
       _.isEmpty(_.get(community, 'attrs.documents', []));
+    return result;
   },
   showAddPage: function() {
     var community = this.state.community
       , authUser = this.state.authUser
     ;
     var doc = this.state.document;
-    if (!this._communityService.canAddDocument(community, authUser)) return(false);
+    if (!BrowserFunctionService.canAddDocument(community, authUser)) return(false);
     return doc && _.isEmpty(_.get(doc, 'attrs.children'));
   },
   showLoginModal: function() {
@@ -89,7 +97,7 @@ var HeaderComponent = ng.core.Component({
   },
   logout: function() {
     this._authService.logout();
-    DualFunctionService.setCookie("TCUser", JSON.stringify({}), 30);
+    DualFunctionService.setCookie("TCUser", "", 30);
   },
   loadModal: function(which) {
     if (which === 'add-document-page') {

@@ -1,0 +1,10 @@
+var witnessInf={};
+witnessInf['1609']={id:'No information found for 1609. Check the documentation', permission:'No permission found for 1609 Check the documentation'};
+witnessInf['Oxford2005']={id:'No information found for Oxford2005. Check the documentation', permission:'No permission found for Oxford2005 Check the documentation'};
+witnessInf['1640']={id:'No information found for 1640. Check the documentation', permission:'No permission found for 1640 Check the documentation'};
+witnessInf['Lerner1978']={id:'No information found for Lerner1978. Check the documentation', permission:'No permission found for Lerner1978 Check the documentation'};
+witnessInf['1710']={id:'No information found for 1710. Check the documentation', permission:'No permission found for 1710 Check the documentation'};
+witnessInf['1778']={id:'No information found for 1778. Check the documentation', permission:'No permission found for 1778 Check the documentation'};
+witnessInf['1864']={id:'No information found for 1864. Check the documentation', permission:'No permission found for 1864 Check the documentation'};
+witnessInf['2012']={id:'No information found for 2012. Check the documentation', permission:'No permission found for 2012 Check the documentation'};
+witnessInf['Base']={id:'No information found for Base. Check the documentation', permission:'No permission found for Base Check the documentation'};

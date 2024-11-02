@@ -1,0 +1,1 @@
+var menu=[{"title":"About this edition","key":"About"},{"title":"Copyright","key":"Copyright"},{"title":"Title Page","key":"TitlePage"},{"title":"Wife of Bath's Prologue","key":"WBP","menu":[{"title":"117","key":"WBP:line=117"},{"title":"484","key":"WBP:line=484"}]}]

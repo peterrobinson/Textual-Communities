@@ -1,0 +1,67 @@
+  
+    <div id="grp1" style="width: 100%;">
+    	<div id="logos"><a href="http://www.inklesseditions.com">
+    		<img src="../../../common/core/images/inklesslogo.png" height="33px"></a>
+        </div>
+		<div id="title"><a style="color:white" href="../../../index.html" id="shortTitle">Sonnet 129</a></div>
+      	<div id="infoLinks">
+		  <span id="aboutLink"><a style="color:white; font-size:100%;" href="../../../html/editorial/menu/About.html"> About </a></span>
+		</div>
+		<div>
+		  <a href="../../../html/editorial/menu/Copyright.html">
+		  	<img src="../../../common/core/images/copyright.png" height="18px">
+		  </a>
+		</div>
+		
+		
+     </div>
+     <div id="grp2"> <!-- contents of editorial and entity menus. Editorial menu ex bootstrap first -->
+       <div id="editorialMenu">
+         <ul class="navbar-nav">
+           <li class="nav-item dropdown">
+             <a style="color:black; height:23px; background-color: white; font-size:100%;" class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><span style="position:relative;top:-8px">&nbsp;&nbsp;Editorial Material</span></a>
+             <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="../../../html/editorial/menu/About.html">About this edition</a></li>
+              <li><a class="dropdown-item" href="../../../html/editorial/menu/Copyright.html">Copyright</a></li>
+              <li><a class="dropdown-item" href="../../../html/editorial/menu/TitlePage.html">Title Page</a></li>
+              <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html">129 »</a>
+                <ul class="submenu dropdown-menu">
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=1">1</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=2">2</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=3">3</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=4">4</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=5">5</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=6">6</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=7">7</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=8">8</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=9">9</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=10">10</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=11">11</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=12">12</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=13">13</a></li>
+                  <li><a class="dropdown-item" href="../../../html/editorial/commentary/129.html#129:line=14">14</a></li>
+                </ul>
+              </li>
+           </ul>
+         </li>
+       </ul>
+      </div>
+      <div id="entityMenu">
+         <select id="menu0" onchange="populateMSS(0);">
+           <option value="129">129</option>
+         </select>
+         <input id="line" type="text" size="3" style="height:23px" name="line" value="head=Title" onchange="populateMSS(1);">
+         <select id="MS" onchange="changeView()">
+           <option value="1609">1609</option>
+           <option value="Oxford2005">Oxford2005</option>
+           <option value="1640">1640</option>
+           <option value="Lerner1978">Lerner1978</option>
+           <option value="1710">1710</option>
+           <option value="1778">1778</option>
+           <option value="1864">1864</option>
+           <option value="2012">2012</option>
+           <option value="Base">Base</option>
+         </select>
+       </div>
+     </div>
+  

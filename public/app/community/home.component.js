@@ -3,6 +3,7 @@ var RouteParams = ng.router.RouteParams
   , CommunityService = require('../services/community')
   , UIService = require('../services/ui')
   , joinCommunity = require('../joinCommunity')
+  , BrowserFunctionService = require('../services/functions')
 ;
 
 var CommunityHomeComponent = ng.core.Component({
@@ -32,19 +33,22 @@ var CommunityHomeComponent = ng.core.Component({
   },
   canJoin: function() {
     var state = this.state;
-    return this._communityService.canJoin(state.community, state.authUser);
+    return (BrowserFunctionService.canJoin(state, state.community))
   },
   isLeader: function() {
     var state = this.state;
-    return this._communityService.isLeader(state.community, state.authUser);
+    var role=BrowserFunctionService.getRole(state, state.community);
+    if (role=="LEADER") {return true;} else {return false;}
   },
   isMember: function() {
     var state = this.state;
-    return this._communityService.isMember(state.community, state.authUser);
+    var role=BrowserFunctionService.getRole(state, state.community);
+    if (role=="MEMBER") {return true;} else {return false;}
   },
   isCreator: function() {
     var state = this.state;
-    return this._communityService.isCreator(state.community, state.authUser);
+    var role=BrowserFunctionService.getRole(state, state.community);
+    if (role=="CREATOR") {return true;} else {return false;}
   },
 });
 

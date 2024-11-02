@@ -92,6 +92,7 @@ var CommunityComponent = ng.core.Component({
   },
   navigate: function(route) {
     var community = this.state.community;
+    alert("Here!!!")
     var id = community ? community.getId() : this._routeParams.get('id');
     var instruction = this._router.generate([
       'Community', {id: id, route: route}

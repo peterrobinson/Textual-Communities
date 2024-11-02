@@ -1,8 +1,9 @@
 var CommunityService = require('../services/community')
   , UIService = require('../services/ui')
   , DocService = require('../services/doc')
-    , async = require('async')
+  , async = require('async')
   , config = require('../config')
+  , BrowserFunctionService = require('../services/functions')
 ;
 
 var ManageCommunityComponent = ng.core.Component({
@@ -45,7 +46,8 @@ var ManageCommunityComponent = ng.core.Component({
   },
   isLeader: function() {
     var state = this.state;
-    return this._communityService.isLeader(state.community, state.authUser);
+    var role=BrowserFunctionService.getRole(state, state.community);
+    if (role=="LEADER") {return true;} else {return false;}
   },
   setCollEnts: function(){
   	if (this.state.community.attrs.rebuildents) this.state.community.attrs.rebuildents=false
@@ -58,7 +60,8 @@ var ManageCommunityComponent = ng.core.Component({
   },
   isCreator: function(){
     var state = this.state;
-    return this._communityService.isCreator(state.community, state.authUser);
+    var role=BrowserFunctionService.getRole(state, state.community);
+    if (role=="CREATOR") {return true;} else {return false;}
   },
   deleteCommunity: function(){
     this._uiService.manageModal$.emit({
@@ -115,6 +118,11 @@ var ManageCommunityComponent = ng.core.Component({
        type: 'test-collate-conversion',
        community: this.state.community
     });
+  },
+  fixTaskWitnames: function() {
+  	$.post(config.BACKEND_URL+'fixTaskWitnames', function(res) {
+  	
+  	});
   },
   removeModOrigXML: function() {
   	var self=this;

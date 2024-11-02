@@ -41,56 +41,52 @@ var ViewerComponent = ng.core.Component({
     this.isVerticalSplit=true;
     this.isPreviewText=false;
     this.pageStatus={status:"NONE",access:"NONE"};
-    if (this.state.authUser._id) {
-      for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
-        if (this.state.authUser.attrs.memberships[i].community.attrs._id==this.state.community.attrs._id)
-          this.role=this.state.authUser.attrs.memberships[i].role;
-      }
-    } else this.role="NONE";
-    if (this.state.authUser.attrs.local && this.state.authUser.attrs.local.email=="peter.robinson@usask.ca") this.role="LEADER";
-    this._uiService.sendEditorText$.subscribe(function(data) {
-      self.contentText = data.text;
-      if (data.choice=="save") {self.saveSend(data.text)}
-      if (data.choice=="preview") {self.previewSend(data.text)}
-      if (data.choice=="commit") {self.commitSend(data.text)}
-    });
-    this._uiService.sendCommand$.subscribe(function(chosen){
-      //this when we are coming after adding a page
-      if (chosen==="commitTranscript") {
-        self.state.doNotParse=true;
-        self.commit();
-      };
-      if (chosen==="newTranscript") {
-        self.newText();
-      };
-      if (chosen==="ContinuingTranscript") {
-          self.state.isNewContinuingText=true;
-          self.setContentText(self.contentText);
-      }
-      if (chosen==="submitTranscript") {
-          self.doSubmitTranscript();
-      }
-      if (chosen==="previewPrev") {
-        self.isPreviewText=true;
-        self.showPrev(self.page, self.document);
-      }
-      if (chosen==="previewNext") {
-        self.isPreviewText=true;
-        self.showNext(self.page, self.document);
-      }
-    });
-    this._uiService.changeMessage$.subscribe(function(message){
-//      console.log(message);
-      self._uiService.manageModal$.emit({type: 'info-message', source:'commit', header: "Committing page  zzz "+message.page+" in document "+message.docname, message:message.message});
-      if (message.type=="commit") self.commitFailed=true;
-    });
+	if (self.state.authUser && self.state.authUser.attrs.local && self.state.authUser.attrs.local.email=="peter.robinson@usask.ca") self.role="LEADER";
+	self._uiService.sendEditorText$.subscribe(function(data) {
+	  self.contentText = data.text;
+	  if (data.choice=="save") {self.saveSend(data.text)}
+	  if (data.choice=="preview") {self.previewSend(data.text)}
+	  if (data.choice=="commit") {self.commitSend(data.text)}
+	});
+	self._uiService.sendCommand$.subscribe(function(chosen){
+	  //self when we are coming after adding a page
+	  if (chosen==="commitTranscript") {
+		self.state.doNotParse=true;
+		self.commit();
+	  };
+	  if (chosen==="newTranscript") {
+		self.newText();
+	  };
+	  if (chosen==="ContinuingTranscript") {
+		  self.state.isNewContinuingText=true;
+		  self.setContentText(self.contentText);
+	  }
+	  if (chosen==="submitTranscript") {
+		  self.doSubmitTranscript();
+	  }
+	  if (chosen==="previewPrev") {
+		self.isPreviewText=true;
+		self.showPrev(self.page, self.document);
+	  }
+	  if (chosen==="previewNext") {
+		self.isPreviewText=true;
+		self.showNext(self.page, self.document);
+	  }
+		self._uiService.changeMessage$.subscribe(function(message){
+	//      console.log(message);
+		  self._uiService.manageModal$.emit({type: 'info-message', source:'commit', header: "Committing page  zzz "+message.page+" in document "+message.docname, message:message.message});
+		  if (message.type=="commit") self.commitFailed=true;
+		});
+    
+    
+    })
   }],
   ngOnInit: function() {
     var el = this._elementRef.nativeElement
       , $el = $(el)
       , self=this
     ;
-    if (this.state.authUser._id) {
+    if (this.state.authUser && this.state.authUser._id) {
       for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
         if (this.state.authUser.attrs.memberships[i].community.attrs._id==this.state.community.attrs._id)
           this.role=this.state.authUser.attrs.memberships[i].role;
@@ -775,7 +771,7 @@ function processChanges(docService, page,self) {
 }
 
 function isPageAssigned(page, user, role) {
-  if (!page.attrs.tasks || !page.attrs.tasks.length) return({status: "NONE", access: "NONE"});
+  if (!user || !page.attrs.tasks || !page.attrs.tasks.length) return({status: "NONE", access: "NONE"});
   for (var i=0; i<page.attrs.tasks.length; i++) {
     if (page.attrs.tasks[i].userId==user.attrs._id) {  //that was = not ==!!!! dumb
       //ok, task is addressed at this member. But depending on where it is in the cycle -- may not be assigned
@@ -843,6 +839,25 @@ function sendPreviewText (contentText, context, page) {
   });
 }
 
+function sleep(timer) {
+    return new Promise(resolve => setTimeout(resolve, timer));
+}
 
-
+async function getAuthUser(context){	
+ if (!context.state.authUser) {
+	let timer=0;
+	while (!context.state.authUser && timer<1000) {
+		timer+=100
+		await sleep(100);
+	}
+	if (timer==1000) {
+		context.state.authUser=null;
+	} else {
+		context.authUser=context.state.authUser;
+	}
+	return(context.authUser);
+  } else {
+  	return(context.state.authUser)
+  }
+}
 module.exports = ViewerComponent;

@@ -1,0 +1,20 @@
+
+  { "params" : 
+    [ 
+      { "searchFile" : "index.html",
+        "recurse" : "true",
+        "linkToFragmentId" : "true",
+        "scrollToTextFragment" : "false",
+        "phrasalSearch" : "true",
+        "wildcardSearch" : "true",
+        "createContexts" : "true",
+        "resultsPerPage" : 5,
+        "minWordLength" : 2,
+        "maxKwicsToHarvest" : 5,
+        "maxKwicsToShow" : 5,
+        "totalKwicLength" : 15,
+        "kwicTruncateString" : "...",
+        "verbose" : "false",
+        "stopwordsFile" : "test_stopwords.txt",
+        "dictionaryFile" : "english_words.txt",
+        "indentJSON" : "true" } ] }

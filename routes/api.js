@@ -103,9 +103,9 @@ router.get('/communities/:id/memberships/', function(req, res, next) {
 
 router.post('/getCommunity/:id', function(req, res, next) {
  var communityId = req.params.id;
-// console.log("looking for ..."+communityId)
+ console.log("looking for ..."+communityId)
  Community.findOne({ _id: new ObjectId(communityId)}).then (function(community){
- //   console.log("found it? "+community.name)
+    console.log("found it? "+community.name)
   	res.json(community);
   })
 });
@@ -693,7 +693,7 @@ function validateAction(action) {
 }
 
 router.get('/actions/:id', function(req, res, next) {
-//  console.log("confirming membership");
+  console.log("confirming membership");
   Action.findOne({_id: new ObjectId(req.params.id)}).then (function(action) {
     var payload = action.payload
       , role = payload.role
@@ -710,6 +710,7 @@ router.get('/actions/:id', function(req, res, next) {
         var user = results[0]
           , community = results[1]
         ;
+        console.log("user "+user._id+" community "+community._id);
         community.members.push(user._id);
         user.memberships.push({
           community: community._id,
@@ -737,7 +738,8 @@ router.get('/actions/:id', function(req, res, next) {
           if (err) {
             next(err);
           } else {
-            res.redirect('/app');
+          	//write the cookie for the user
+             res.redirect('/app');
           }
         });
       });
@@ -894,7 +896,19 @@ router.post('/getDocEntities', function(req, res, next) {
     }
   });
 });
-
+router.post('/fixTaskWitnames', function(req, res, next) {
+	Doc.find({label:"pb", "tasks.0": { "$exists": true } }).then (function(docs){
+		let pages=[];
+		let index=0;
+		async.map(docs, function(doc, callback){
+			index++;
+			if (index%1000 == 0) {
+				console.log("page "+index+" doc "+doc.tasks);
+			}
+			callback();
+		})
+	}	)
+});
 
 //get all pages with tasks for this id, return info so we can create links to each page
 router.post('/getMemberTasks', function(req, res, next) {
@@ -904,6 +918,9 @@ router.post('/getMemberTasks', function(req, res, next) {
     var assigned=[], inprogress=[], submitted=[], approved=[], committed=[];
     if (docs.length) {
       docs.forEach(function(doc){
+ //     	console.log("doc in tasks "+doc);
+      	//problem ... some times we do NOT have the witness name in doc.tasks[], for complex  I don't undertand
+    	
         for (var i=0; i<doc.tasks.length; i++) {
           if (doc.tasks[i].memberId==req.query.id) {
             if (doc.tasks[i].status=="ASSIGNED") assigned.push({pageId: doc._id, name: doc.name, docId:doc.ancestors[0], docName:doc.tasks[i].witname});

@@ -105,11 +105,13 @@ var LoginModalComponent = ng.core.Component({
 		let urlParams = new URLSearchParams(qString);
 		let myParam = urlParams.get('TCUser');
 		if (myParam) {
-			$.post(config.BACKEND_URL+'getUser/'+myParam, function(user) {
+		/*	$.post(config.BACKEND_URL+'getUser/'+myParam, function(user) {
 				//create a cookie here for this user
 				DualFunctionService.setCookie("TCUser", JSON.stringify(user), 30);
 				window.location=origStr;
-			});
+			}); */
+			DualFunctionService.setCookie("TCUser", myParam, 30);
+			window.location=origStr;
 		} else { 
 			if (url) window.location=url;
 		} 

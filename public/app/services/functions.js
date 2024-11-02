@@ -95,6 +95,44 @@ var BrowserFunctionService = {
       return true;
     }
   },
+   getRole:function(state, community) {
+    if (!state.authUser || Object.keys(state.authUser.attrs).length==0) {
+    	return "none"
+    } else {
+    	var memberships = _.get(state.authUser, 'attrs.memberships');
+		if (memberships.filter(member=>member.community.attrs._id==community.attrs._id).length==0) { 
+			return "none";
+	   } else {
+			var role= memberships.filter(member=>member.community.attrs._id==community.attrs._id)[0].role;
+			return role;
+	   }
+    }
+  },
+  canAddDocument:function(community, user) {
+  	if (!community || !state) return false;
+  	if (Object.keys(user.attrs).length==0) {
+    	return false;
+    } else {
+    	var memberships = _.get(user, 'attrs.memberships');
+		if (memberships.filter(member=>member.community.attrs._id==community.attrs._id).length==0) { 
+			return false;
+	   } else {
+			var role= memberships.filter(member=>member.community.attrs._id==community.attrs._id)[0].role;
+			if (role=="LEADER" || role=="CREATOR") {
+				return true;
+			} else {
+				return false;
+			}
+	   }
+    }
+  },
+  canJoin:function(state, community) {
+  	var role=this.getRole(state, community);
+  	if (role=="none" && _.get(state.community, 'attrs.accept', true)) {
+  		return(true); 
+  	} else {
+  		return(false);
+  	}
+  }
 }
-
 module.exports = BrowserFunctionService;

@@ -1,0 +1,1 @@
+var menu=[{"title":"About this edition","key":"About"},{"title":"Copyright","key":"Copyright"},{"title":"Title Page","key":"TitlePage"},{"title":"Squire's Tale","key":"SQ","menu":[{"title":"491","key":"SQ:line=491"}]}]

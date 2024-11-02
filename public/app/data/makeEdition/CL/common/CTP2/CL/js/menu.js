@@ -1,0 +1,1 @@
+var menu=[{"title":"About this edition","key":"About"},{"title":"Copyright","key":"Copyright"},{"title":"Title Page","key":"TitlePage"},{"title":"Clerk's Tale","key":"CL","menu":[{"title":"1065","key":"CL:line=1065"},{"title":"1067","key":"CL:line=1067"}]}]

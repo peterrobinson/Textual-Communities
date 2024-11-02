@@ -49,7 +49,7 @@ var CommunityService = ng.core.Injectable().Class({
     });
   },
   refreshCommunity: function(community) {
-    return this.fetch(community.getId(), {
+    return this.fetch(community.attrs._id, {
 //      populate: JSON.stringify('documents')   //ok, this is slow with a community with lots of documents
     });
   },
@@ -95,19 +95,37 @@ var CommunityService = ng.core.Injectable().Class({
     });
   },
   _isRole: function(community, user, fn) {
-    var memberships = _.get(user, 'attrs.memberships');
-    return _.find(memberships, function (obj){
+    if (!community) {
+    	fn({role:"none"});
+    }  else {
+		var memberships = _.get(user, 'attrs.memberships');
+		if (memberships.filter(member=>member.community.attrs._id==community.attrs._id).length==0) { 
+			fn({role:"none"})
+	   } else {
+			var role= memberships.filter(member=>member.community.attrs._id==community.attrs._id)[0].role;
+			fn({role:role})
+	   }
+	}
+/*    return _.find(memberships, function (obj){
       return obj.community === community && fn(obj);
-    });
+    }); */
   },
   isCreator: function(community, user) {
-    return this._isRole(community, user, function(obj) {
-      return obj.role === 'CREATOR';
+    this._isRole(community, user, function(obj) {
+      if (obj.role === 'CREATOR') {
+      	return true
+      } else {
+      	return false
+      }
     });
   },
   isLeader: function(community, user) {
-    return this._isRole(community, user, function(obj) {
-      return obj.role === 'LEADER';
+    this._isRole(community, user, function(obj) {
+      if (obj.role === 'LEADER') {
+      	return true
+      } else {
+      	return false
+      }
     });
   },
   isMember: function(community, user) {

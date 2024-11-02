@@ -1,7 +1,7 @@
-<div style="margin-right:auto; margin-left:auto; width:900px">
+<div *ngIf="isAuthUser()" style="margin-right:auto; margin-left:auto; width:900px">
     <p *ngIf="environment!='production'" style="margin-top:10px; text-align:center"><button type="button" class="btn btn-primary btn-sm" [routerLink]="['CreateCommunity']">Create Community</button></p>
 
-<h4>Member Profile for {{authUser.attrs.local.name}}</h4>
+<h4 >Member Profile for {{authUser.attrs.local.name}}</h4>
   <p style="margin:3px">This account is associated with the email address {{authUser.attrs.local.email}}</p>
   <p *ngIf="authUser.attrs.facebook || authUser.attrs.google || authUser.attrs.twitter " style="margin:3px">You can log in by <span *ngIf="authUser.attrs.facebook" class="fa fa-facebook"><img height="32" src="../images/facebook.png"> Facebook</span> <span *ngIf="authUser.attrs.google"><img height="32" src="../images/google.png"> Google</span> <span *ngIf="authUser.attrs.twitter"><img height="32" src="../images/twitter.png"> Twitter</span></p>
   <div *ngIf="nmemberships">
@@ -65,8 +65,6 @@
               (click)="navigate(membership.community, 'edit')">Edit</button>&nbsp;
               <button type="button" class="btn btn-primary btn-sm" (click)="navigate(membership.community,'view')">View</button>&nbsp;
               <button *ngIf="membership.role=='CREATOR' || membership.role=='LEADER'" type="button" class="btn btn-primary btn-sm" (click)="invite(membership.community)">Invite</button></td>
-
-        <!-- td><a href="#/community/{{membership.community._id}}/view">View</a></td><td><a href="#/community/{{membership.community._id}}/home">Home</a></td -->
         </tr>
       </tbody>
     </table>

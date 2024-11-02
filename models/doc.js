@@ -36,7 +36,7 @@ var DocSchema = extendNodeSchema('Doc', {
   docinf: String,
   community: String,
   entities: [],
-  tasks:[{name:String, status:{ type: String, index: true }, memberId:String, witname: String, date: {type: Date}, userId: { type: String, index: true }}],
+  tasks:[{name:String, status:{ type: String, index: true }, memberId:String, witname: [], date: {type: Date}, userId: { type: String, index: true }}],
   image: String,
   meta: Schema.Types.Mixed,
   teiHeader: String,

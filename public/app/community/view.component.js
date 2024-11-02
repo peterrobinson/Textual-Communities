@@ -46,7 +46,6 @@ var ViewComponent = ng.core.Component({
     });
     this.collationEditor=false;
     this.callCollationEditor='';
-    var bill=2;
 	$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
    	.done ( function(res) {
 //   	  console.log("succeed");
@@ -105,7 +104,7 @@ var ViewComponent = ng.core.Component({
             if (err) alert(err.json().message);
         });
      }
-    if (this.state.authUser._id) {
+    if (this.state.authUser && this.state.authUser._id) {
       for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
         if (this.state.authUser.attrs.memberships[i].community.attrs._id==this.state.community.attrs._id)
           this.role=this.state.authUser.attrs.memberships[i].role;
@@ -113,7 +112,7 @@ var ViewComponent = ng.core.Component({
           this.GAid=this.state.authUser._id;
       }
     } else {this.state.role="NONE"; this.role="NONE"; this.GAid="VISITOR"}
-    if (this.state.authUser.attrs.local && this.state.authUser.attrs.local.email=="peter.robinson@usask.ca") {this.state.role="LEADER"; this.role="LEADER";}
+    if (this.state.authUser && this.state.authUser.attrs.local && this.state.authUser.attrs.local.email=="peter.robinson@usask.ca") {this.state.role="LEADER"; this.role="LEADER";}
 //    $('#TCsidebar').height(tcheight);
   },
   ngAfterViewInit: function() {

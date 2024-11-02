@@ -5,6 +5,7 @@ var RouteParams = ng.router.RouteParams
   , CommunityComponent = require('./community/community.component')
   , MemberProfileComponent = require('./memberprofile.component')
   , CommunityService = require('./services/community')
+  , UIService = require('./services/ui')
 ;
 
 var AppComponent = ng.core.Component({
@@ -18,11 +19,20 @@ var AppComponent = ng.core.Component({
   ],
 }).Class({
   constructor: [
-    AuthService, CommunityService,
-    function(authService, communityService) {
+    AuthService, CommunityService, UIService,
+    function(authService, communityService, uiService) {
     authService.refreshAuthUser().subscribe();
     communityService.refreshPublicCommunities().subscribe();
+    this.state = uiService.state;
+    //let's load up the user here before we go any further
   }],
+  isAuthUser: function() {
+  	if (!this.state.authUser) {
+  		return false
+  	} else {
+  		return true;
+  	}
+  }
 });
 ng.router.RouteConfig([{
   path: '/app/', name: 'Default', component: HomeComponent, useAsDefault: true,

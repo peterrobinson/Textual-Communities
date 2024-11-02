@@ -1,0 +1,302 @@
+html { 
+  height: 100%; 
+}
+body {
+  min-height: 100%;
+  height: 100%;
+  margin: 0 auto;
+  font-family: junicoderegular;
+  font-size: 1em;
+  background-color:black;
+  overflow: hidden;
+}
+
+#whole {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    height: 100%;
+    width:100%;
+    align-items: start;
+    justify-content: center;
+    gap:5px;
+    overflow: hidden;
+}
+#page-head {
+    display: flex;
+    flex-direction:row;
+    width:97%;
+    min-height: 45px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-weight: lighter;
+    font-family: Helvetica;
+    justify-content: space-between;
+    background-color: black;
+    margin-top: 1px;
+    margin-bottom: 2px;
+}
+
+.index #page-head {
+	color: #c58f45;
+    border-bottom: solid;
+    border-bottom-width: thin;
+    padding-bottom: 3px;
+}
+
+.index #Search {
+	position: relative;
+    top: 10px;
+}
+
+#longTitle {font-size: x-large; margin-bottom: 0px; margin-top: 0px;}
+#page-head a {text-decoration:none}
+#grp1 {display:flex; justify-content: space-between;   padding-left: 10px; align-items: center; flex-grow:1; white-space:no-wrap; padding-right: 5px;}
+#grp2 {display:flex; justify-content: space-between;   align-items: center;  flex-grow:1; white-space:no-wrap; margin-left:5px;}
+#Search {display:flex; margin-right:10px; justify-content: space-evenly; align-items: center; flex-shrink:0};
+#title {font-size: 140%; font-weight: 600; color: white }
+
+#rTable {
+  display: block;
+  overflow: hidden;
+  height: 50%;
+  width: 99%;
+  margin-bottom: 5px;
+}
+
+
+#panel-left {
+    width: 49%;
+     min-width: 100px;
+    min-height: 100px;
+    background-color:black;
+}
+
+#panel-right {
+     height: 100%;
+    width: 49%;
+    background: #fff7e8;
+    min-width: 100px;  //mobile phone width
+    min-height: 100px;
+    overflow: hidden;
+//    margin:auto;
+}
+
+/* #footer {
+	height: 50px;
+	background-color: #fff7e8;
+} */
+#searchVBase {background-color: #fff7e8; display:none}
+#searchContainer {background-color: #fff7e8; ; display:none; height: 91%; overflow: auto; width: 98%;}
+#transcriptFrame {width:100%; overflow:auto; height: 100%}
+#compareFrame {min-width:250px; overflow:hidden; width:98%; display:flex; background-color: #fff7e8; height:99%; flex-direction: column}
+#cfLinks {display:flex; justify-content: space-around; margin: 8px; align-items: baseline}
+.cfMoveLine {font-weight: 800; font-size:large;}
+#cfHeader {display:flex;}
+#cfWitsChoice {flex-grow:1; margin:10px}
+#cfcontrols {width: 100px; margin: 10px; display: flex; flex-direction: column;justify-content: center; align-items: center;}
+#cfWitsFrame {display: flex; margin-left:3px}
+#cfWitsShow {display: flex; margin-left:3px; height: 100%; overflow-x: auto;overflow-y:hidden}
+#selectView {white-space: nowrap; overflow:hidden}
+.cfSpan {white-space: nowrap; overflow:hidden}
+.cfText {border: black; border-style: solid; margin:3px; flex-shrink: 0; padding: 0px 10px 0px 10px; resize: both; overflow:hidden; width:300px; height: 600px; background-color: white; display:flex; flex-direction: column}
+.cfImage {border: black; border-style: solid; margin:3px;flex-shrink: 0; padding: 0px 10px 0px 10px; resize: both; overflow:auto; width:300px; height: 300px; background-color: white }
+.cfTextHeader {display:flex; justify-content: space-between; margin: 5px; padding-bottom: 5px;}
+.cfImageWords {height: 95%}
+.cfTextWords {overflow:auto; height:100%; padding-top: 5px;}
+.cfImageHeader {display:flex; justify-content: space-between; margin: 5px}
+.cfMatchLine {box-shadow: inset -1px 0 0 grey, inset 0 -1px 0 grey, inset 1px 0 0 grey, inset 0 1px 0 grey;}
+.cfStackLines {width: 400px;  height: 300px; display: flex; flex-shrink: 0; flex-direction: column; resize: both; background-color:white; margin-left:10px; margin-top: 3px; border: black; border-style: solid; overflow:auto}
+.cfStackHeader {display: flex; width: 100%; align-items: center; justify-content: space-evenly; border-bottom: black; border-bottom-style: solid;}
+.cfStackLine {display: flex}
+.clSLinf {flex-basis: 65px; margin-left: 10px; margin-right: 10px; display:flex; justify-content: space-between}
+.cfsCloseLine {height: 14px; position: relative; top: 1px; left: -4px;}
+#cfStackwits {display: none; height:100%; overflow-x: scroll; overflow-y:hidden}
+#selectView {color:red; font-weight:bold}
+.cfText ex {display: none}
+.cfText note {display: none}
+.lineCfTextOut {display: inline-flex; width: 100%; justify-content: center;}
+#cfSynchScroll {width: 100px}
+#popUps {display:none}
+#collationFrame {display:none; overflow:auto}
+#splash {margin:auto; height:100%; display:flex; text-align: center; color: #c58f45}
+a.splash {
+    color: #c49d61;
+    text-decoration: none;
+}
+
+#p-r-top {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 400px;
+}
+#c-r-top {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 520px;
+}
+
+.pageLinks {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 8px;
+  margin-top: 3px;
+}
+.pageInf {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  margin: 8px;
+}
+#transcript {
+  display: flex;
+  flex-direction: column;
+  align-items:center;
+  margin-left: 20px;
+  margin-right: 10px;
+  overflow:auto;
+  width: 100%;
+  height: 100%;
+} 
+#collation {overflow:auto; margin-left: 20px; margin-right: 15px; }
+#transcript-tm {
+  margin-bottom: 10px;
+  width:100%;
+  display: flex;
+  justify-content:space-between;
+}
+#transcript-bm {
+  font-size: 80%;
+  width: 90%;
+  margin-top: 10px;
+  display:flex;
+  justify-content:space-between;
+}
+#transcript-body {
+  display:flex;
+  justify-content:flex-start;
+  flex-direction: row;
+ }
+
+#transcript-text {
+//  display:flex;
+//  justify-content:center;
+//  flex-direction: row;
+	margin-bottom: 30px;
+ }
+#edNotes {width:80%; margin:auto;}
+#br {display: flex; justify-content: flex-end;}
+.col {
+  display: flex;
+  align-content: flex-start;
+  flex-wrap: wrap;
+}
+
+
+#select {width:235px; white-space: nowrap}
+#bm {display: block; text-align: center}
+#popApp {display:flex; align-items: center; justify-content: space-between; width: 100%}
+#popAppFrame {display: flex; flex-direction: column; align-items: center}
+#rdgApp {display:flex; align-items: center; line-height: 110%; }
+#popAppTitle {display:flex; justify-content: space-between; width: 50%}
+
+
+
+#splitter {     
+   flex: none;
+   width: 12px;
+   height: 100%;
+   cursor: col-resize;
+    background-image: url("http://www.inklesseditions.com/TCR/common/images/splithandvert.png");
+    background-color: black;
+    background-size: 15px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+#ssForm {margin-bottom: 0px};
+.gutter:hover {
+	background-color: darkgrey;
+}
+.gutter {
+    background-color: black;
+    background-repeat: no-repeat;
+    background-position: 50%;
+    background-size: 40px;
+    cursor: row-resize;
+   background-image: url("http://www.inklesseditions.com/TCR/common/images/splithandhoriz.png");
+}
+
+.gutter.gutter-horizontal {
+	   background-image: url("http://www.inklesseditions.com/TCR/common/images/splithandvert.png");
+	   background-size: 15px;
+       cursor: col-resize;
+}
+
+div#tipDiv {padding:5px; color:#000;  line-height: 1.5; background-color:#fff7e8; border: thin solid #844D18; font-family: junicoderegular; margin-left: 8px }
+.tooltip2 {width:260px}
+.tooltip {width:430px; max-height:600px; overflow:scroll; }
+
+unclear {color:  darkgrey};
+
+.msInf {background-color: #CBBAA1;}
+
+.commRef {color:red}
+
+@media all and (max-width : 829px) {
+	#grp1 {max-width: 829px; }
+	#grp2 {max-width: 829px; padding-left: 5px; margin-left: 0px}
+}
+
+@media all and (max-width : 839px) {
+	#grp1 {max-width: 839px; }
+	#grp2 {max-width: 839px; padding-left: 5px; margin-left: 10px}
+}
+@media all and (max-width : 849px) {
+	#grp1 {max-width: 849px; }
+	#grp2 {max-width: 849px; padding-left: 5px; margin-left: 20px}
+}
+
+@media all and (max-width : 880px) {
+	#grp1 {max-width: 880px; }
+}
+@media all and (max-width : 859px) {
+	#grp2 {max-width: 859px; padding-left: 5px; margin-left: 0px}
+}
+
+#ssDoSearch {
+  background-size: 15px;
+  height: 28px;
+ width: 23px;
+ font-size: 0px;
+ background-position: 50%;
+ background-repeat: no-repeat;
+ position: relative;
+ top: -3px;
+}
+
+#ssQuery {
+	width: 100px;
+}
+
+#ssResults {display:none}
+#ssPoweredBy {display:none}
+#ssSearching {display:none}
+
+#editorial {background-color: #fff7e8; ; display:none; overflow: auto; width: 98%;}
+#editorial p {margin-left: 15px; margin-right: 15px;}
+#editorial p.edRespons {text-align: right; font-style: italic; margin-top:-10px;}
+#editorial h3 {margin-left: 15px; margin-right: 15px;}
+#editorial a {text-decoration:none;}
+#editorial div.edCommHead {display: flex; justify-content: space-between; align-items: center;}
+
+#editorial h2{text-align: center; margin-top: 15px}
+
+#splashLogos{margin-top: 25px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;}
