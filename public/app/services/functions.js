@@ -128,7 +128,7 @@ var BrowserFunctionService = {
   },
   canJoin:function(state, community) {
   	var role=this.getRole(state, community);
-  	if (role=="none" && _.get(state.community, 'attrs.accept', true)) {
+  	if (role=="none" && _.get(community, 'attrs.accept', true)) {
   		return(true); 
   	} else {
   		return(false);

@@ -215,6 +215,7 @@ var EditCommunityComponent = ng.core.Component({
             self.initEdit(community);
             document.getElementById("ECSuccess").scrollIntoView(true);
             //change to view this Community. Doesn't work now
+            //write new community to cookie
             window.location="/app/community/?id="+community.attrs.data._id+"&route=view"
             //switch to view community
           }, function(err) {
