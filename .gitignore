@@ -47,7 +47,7 @@ public/app/config/*.js
 upload
 
 #ignore MakeEdition files
-makeEdition/BOD
+public/app/data/makeEdition/makeEdition/BOD
 makeEdition/CL
 commonOrig
 CTP2Orig
