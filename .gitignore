@@ -47,19 +47,17 @@ public/app/config/*.js
 upload
 
 #ignore MakeEdition files
-public/app/data/makeEdition/makeEdition/BOD
-makeEdition/CL
+public/app/data/makeEdition/BOD
+public/app/data/makeEdition/CL
 commonOrig
 CTP2Orig
-makeEdition/driver
-makeEdition/KT/*
-makeEdition/RE
-makeEdition/SQ/*
-makeEdition/TC22/*
+public/app/data/makeEdition/driver
+public/app/data/makeEdition/KT
+public/app/data/makeEdition/RE
+public/app/data/makeEdition/SQ
+public/app/data/makeEdition/TC22
 public/app/data/makeEdition/teseida
-makeEdition/WBP/*
-makeEdition/BOD/*
-makeEdition/SQ/*
+public/app/data/makeEdition/WBP
 makeEdition/common/CTP2/*
 GPApp
 teststuff
