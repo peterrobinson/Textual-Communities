@@ -61,6 +61,9 @@ public/app/data/makeEdition/WBP
 public/app/data/makeEdition/common/CTP2
 tc.bbprojectd
 public/app/data/makeEdition/driverOrig
+public/app/data/makeEdition/makeEditionTeseida.json
+public/app/data/makeEdition/makeEditionTeseidaStandAlone.json
+public/app/data/makeEdition/common/teseida/
 GPApp
 teststuff
 
