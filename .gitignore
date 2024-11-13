@@ -51,13 +51,17 @@ MakeEdition/BOD
 MakeEdition/CL
 commonOrig
 CTP2Orig
-MakeEdition/driver
-MakeEdition/KT
-MakeEdition/RE
-MakeEdition/SQ
-MakeEdition/TC22
-MakeEdition/teseida
-MakeEdition/WBP
+makeEdition/driver
+makeEdition/KT
+makeEdition/RE
+makeEdition/SQ
+makeEdition/TC22
+makeEdition/teseida
+makeEdition/WBP
+makeEdition/BOD
+makeEdition/SQ
+makeEdition/common/CTP2
+GPApp
 teststuff
 
 #ignore https cert folder
