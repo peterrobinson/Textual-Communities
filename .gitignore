@@ -47,8 +47,8 @@ public/app/config/*.js
 upload
 
 #ignore MakeEdition files
-MakeEdition/BOD
-MakeEdition/CL
+makeEdition/BOD
+makeEdition/CL
 commonOrig
 CTP2Orig
 makeEdition/driver
@@ -56,7 +56,7 @@ makeEdition/KT/*
 makeEdition/RE
 makeEdition/SQ/*
 makeEdition/TC22/*
-makeEdition/teseida/*
+public/app/data/makeEdition/teseida
 makeEdition/WBP/*
 makeEdition/BOD/*
 makeEdition/SQ/*
