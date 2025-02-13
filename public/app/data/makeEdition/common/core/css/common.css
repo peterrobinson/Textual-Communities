@@ -282,6 +282,7 @@ unclear {color:  darkgrey};
 	width: 100px;
 }
 
+#titlePageHead {color: white}
 #ssResults {display:none}
 #ssPoweredBy {display:none}
 #ssSearching {display:none}

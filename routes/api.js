@@ -103,9 +103,9 @@ router.get('/communities/:id/memberships/', function(req, res, next) {
 
 router.post('/getCommunity/:id', function(req, res, next) {
  var communityId = req.params.id;
- console.log("looking for ..."+communityId)
+// console.log("looking for ..."+communityId)
  Community.findOne({ _id: new ObjectId(communityId)}).then (function(community){
-    console.log("found it? "+community.name)
+ //   console.log("found it? "+community.name)
   	res.json(community);
   })
 });
@@ -411,14 +411,15 @@ router.post('/community/:abbr/vbases/', function(req, res, next) {
 //  console.log("getting vBases");
   var community = req.params.abbr;
    VBase.find({community: community}).then (function(vbases) {
+     console.log("so many vbases "+vbases.length)
      if (vbases.length) {
 			 var VBases=[];
 			 vbases.forEach(function(vbase, index){
 			 	var nVars=vbase.varsites.length;
 			 	var nRdgs=0;
-			 	for (var j=0; j<vbase.varsites.length; j++) {nRdgs+=vbase.varsites[j].variants.length};
-		 		if (index==0) VBases.push({name:vbase.name, community: community, witlist: vbase.witlist,  origname: vbase.name, nRdgs: nRdgs, nVars:nVars, varsites: vbase.varsites, saved: true, indb: true, selected: true, conditionsets: vbase.conditionsets});
-		 		else VBases.push({name:vbase.name, nRdgs: nRdgs, nVars:nVars, origname: vbase.name, saved: true, indb: true, selected: false, varsites:[]});
+			 	for (var j=0; j<vbase.varsites.length; j++) {nRdgs+=vbase.varsites[j].variants.length};		 		
+			 	if (index==0) VBases.push({name:vbase.name, community: community, witlist: vbase.witlist,  origname: vbase.name, nRdgs: nRdgs, nVars:nVars, varsites: vbase.varsites, saved: true, indb: true, selected: true, conditionsets: vbase.conditionsets});
+		 		else VBases.push({name:vbase.name, nRdgs: nRdgs, nVars:nVars, origname: vbase.name, saved: true, indb: true, selected: false, varsites:[], conditionsets:[] });
 			 });
 			res.json({result:"success", nvars:1, vBases: VBases});
 		 } else {
@@ -431,8 +432,8 @@ router.post('/community/:abbr/vbases/', function(req, res, next) {
 
 router.post('/saveVBName', function (req, res, next){ //new search saved
 	var community=req.query.community, vBase=req.query.vBase;
-	VBase.collection.update({community: community, name:vBase}, 
-		{$push: {conditionsets: req.body}}, function (err) {
+	VBase.updateOne({community: community, name:vBase}, 
+		{$push: {conditionsets: req.body}}).then (function (err) {
 		if (!err) res.json({success: 1});
 		else res.json({success:0, error:err});
 	});
@@ -442,10 +443,10 @@ router.post('/insertVBConditions', function (req, res, next){ //new search saved
 //wierd behaviour. Have to remove the condition and then add it back. Can't just replace the conditions
 	var community=req.query.community, vBase=req.query.vBase;
 	var offset=req.body.offset, name=req.body.name, conditions=req.body.conditions;
-	VBase.collection.update({community: community, name:vBase}, 
-		{$push: {conditionsets: {$each: [{"name":name, "conditions": conditions}], $position:offset}}}, function (err, result) {
-		if (!err) res.json({success: 1});
-		else res.json({success:0, error:err});
+	VBase.updateOne({community: community, name:vBase}, 
+		{$push: {conditionsets: {$each: [{"name":name, "conditions": conditions}], $position:offset}}}).then (function (result) {
+		if (result.modifiedCount==1) res.json({success: 1});
+		else res.json({success:0, error:result});
 	});
 });
 
@@ -453,36 +454,33 @@ router.post('/insertVBConditions', function (req, res, next){ //new search saved
 router.post('/deleteVBCondition', function (req, res, next){ //new search saved
 //wierd behaviour. Have to remove the condition and then add it back. Can't just replace the conditions
 	var community=req.query.community, vBase=req.query.vBase, condition=req.query.condition;
-	VBase.collection.update({community: community, name:vBase}, 
-		{$pull: {conditionsets:{name: condition}}}, {multi: true}, function (err, result) {
-		if (!err) res.json({success: 1});
-		else res.json({success:0, error:err});
+	VBase.updateOne({community: community, name:vBase}, 
+		{$pull: {conditionsets:{name: condition}}}, {multi: true}).then (function (result) {
+		if (result.modifiedCount==1) res.json({success: 1});
+		else res.json({success:0, error:result});
 	});
 });
 
 router.post('/isAlreadyVBase',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VBase.findOne({community: community, name: name }, function(err, vbase) {
-	 	if (err) res.json({success: 0});
-	 	else {
+	VBase.findOne({community: community, name: name }).then (function(vbase) {
 	 		if (vbase) {res.json({success: 1, isDuplicate: 1})}
 		 	else {res.json({success: 1, isDuplicate: 0})}
-	 	}
 	 });
 });
 
 router.post('/getVBase',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VBase.findOne({community: community, name: name }, function(err, vbase) {
-		if (err || !vbase) res.json({success: 0});
+	VBase.findOne({community: community, name: name }).then (function(vbase) {
+		if (!vbase) res.json({success: 0});
 		else res.json({success:1, varsites: vbase.varsites, conditionsets: vbase.conditionsets, witlist: vbase.witlist});
 	});	
 });
 
 router.post('/getVBaseConditions',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VBase.findOne({community: community, name: name }, function(err, vbase) {
-		if (err || !vbase) res.json({success: 0, error: err});
+	VBase.findOne({community: community, name: name }).then (function(vbase) {
+		if (!vbase) res.json({success: 0, error: "can't find VBase"});
 		else res.json({success:1, conditionsets: vbase.conditionsets});
 	});	
 });
@@ -507,12 +505,16 @@ router.post('/changeVBaseName',  function(req, res, next) {
 router.post('/saveVBase', function(req, res, next) {
 	var vbase=req.body;
 	var community=req.query.community, name=req.query.name;
-//	console.log(vbase.varsites[0].entity);
-	VBase.collection.update({community: vbase.community, name: vbase.origname}, 
-	     {$set: {name: name, witlist: vbase.witlist, community: community, varsites:vbase.varsites, conditionsets: vbase.conditionsets}}, {upsert: true}, function(err){
-		if (!err) res.json({success: 1});
-		else res.json({success: 0});
-	})
+	console.log("vbase name "+vbase.origname);
+//	console.log("vbase "+JSON.stringify(vbase));
+	VBase.updateOne({community: vbase.community, name: vbase.origname}, 
+	     {$set: {name: name, witlist: vbase.witlist, community: community, varsites:vbase.varsites, conditionsets: vbase.conditionsets}}, {upsert: true}).then (function(err){
+			if (!err) res.json({success: 1});
+			else {
+//				console.log("save failed")
+				res.json({success: 0, error: err});
+			}
+		})
 });
 
 //ok -- also add to members array
@@ -3468,7 +3470,7 @@ router.get('/cewitness', function(req, res, next) {
 		  getWitness (req.query.witness, myCommunity, thisEntity, base, override, function(err, result, thisDoc, errorRead){
 		  	 errorMessage+=errorRead;
 			 if (!err) {
-			   TEI.update({docs: thisDoc._id, entityName: thisEntity}, {$set: {collateX: result}}, function (err, results){
+			   TEI.updateOne({docs: thisDoc._id, entityName: thisEntity}, {$set: {collateX: result}}).then (function (results){
 				 res.json(JSON.parse(result));
 			   });
 			 } else {   //have to do it this way else screw up comparing string and json object

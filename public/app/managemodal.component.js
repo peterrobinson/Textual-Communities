@@ -56,7 +56,8 @@ var ManageModalComponent = ng.core.Component({
     require('./editvmap.component'),
     require('./editvmaps.component'),
     require('./testcollationconversion.component'),
-    require('./writecommentary.component')
+    require('./writecommentary.component'),
+    require('./writevbase.component')
  ]
 }).Class({
   constructor: [CommunityService, UIService, RESTService, function(communityService, uiService, restService) {
@@ -304,8 +305,13 @@ var ManageModalComponent = ng.core.Component({
       	self.choice=event.type;
       	self.community=event.community;
       } else if (event.type ==='write-commentary'){
-        self.community=event.community;
-       } 
+         self.choice=event.type;
+         self.community=event.community;
+       } else if (event.type ==='makewebsite-vbase'){
+         self.choice=event.type;
+       	 self.community=event.community;
+         self.vBase=event.vBase;
+       }
       $('#manageModal').modal('show');
     });
   },

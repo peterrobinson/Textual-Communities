@@ -3,6 +3,7 @@ function createVBase () {
 	console.log("hello");
 	$("#rTable").hide();
 	$("#searchVBase").show();
+	$("#title").html("Variant database (VBase) for the "+vBase.name);
 	setUpVBase();
 }
 

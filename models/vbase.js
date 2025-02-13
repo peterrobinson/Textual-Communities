@@ -24,7 +24,7 @@ const vBaseSchema = new Schema({
 	}],
     conditionsets: [{
 		name: String,
-		conditionset: [{
+		conditions: [{
 			in: Boolean,
 			spec: String,
 			wits: String

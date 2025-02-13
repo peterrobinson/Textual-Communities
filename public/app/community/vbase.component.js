@@ -22,7 +22,7 @@ var VBaseComponent = ng.core.Component({
   constructor: [Router, UIService, function(router, uiService) {
   	var self=this;
     this.state = uiService.state;
-    if (this.state.authUser._id) {
+    if (this.state.authUser.attrs.memberships.length) {
       for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
         if (this.state.authUser.attrs.memberships[i].community.attrs._id==this.state.community.attrs._id)
           this.role=this.state.authUser.attrs.memberships[i].role;
@@ -46,6 +46,7 @@ var VBaseComponent = ng.core.Component({
     this.varFrom=1;
     this.varTo=50;
     this.error="";
+    this.conditionsCopied=false;
     this.varnums=[0,1,2,3,4,5,6,7,8,9,"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
 
   }],
@@ -60,6 +61,8 @@ var VBaseComponent = ng.core.Component({
       	} else {
       		self.vBases=res.vBases;
       		self.vBase=self.vBases[0];
+      		self.vBase.selected=true;
+      		for (let i=1; i<self.vBases.length; i++) {self.vBases[i].selected=false}
       		if (!self.vBase.witlist.includes('\\all')) self.vBase.witlist.push("\\all");
       		self.success=self.vBases.length+" VBase(s) loaded";
       		if (self.vBase.conditionsets.length>1) { //first variants set is always blank
@@ -75,11 +78,11 @@ var VBaseComponent = ng.core.Component({
       	}
       }
       var height=window.innerHeight-$("tc-header").height()-$("div.container-fluid").height()-$("tc-manage-community").height();
-      $(".panel-left").height(height);
+      $(".panel-left").height(height-15);
       $(".panel-right").height(height);
       window.addEventListener('resize', function (event){
       	  var height=window.innerHeight-$("tc-header").height()-$("div.container-fluid").height()-$("tc-manage-community").height();
-      	  $(".panel-left").height(height);
+      	  $(".panel-left").height(height-15);
       	  $(".panel-right").height(height);
       });
     });
@@ -112,6 +115,16 @@ var VBaseComponent = ng.core.Component({
       $(".panel-left").height(height);
       $(".panel-right").height(height);
   },
+  copyConditions: function() {
+  	this.conditionsCopied=true;
+  	this.copiedConditions=JSON.stringify(this.conditions);
+  }, 
+   pasteConditions: function() {
+  	this.conditions=JSON.parse(this.copiedConditions);
+  }, 
+ clearConditions: function() {
+  	this.conditionsCopied=false;
+  },
   choose: function(vBase) {
   	var self=this;
   	for (var j=0; j<this.vBases.length; j++){this.vBases[j].selected=false};
@@ -123,17 +136,39 @@ var VBaseComponent = ng.core.Component({
   				vBase.selected=true;
   				vBase.witlist=res.witlist;
   				self.vBase=vBase;
+  				self.conditionName=self.origConditionName="";
   				if (!self.vBase.witlist.includes('\\all')) self.vBase.witlist.push("\\all");
-   				self.conditions=vBase.conditionsets[0].conditions;
-   				self.searchDone=false;
-  			}
+  				if (self.vBase.conditionsets.length>1) { //first variants set is always blank
+					self.conditions=self.vBase.conditionsets[1].conditions;
+					self.conditionName=self.origConditionName=self.vBase.conditionsets[1].name;
+					self.vBase.conditionsets[1].selected=true;
+					for (var i=2; i<self.vBase.conditionsets.length; i++) {
+						self.vBase.conditionsets[i].selected=false;
+					}
+					self.searchVBase();
+      			} else {
+      				self.conditions=self.vBase.conditionsets[0].conditions;
+      				self.searchDone=false;
+      			}
+   		}
   			else self.error="Database error";
   		});
   	} else {
   		vBase.selected=true;
   		this.vBase=vBase;
-  		this.searchDone=false;
-  		this.conditions=vBase.conditionsets[0].conditions;
+  		this.conditionName=this.origConditionName="";
+		if (this.vBase.conditionsets.length>1) { //first variants set is always blank
+			this.conditions=this.vBase.conditionsets[1].conditions;
+			this.conditionName=this.origConditionName=this.vBase.conditionsets[1].name;
+			this.vBase.conditionsets[1].selected=true;
+			for (var i=2; i<this.vBase.conditionsets.length; i++) {
+				this.vBase.conditionsets[i].selected=false;
+			}
+			this.searchVBase();
+		} else {
+			this.conditions=this.vBase.conditionsets[0].conditions;
+			this.searchDone=false;
+		}
   	}
   },
   addCondition: function () {
@@ -141,6 +176,9 @@ var VBaseComponent = ng.core.Component({
   },
   removeCondition: function (i) {
   	this.conditions.splice(i, 1);
+  },
+  makeWebsite: function(vbase) { //invoke navigator function, sourced from community.component
+  	this.uiService.manageModal$.emit({type: "makewebsite-vbase", community: this.community, vBase: vbase});
   },
   chooseSearch: function (conditionset) {
   	this.conditions=conditionset.conditions;
@@ -505,6 +543,168 @@ var VBaseComponent = ng.core.Component({
   filechange: function(filecontent, filename) {
      var myXMLDOM = new DOMParser().parseFromString(filecontent, "text/xml");
      var apps=myXMLDOM.getElementsByTagName("app");
+//	 var wits=myXMLDOM.getElementsByTagName("witness"); we don't use witnessList in we don't use witnessList in the header
+	 var newVBase={};
+	 this.error="";
+	 this.success="Loading...";
+	 var nRdgs=0;
+	 var wits=[];
+	 var varnums=[0,1,2,3,4,5,6,7,8,9,"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+	 newVBase.witlist=[];
+	 newVBase.varsites=[];
+	  //if we don't have either of these abort;
+	  if (wits.length==0) {
+	  	 //  will make liar from the witnesses actually present
+	  	 var witnesses=myXMLDOM.getElementsByTagName("idno");  //ref for dante, idno for chaucer
+	  	 this.success= witnesses.length+" references to witnesses found";
+		 var witsfound=[];
+		 for (let i=0; i<witnesses.length; i++) {
+		 	if (!witsfound.includes($(witnesses[i]).html())) witsfound.push($(witnesses[i]).html());
+		 }
+		 //sort the wits!
+		 witsfound.sort();
+		 this.success=witsfound.length+" distinct witnesses found: "+witsfound.join(" ");
+	  }
+	  if (apps.length==0) {
+		 this.error="The XML input file contains no <app> elements.";
+		 return;
+	  } else {
+	  	this.success=apps.length+" elements found in this file. Converting the file into a VBase"
+	  }
+	var witsMap= new Map();
+	for (var i=0; i<witsfound.length; i++) {
+		newVBase.witlist.push(witsfound[i]);
+		witsMap.set(witsfound[i], i);
+  	}
+  	//ok. Let's go through the list now...
+  	var noLabelWarningGiven=false;
+  	var noVartypeWarningGiven=false;
+   	var noVarFromToWarningGiven=false;
+  	var lemPresentWarningGiven=false;
+   	var rdgAbsentWarningGiven=false;
+ 	for (var i=0; i<apps.length; i++) {
+		label=apps[i].getAttribute("n");
+		if (!label) {
+			if (!noLabelWarningGiven) this.error+="\rNo n value declared for an app element. Using the number of the app instead";
+			noLabelWarningGiven=true;
+			label=i+1;
+		}
+		var vartype=apps[i].getAttribute("type");
+		var varfrom=apps[i].getAttribute("from");
+		var varto=apps[i].getAttribute("to");
+		if (!vartype) {
+			if (noVartypeWarningGiven) this.error+="\rNo variant type value declared for an app element. Using type=main instead";
+			noVartypeWarningGiven=true;
+			vartype="main";
+		}
+		if (vartype=="main") {
+		  var matrixrow = new Array(witsfound.length)
+		  matrixrow.fill("?");
+		  if (!varfrom || !varto) {
+			if (noVarFromToWarningGiven) this.error+="\rNo from and/or to value declared for an app element. Using from and to=0 instead. This will cause problems";
+			noVarFromToWarningGiven=true;
+			varfrom=varto=0;
+		  }
+		} else if (vartype=="lac") { //just skip this app
+			continue;
+		}
+		else {  //must be a lacuna. we probably should never get here?
+		  var matrixrow = new Array(witsfound.length);
+		  console.log("should not be here");
+		  matrixrow.fill("0");
+		}
+		var varsites=[];
+		var rdgs=apps[i].getElementsByTagName("rdg");
+		nRdgs+=rdgs.length;
+		var lems=apps[i].getElementsByTagName("lem");
+		if (rdgs.length==0) {
+		 	if (!rdgAbsentWarningGiven) this.error+="\rAn <app> element found with no <rdg> elements. This might result in unpredictable results";
+		 	rdgAbsentWarningGiven=true;
+		}
+		
+		if (lems.length>0) {
+		 	if (!lemPresentWarningGiven) this.error+="\rA <lem> element found in a <rdg> elements. This iteration of VBase ignores <lem> elements, assuming that the first <rdg> element stands in place of a <lem>";
+		 	lemPresentWarningGiven=true;
+		}
+		var varsite={};
+		varsite.vartype=vartype;
+		varsite.entity=label;
+		if (vartype=="main") {
+			varsite.from=varfrom;
+			varsite.to=varto;
+		}
+		var variants=[];
+		if (vartype=="lac") { //there are no witnesses missing this entity. Missing witnesses get 1. Wits present are 0
+			  if (rdgs[0])	 {
+				var lacwits=rdgs[0].getElementsByTagName("idno");
+				for (var j=0; j<lacwits.length; j++) {
+				  var thisWit=lacwits[j].childNodes[0].nodeValue;
+				  var indexWit=witsMap.get(thisWit);
+				  matrixrow[indexWit]=1;
+				}
+				variants.push("Block present");  //default. all wits present
+				if (rdgs.length>0) { // some wits do not have the block. They are reading 1
+					variants.push("Block absent"); 
+				} 
+			  }
+			} else { //not dealing with whole block variants...
+				//no variants -- ie only one reading -- but still need to record it
+				if (rdgs.length==1) {
+				  var rdgwits=rdgs[0].getElementsByTagName("idno");
+				  variants.push(rdgs[0].childNodes[0].nodeValue);
+				  for (j=0; j<rdgwits.length; j++) {
+					var thisWit=rdgwits[j].childNodes[0].nodeValue;
+					var indexWit=witsMap.get(thisWit);
+					matrixrow[indexWit]=0;
+				  }
+				} else {//deal with multiple readings here
+				  for (var j=0; j<rdgs.length; j++) {  //first reg is always the lemma. We ignore any lemma element present
+					var rdgwits=rdgs[j].getElementsByTagName("idno");
+					if (rdgwits.length==0) {
+				  		rdgwits=$($(rdgs[j]).next("wit")[0]).find("ref");
+				    }	
+					var rdgindex=this.varnums[j];
+				//	console.log(rdgs[j].childNodes[0].nodeValue);
+					var thisrdg=rdgs[j].childNodes[0].nodeValue;
+					variants.push(thisrdg);
+					for (var k=0; k<rdgwits.length; k++) {
+					  var thisWit=rdgwits[k].childNodes[0].nodeValue;
+					  var indexWit=witsMap.get(thisWit);
+					  matrixrow[indexWit]=rdgindex;
+					}
+				  }
+			}
+		}
+		varsite.variants=variants;
+		varsite.matrix=matrixrow.join("");
+		newVBase.varsites.push(varsite);
+		newVBase.conditionsets=[{name:"", conditions:[{in: true, spec:"", wits:""}]}];
+		if (i%1000==0) {
+			this.success=""+i+" sites of variation processed for "+nRdgs+" variants";
+		}
+	}
+	this.success=this.filename+" successfully loaded. "+apps.length+" sites of variation found, with "+nRdgs+" variants. Ready to search!"
+	newVBase.nRdgs=nRdgs;
+	newVBase.saved=false;
+	newVBase.indb=false;
+	newVBase.nVars=newVBase.varsites.length
+	newVBase.selected=true;
+	newVBase.origname=this.filename;
+	newVBase.name=this.filename;  //passed by event emitter
+	for (var j=0; j<this.vBases.length; j++){this.vBases[j].selected=false};
+	this.vBase=newVBase;
+	this.origConditionName=this.conditionName="";
+	this.doSaveCondition=false;
+	this.searchDone=false;
+	this.conditions=this.vBase.conditionsets[0].conditions;
+	this.vBases.push(newVBase);
+  },
+});
+
+/*  this has the entire original file change function, in case of catastrophe
+
+     var myXMLDOM = new DOMParser().parseFromString(filecontent, "text/xml");
+     var apps=myXMLDOM.getElementsByTagName("app");
 	 var wits=myXMLDOM.getElementsByTagName("witness");
 	 var newVBase={};
 	 this.error="";
@@ -610,6 +810,7 @@ var VBaseComponent = ng.core.Component({
 				  for (var j=0; j<rdgs.length; j++) {  //first reg is always the lemma. We ignore any lemma element present
 					var rdgwits=rdgs[j].getElementsByTagName("idno");
 					var rdgindex=this.varnums[j];
+				//	console.log(rdgs[j].childNodes[0].nodeValue);
 					var thisrdg=rdgs[j].childNodes[0].nodeValue;
 					variants.push(thisrdg);
 					for (var k=0; k<rdgwits.length; k++) {
@@ -643,8 +844,6 @@ var VBaseComponent = ng.core.Component({
 	this.searchDone=false;
 	this.conditions=this.vBase.conditionsets[0].conditions;
 	this.vBases.push(newVBase);
-  },
-});
-
+  */
 
 module.exports = VBaseComponent;

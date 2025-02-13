@@ -1,4 +1,6 @@
 var $ = require('jquery')
+  , JSZip = require('jszip')
+  , JSZipUtils = require('jszip-utils')
 ;
 
 
@@ -18,6 +20,82 @@ var BrowserFunctionService = {
       el.children = children;
     });
     return teiRoot;
+  },
+  urlToPromise: function (url,cb) {
+	return new Promise(function(resolve, reject) {
+		JSZipUtils.getBinaryContent(url, function (err, data) {
+			if(err) {
+				reject(err);
+			} else {
+				resolve(data);
+				cb(null, []);
+			}
+		});
+	});
+  },
+  adjustResult: function(self, source, isIndex, persistVals, persistScripts) {
+	let replaceStr="";
+	if (persistVals.length>0) {
+		replaceStr+="<script>const ";
+		for (let i=0; i<persistVals.length; i++) {
+			if (!persistVals[i].isobject) {
+					replaceStr+=persistVals[i].key+" = "+'"'+persistVals[i].value+'"';
+				} else {
+					replaceStr+=persistVals[i].key+" = "+persistVals[i].value;
+				}
+			if (i<persistVals.length-1) replaceStr+=", "; 
+		} 
+		replaceStr+="</script>\n"; 
+	}
+	if (persistScripts.length>0) {
+		for (let i=0; i<persistScripts.length; i++) {
+			if (typeof persistScripts[i]=="undefined") continue;  //catches case where aliases file does not exist
+			replaceStr+='<script type="text/javascript" src="'+persistScripts[i]+'"></script>\n';
+		}
+		source=source.replace('<script id="placeholder"></script>', replaceStr);
+//		if (self.config.hasOwnProperty("ssSearch") && source.indexOf('<div id="staticSearch"></div>')>-1) {
+//			source=source.replace('<div id="staticSearch"></div>',self.config.ssSearch);
+//		} 
+	} 
+	//remove all file references with ../common
+	source=source.replace(/src="[^"]+\/common\//g,'src="../../../common/');
+	source=source.replace(/src='[^']+\/common\//g, "src='../../../common/");
+	source=source.replace(/href="[^"]+\/common\//g,'href="../../../common/');
+	source=source.replace(/href='[^']+\/common\//g, "href='../../../common/");
+	source=source.replace(/universalBannerLocation = "[^"]+\/common\//g, 'universalBannerLocation="../../../common/');
+	source=source.replace(/splash = "[^"]+\/common\//g, 'splash = "../../../common/');
+
+//	source=source.replace(/url\(&quot;.*?\/common\//g, "url(&quot;../../../common/");
+	if (isIndex) source=source.replaceAll("../../../", "");
+	return(source);
+ },
+  customTemplates: function (str, drivervalues,driverfiles) { //we only add stuff used in the driver process here
+	let myDOM = new DOMParser().parseFromString(str, "text/html");
+	if (drivervalues.length>0) {
+		let driverscript="<script class='driverScript'>const ";
+		for (let i=0; i<drivervalues.length; i++) {
+			if (!drivervalues[i].isobject) {
+				driverscript+=drivervalues[i].key+" = "+'"'+drivervalues[i].value+'"';
+			} else {
+				driverscript+=drivervalues[i].key+" = "+drivervalues[i].value;
+			}
+			if (i<drivervalues.length-1) driverscript+=", ";
+		}
+		driverscript+="<";
+		driverscript+="/script>\n";
+		$(myDOM).contents().find("head")[0].insertAdjacentHTML('beforeend', driverscript);
+	}
+	if (driverfiles.length>0) {
+		let dfiles="";
+		for (let i=0; i<driverfiles.length; i++) {
+			if (typeof driverfiles[i]=="undefined") continue;  //catches case where aliases file does not exist
+			dfiles+='<script type="text/javascript" class="driverScript" src="'+driverfiles[i]+'"><';
+			dfiles+='/script>\n';
+		}
+		$(myDOM).contents().find("head")[0].insertAdjacentHTML('beforeend', dfiles);
+	}
+	let s = new XMLSerializer();
+	return(s.serializeToString(myDOM)); 
   },
   download: function (content, filename, contentType)  {
       if(!contentType) contentType = 'application/octet-stream';
