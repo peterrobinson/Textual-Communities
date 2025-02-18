@@ -2923,7 +2923,7 @@ router.get('/getTranscriberRecord', function(req, res, next){
   async.map(periods, function(period, cb1) {
     async.parallel([
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"IN_PROGRESS", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"IN_PROGRESS", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.inprogress={n: docs.length};
           if (docs.length) {
             var inprogarray=[];
@@ -2934,11 +2934,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.inprogarray=inprogarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"SUBMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"SUBMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.submitted={n: docs.length};
           if (docs.length) {
             var submarray=[];
@@ -2949,11 +2949,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.submarray=submarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"COMMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"COMMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.committed={n: docs.length};
           if (docs.length) {
             var commarray=[];
@@ -2964,11 +2964,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.commarray=commarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"APPROVED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"APPROVED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.approved={n:docs.length};
           if (docs.length) {
             var apparray=[];
@@ -2979,11 +2979,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.apparray=apparray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"ASSIGNED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"ASSIGNED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.assigned={n: docs.length};
           if (docs.length) {
             var assarray=[];
@@ -2994,7 +2994,7 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.assarray=assarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
     ], function(err){
