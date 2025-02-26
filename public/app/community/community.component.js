@@ -86,9 +86,14 @@ var CommunityComponent = ng.core.Component({
           clone.control={transcripts:"ALL", tmsg:"", images:"ALL", imsg:"", collations:"ALL", cmsg:""};
           this._communityService.createCommunity(clone).subscribe(function(community) {
           });
+        } else if (!this.state.community && id) {
+        	this._communityService.selectCommunity(id);
         }
     } 
     //else: leave community at null
+    if (state.community._id != id) {
+    	this._communityService.selectCommunity(id)
+    }
   },
   navigate: function(route) {
     var community = this.state.community;
