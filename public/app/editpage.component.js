@@ -43,6 +43,9 @@ var AddPageComponent = ng.core.Component({
     $('#manageModal').height("300px");
     if (config.env !== 'production') {
       url += '?env=' + config.env;
+      url += "&doc="+this.state.document.attrs.name+"&page="+this.page.attrs.name+"&community="+this.state.community.attrs.abbr;
+    } else {
+      url += "?doc="+this.state.document.attrs.name+"&page="+this.page.attrs.name+"&community="+this.state.community.attrs.abbr;;
     }
     $dropzone.dropzone({
       url: url,

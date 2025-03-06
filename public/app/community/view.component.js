@@ -10,6 +10,7 @@ var CommunityService = require('../services/community')
   , BrowserFunctionService = require('../services/functions')
 ;
 
+
 var prevHeight;
 
 var ViewComponent = ng.core.Component({
@@ -46,6 +47,7 @@ var ViewComponent = ng.core.Component({
     });
     this.collationEditor=false;
     this.callCollationEditor='';
+    this.rebuild=true; //temporary, to upgrade images
 	$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
    	.done ( function(res) {
 //   	  console.log("succeed");
@@ -246,6 +248,79 @@ var ViewComponent = ng.core.Component({
      this.selectDoc(doc);
   //refresh the document...
     }
+  },
+  rebuildIIF: function(doc) { //used only to reset image storage to new system
+  	let index=1;
+  	let self=this;
+  	this._docService.refreshDocument(doc).subscribe(function(mydoc) { //make sure we have our document
+  		//first, we are going to make the default jpg
+		async.mapSeries(mydoc.attrs.children, function(page, callback) {
+			console.log("Making default image for "+mydoc.attrs.name+", "+page.attrs.name+", "+index+" of "+mydoc.attrs.children.length);
+			index++;
+			//if this is a call to an external 
+			if (! page.attrs.image || typeof page.attrs.image=="undefined" || page.attrs.image=="") {
+				callback(null,[]);
+			} else if (page.attrs.image.startsWith("http")) {
+				console.log("Image for "+page.attrs.name+" has iiif url")
+				callback(null,[]);
+			} else {// got to get the image from the TC iiiif server
+				//first, download and save the source file from the TC server
+	 			$.get(config.BACKEND_URL+'makeDefaultIIIF/?community='+this.state.community.attrs.abbr+'&doc='+mydoc.attrs.name+'&page='+page.attrs.name+'&image='+page.attrs.image) 
+	 			.done (function(res){
+	 				//url as value of image attribute
+	 				if (res.success) {
+						callback(null, []);
+				} else {
+						//if we are here we have a problem
+						console.log("We have a problem on page "+page.attrs.name+". Aborting")
+						callback({success:false});
+					}
+	 			})
+	 			.fail (function( jqXHR, textStatus, errorThrown ) {
+					console.log(jqXHR);
+					console.log(textStatus);
+					console.log(errorThrown );
+					callback(null);
+				});
+			}
+		}, function(err, results) {
+			index--;
+			console.log("Created "+index+" default images.");
+			index=1;
+			return;
+			async.mapSeries(mydoc.attrs.children, function(page, callback2) {
+				$.get(config.BACKEND_URL+'makeIIIFImage/?community='+this.state.community.attrs.abbr+'&doc='+mydoc.attrs.name+'&page='+page.attrs.name+'&image='+page.attrs.image) 
+				 .done (function(res){
+	 				//url as value of image attribute
+	 				var options = {};
+	 				let image=config.IIIF_URL+self.state.community.attrs.abbr+"/"+mydoc.attrs.name+"/"+page.attrs.name;
+	 				if (res.success) {
+						self._docService.update(page.getId(), {
+						  image: image,
+						}, options).subscribe(function(mypage) {
+	//					  self.page = page;
+						  callback2(null, []);
+						});
+					} else {
+						//if we are here we have a problem
+						console.log("We have a problem on page "+page.attrs.name+". Aborting")
+						callback2({success:false});
+					}
+	 			})
+	 			.fail (function( jqXHR, textStatus, errorThrown ) {
+					console.log(jqXHR);
+					console.log(textStatus);
+					console.log(errorThrown );
+					callback(null);
+				});
+			
+			}, function (err, results) {
+				index--;
+				console.log("Created "+index+" IIIF images.");
+			});
+			//no do it again for the images we just made
+		});
+	})
   },
   showAddFirstPage: function(doc) {
     return doc &&  _.isEmpty(_.get(doc, 'attrs.children'));

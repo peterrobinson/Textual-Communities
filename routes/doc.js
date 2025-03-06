@@ -164,11 +164,12 @@ var DocResource = _.inherit(Resource, function(opts) {
     };
   },
   execSave: function(req, res, next) {
-//  	console.log("about to commit 1? ");
+  	console.log("about to commit 1? ");
     if (!req.body.commit) {
        return function(obj, callback) {
-        obj.save(function(err, obj) {
-          callback(err, obj);
+        console.log("do it");
+        obj.save().then(function(obj) {
+          callback(null, obj);
         });
       };
     }

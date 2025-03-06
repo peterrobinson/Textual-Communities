@@ -375,7 +375,7 @@ function loadBaseFiles(zip, self, callback) {
 			zip.file('edition/common/core/js/vBaseUtilsJs.js',myfile._body);
 			cb(null, []);
 		})
-	},
+	},			
 	function(arguments, cb) {
 		self.restService.http.get('/app/data/makeEdition/common/core/js/editorialJs.js').subscribe(function(myfile) {
 			zip.file('edition/common/core/js/editorialJs.js',myfile._body);

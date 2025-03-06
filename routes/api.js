@@ -1,6 +1,8 @@
 var _ = require('lodash')
   , ejs = require('ejs')
   , fs = require('fs')
+  , fetch = require("node-fetch")
+  , https = require('https')
   , path = require('path')
   , crypto = require('crypto')
   , async = require('async')
@@ -33,6 +35,7 @@ var _ = require('lodash')
   , ObjectId = mongoose.Types.ObjectId
   , FunctionService = require('../services/functions')
   , DualFunctionService = require('../public/app/services/dualfunctions')
+  , { exec } = require("child_process");
 ;
 
 
@@ -788,16 +791,152 @@ router.get('/auth', function(req, res, next) {
 }, userResource.detail());
 
 
+/* const storage = multer.diskStorage({
+  destination: TCIdestination,
+  filename: function (req, file, cb) {
+  	console.log("request is here"+JSON.stringify(req.body));
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    console.log("about to write in file" +file.fieldname + '-' + uniqueSuffix);
+//    cb(null, file.fieldname + '-' + uniqueSuffix)
+	  cb(null, "testwrite.jpg")
+  }
+ })
 
 var upload = multer({
-  storage: gridfs,
-});
-router.post('/upload', upload.any(), function(req, res, next) {
-//  console.log(req.files);
-  res.json(req.files);
+  storage: storage,
+}); */
+router.post('/upload', function(req, res, next) {
+	var page=req.query.page;
+	var doc=req.query.doc;
+	var community=req.query.community;
+	console.log("doc "+doc+" page "+page+" community"+community);
+	var TCIdestination=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0";
+	console.log("copy to "+TCIdestination);
+//	var TCIdestination="/Volumes/Macintosh HD/Users/pmr906_1/venv/TCangular/tc/public/app/data/tcimages/CTP2/Ad1/41v/full/full/0";
+    var storage = multer.diskStorage({
+    	destination: TCIdestination,
+//        destination: config.TCIMAGE_STORAGE+community+"/"+doc+"/"+page+"full/full/0",
+        filename: function (req, file, cb) {
+        	 cb(null, "default.jpg");
+        }
+     });
+    var upload = multer({ storage : storage}).any();
+
+    upload(req,res,function(err) {
+        if(err) {
+            console.log(err);
+            return res.end("Error uploading file.");
+        } else {
+  //         console.log(req.body);
+           req.files.forEach( function(f) {
+  //           console.log(f);
+             // and move file to final destination...
+           });
+           console.log("ready to write the IIIF!")
+           exec("ls '"+TCIdestination+"'", (error, stdout, stderr) => {
+			if (error) { console.log(`error: ${error.message}`); res.json(req.files);return}
+			if (stderr) {console.log(`stderr: ${stderr}`);res.json(req.files);return}
+			if (stdout.trim()=="default.jpg") {
+				console.log("done write default image");
+				//now make the magic 
+				let srcFile=TCIdestination+"/default.jpg";
+				let dstDir=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page;
+				let iiifId=config.host_url+"/app/data/tcimages/"+community+"/"+doc;
+				let vipsParam="'"+srcFile+"' '"+dstDir+"' --layout iiif --id '"+iiifId+"'";	
+				console.log("param is "+vipsParam);
+				exec("vips dzsave "+vipsParam, (error, stdout, stderr) => {
+					if (error) { console.log(`error: ${error.message}`); res.json(req.files);return}
+					if (stderr) {console.log(`stderr: ${stderr}`);res.json(req.files);return}
+					console.log("succcessfully made IIIF image; output is "+stdout);
+					req.files[0]._id=iiifId+"/"+page;
+					res.json(req.files);
+				})
+			} else {
+				console.log("failed to write default image "+stdout)
+			}
+		   });
+        }
+    });
 });
 
+router.get('/makeIIIFImage', function(req, res, next) {
+	var page=req.query.page;
+	var doc=req.query.doc;
+	var community=req.query.community;
+	let srcFile=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0/default.jpg";
+	let dstDir=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page;
+	let iiifId=config.host_url+"/app/data/tcimages/"+community+"/"+doc;
+	console.log("we will make the file here in makeIIIFImage");
+	let vipsParam="'"+srcFile+"' '"+dstDir+"' --layout iiif --id '"+iiifId+"'";	
+	exec("vips dzsave "+vipsParam, (error, stdout, stderr) => {
+		if (error) { console.log(`error: ${error.message}`); res.json({success:false});return}
+		if (stderr) {console.log(`stderr: ${stderr}`);res.json({success:false});return}
+		console.log("succcessfully made IIIF image ");
+		res.json({success:true});
+   })
+});
+
+async function downloadImage(req, result, next){
+    //imageurl https://example.com/uploads/image.jpg
+    var page=req.query.page;
+	var doc=req.query.doc;
+	var community=req.query.community;
+	var image=req.query.image;
+	console.log("in makeDefaultIIIF "+community+" "+doc+" "+page+" "+image);
+	let directory=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0";
+	exec("mkdir -p '"+directory+"'", async (error, stdout, stderr) => {
+		if (error) { console.log(`error: ${error.message}`);result.json({success:false});return}
+		if (stderr) {console.log(`stderr: ${stderr}`);result.json({success:false});return}
+		let fName=directory+"/default.jpg";
+		let imageUrl="https://textualcommunities.org/loris/"+image+"/full/full/0/default.jpg";
+		const imageres = await fetch(imageUrl);
+		const fileStream = fs.createWriteStream(fName);
+		await new Promise((resolve, reject) => {
+			imageres.body.pipe(fileStream);
+			imageres.body.on("error", reject);
+			fileStream.on("finish", resolve);
+		  });
+		console.log("finished?");
+		result.json({success:true})
+	});
+  };
+  
+router.get('/makeDefaultIIIF', function(req, res, next) {
+	downloadImage(req, res, next);
+	return;
+	exec("mkdir -p '"+directory+"'", (error, stdout, stderr) => {
+		if (error) { console.log(`error: ${error.message}`);res.json({success:false});return}
+		if (stderr) {console.log(`stderr: ${stderr}`);res.json({success:false});return}
+//		console.log("output of making directory "+stdout);
+		let url="https://textualcommunities.org/loris/"+image+"/full/full/0/default.jpg";
+		let fName=directory+"/default.jpg";
+		let file = fs.createWriteStream(fName);
+		let request = https
+        .get(url, function (response) {
+        	console.log("getting the file");
+            response.pipe(file);
+            console.log("piping the file");
+            file.on('finish', function () {
+            	console.log("written the default file")
+                file.close();
+                res.json({success:false});
+            });
+        })
+        .on('error', function (err) {
+            fs.unlink(fName); // Delete the file async if there is an error
+            res.json({success:false});
+ //            if (cb) cb(err.message);
+        });
+   	 request.on('error', function (err) {
+        console.log(err);
+        res.json({success:false});
+      });
+   }); 
+});
+
+
 router.get('/gridfs/:id',  function(req, res, next) {
+  console.log(req.params.id );
   gridfs.gfs.findOne({ _id: req.params.id }, function(err, file) {
     if (err || !file) {
       return next(err, file);
