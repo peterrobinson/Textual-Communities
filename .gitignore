@@ -56,9 +56,11 @@ MakeEdition/KT
 MakeEdition/RE
 MakeEdition/SQ
 MakeEdition/TC22
+MakeEdition/common/TC22
 MakeEdition/teseida
 MakeEdition/WBP
 teststuff
+tcimages
 
 #ignore https cert folder
 cert
