@@ -1,1 +1,0 @@
-var menu=[{"title":"About this edition","key":"About"},{"title":"Copyright","key":"Copyright"},{"title":"Title Page","key":"TitlePage"},{"title":"Knight's Tale","key":"KT","menu":[{"title":"1179","key":"KT:line=1179"}]}]

@@ -46,7 +46,7 @@ public/app/config/*.js
 # ignore user uploaded files
 upload
 
-#ignore MakeEdition files
+#ignore MakeEdition and data files
 MakeEdition/BOD
 MakeEdition/CL
 commonOrig
@@ -56,7 +56,6 @@ MakeEdition/KT
 MakeEdition/RE
 MakeEdition/SQ
 MakeEdition/TC22
-MakeEdition/common/TC22
 MakeEdition/teseida
 MakeEdition/WBP
 teststuff
