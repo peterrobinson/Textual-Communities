@@ -103,18 +103,6 @@ var ViewerComponent = ng.core.Component({
       , width = $el.width()
       , height = $el.height()
     ;  //at this point .. if there is no image we can add an image
-    var viewer = OpenSeadragon({
-      id: 'imageMap',
-      prefixUrl: '/images/',
-      preserveViewport: true,
-      visibilityRatio:    1,
-      defaultZoomLevel:   1,
-      sequenceMode:       true,
-      // TODO:
-      // while uploading, we need make:
-      // image name as page name, order by name, reorder, rename
-    });
-    this.viewer = viewer;
     this.onResize();
     this.commitFailed=false;  //reset elsewhere in a very messy piece of programming
     //cqll the image!
@@ -139,6 +127,20 @@ var ViewerComponent = ng.core.Component({
     return date.toLocaleTimeString("en-us", options);
   },
   onImageChange: function() {  //http://www.textualcommunities.org:5004/
+  	if (!this.viewer) {
+		  var myviewer = OpenSeadragon({
+		  id: 'imageMap',
+		  prefixUrl: '/images/',
+		  preserveViewport: true,
+		  visibilityRatio:    1,
+		  defaultZoomLevel:   1,
+		  sequenceMode:       true,
+		  // TODO:
+		  // while uploading, we need make:
+		  // image name as page name, order by name, reorder, rename
+		});
+    	this.viewer = myviewer;
+    }
   	let viewer=this.viewer;
     if (this.page.attrs.facs && this.page.attrs.facs.startsWith("EXTERNAL:")) {
 //    	$("#imageMap").html(""); this stops existing image display. But somehow stops all further images displaying

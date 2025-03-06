@@ -46,7 +46,7 @@ public/app/config/*.js
 # ignore user uploaded files
 upload
 
-#ignore MakeEdition and data files
+#ignore MakeEdition and data 	files
 MakeEdition/BOD
 MakeEdition/CL
 commonOrig
