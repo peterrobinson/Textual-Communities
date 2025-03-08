@@ -871,7 +871,7 @@ router.get('/makeIIIFImage', function(req, res, next) {
 	exec("vips dzsave "+vipsParam, (error, stdout, stderr) => {
 		if (error) { console.log(`error: ${error.message}`); res.json({success:false});return}
 		if (stderr) {console.log(`stderr: ${stderr}`);res.json({success:false});return}
-		console.log("succcessfully made IIIF image ");
+		console.log("successfully made IIIF image ");
 		res.json({success:true});
    })
 });
@@ -904,34 +904,6 @@ async function downloadImage(req, result, next){
 router.get('/makeDefaultIIIF', function(req, res, next) {
 	downloadImage(req, res, next);
 	return;
-	exec("mkdir -p '"+directory+"'", (error, stdout, stderr) => {
-		if (error) { console.log(`error: ${error.message}`);res.json({success:false});return}
-		if (stderr) {console.log(`stderr: ${stderr}`);res.json({success:false});return}
-//		console.log("output of making directory "+stdout);
-		let url="https://textualcommunities.org/loris/"+image+"/full/full/0/default.jpg";
-		let fName=directory+"/default.jpg";
-		let file = fs.createWriteStream(fName);
-		let request = https
-        .get(url, function (response) {
-        	console.log("getting the file");
-            response.pipe(file);
-            console.log("piping the file");
-            file.on('finish', function () {
-            	console.log("written the default file")
-                file.close();
-                res.json({success:false});
-            });
-        })
-        .on('error', function (err) {
-            fs.unlink(fName); // Delete the file async if there is an error
-            res.json({success:false});
- //            if (cb) cb(err.message);
-        });
-   	 request.on('error', function (err) {
-        console.log(err);
-        res.json({success:false});
-      });
-   }); 
 });
 
 

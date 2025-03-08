@@ -249,7 +249,57 @@ var ViewComponent = ng.core.Component({
   //refresh the document...
     }
   },
-  rebuildIIF: function(doc) { //used only to reset image storage to new system
+  createIIIF: function(doc) {
+  	let index=1;
+  	let self=this;
+  	this._docService.refreshDocument(doc).subscribe(function(mydoc) { 
+		async.mapSeries(mydoc.attrs.children, function(page, callback2) {
+	//		console.log("Making deep zoom IIIF image for "+mydoc.attrs.name+", "+page.attrs.name+", "+index+" of "+mydoc.attrs.children.length);
+			index++;
+			if (! page.attrs.image || typeof page.attrs.image=="undefined" || page.attrs.image=="") {
+				callback2(null,[]);
+			} else if (page.attrs.image.startsWith("http")) {
+				console.log("Image for "+page.attrs.name+" has iiif url")
+				callback2(null,[]);
+			} else {
+				$.get(config.BACKEND_URL+'makeIIIFImage/?community='+this.state.community.attrs.abbr+'&doc='+mydoc.attrs.name+'&page='+page.attrs.name+'&image='+page.attrs.image) 
+				 .done (function(res){
+					//url as value of image attribute
+					var options = {};
+					let image=config.IIIF_URL+self.state.community.attrs.abbr+"/"+mydoc.attrs.name+"/"+page.attrs.name;
+					if (res.success) {
+						self._docService.update(page.getId(), {
+						  image: image,
+						}, options).subscribe(function(mypage) {
+		//					  self.page = page;
+						  callback2(null, []);
+						});
+					} else {
+						//if we are here we have a problem
+						console.log("We have a problem on page "+page.attrs.name+". Image reference is "+page.attrs.image)
+						image=null;
+						self._docService.update(page.getId(), {
+						  image: image,
+						}, options).subscribe(function(mypage) {
+		//					  self.page = page;
+						  callback2(null, []);
+						});
+					}
+				})
+				.fail (function( jqXHR, textStatus, errorThrown ) {
+					console.log(jqXHR);
+					console.log(textStatus);
+					console.log(errorThrown );
+					callback(null);
+				});
+		    };
+		}, function (err, results) {
+			index--;
+			console.log("Created "+index+" IIIF images.");
+		});
+	});
+  },
+  rebuildIIIF: function(doc) { //used only to create new default jpegs
   	let index=1;
   	let self=this;
   	this._docService.refreshDocument(doc).subscribe(function(mydoc) { //make sure we have our document
@@ -287,38 +337,6 @@ var ViewComponent = ng.core.Component({
 			index--;
 			console.log("Created "+index+" default images.");
 			index=1;
-			return;
-			async.mapSeries(mydoc.attrs.children, function(page, callback2) {
-				$.get(config.BACKEND_URL+'makeIIIFImage/?community='+this.state.community.attrs.abbr+'&doc='+mydoc.attrs.name+'&page='+page.attrs.name+'&image='+page.attrs.image) 
-				 .done (function(res){
-	 				//url as value of image attribute
-	 				var options = {};
-	 				let image=config.IIIF_URL+self.state.community.attrs.abbr+"/"+mydoc.attrs.name+"/"+page.attrs.name;
-	 				if (res.success) {
-						self._docService.update(page.getId(), {
-						  image: image,
-						}, options).subscribe(function(mypage) {
-	//					  self.page = page;
-						  callback2(null, []);
-						});
-					} else {
-						//if we are here we have a problem
-						console.log("We have a problem on page "+page.attrs.name+". Aborting")
-						callback2({success:false});
-					}
-	 			})
-	 			.fail (function( jqXHR, textStatus, errorThrown ) {
-					console.log(jqXHR);
-					console.log(textStatus);
-					console.log(errorThrown );
-					callback(null);
-				});
-			
-			}, function (err, results) {
-				index--;
-				console.log("Created "+index+" IIIF images.");
-			});
-			//no do it again for the images we just made
 		});
 	})
   },

@@ -67,11 +67,14 @@
                 <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" class="glyphicon glyphicon-info-sign"></span>
             </a>
             
-            <a target="_blank" *ngIf="rebuild" data-toggle="tooltip" title="Rebuild IIIF images" (click)="rebuildIIF(doc)">
+            <a target="_blank" *ngIf="rebuild" data-toggle="tooltip" title="Create default IIIF images" (click)="rebuildIIIF(doc)">
                 <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" >R</span>
             </a>
 
-            
+            <a target="_blank" *ngIf="rebuild" data-toggle="tooltip" title="Create Deep Zoom IIIF images" (click)="createIIIF(doc)">
+                <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" >Z</span>
+            </a>
+           
             
             <span *ngIf="(role=='LEADER'||role=='CREATOR') && showAddFirstPage(doc)" (click)="addFirstPage(doc)"
               class="add-page-after"></span>
