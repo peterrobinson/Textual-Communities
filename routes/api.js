@@ -2204,36 +2204,40 @@ router.post('/registerViewer', function(req, res, next) {
   var leaderEmail=req.body.leaderEmail;
   var letter=req.body.letter;
   var interest=req.body.interest;  //maybe already a viewer or otherwise of the community,, just forgot!
-  User.findOne({"local.email":email}, function(err, user){
+  User.findOne({"local.email":email}). then (function(user){
     if (user) {
       var is_member=user.memberships.filter(function(obj){return String(obj.community) == communityId;})[0];
       if (is_member) res.json({login: false, result: "You are already registered with the email "+email+" and you are already a "+is_member.role+" of this community. Log in with your email."})
       else {
         //add membership to user, and member to community
-        User.collection.update({_id: user._id}, {$push: {memberships:{community:ObjectId(communityId), role: "VIEWER", interest: interest, accesses: [new Date()], created: new Date(), _id: ObjectId()}}}, function(err, result){
-          if (!err) {
-              Community.collection.update({_id:ObjectId(communityId)}, {$push:{members:user._id}}, function(err, result){
-                if (!err) {
+        User.updateOne({_id: user._id}, {$push: {memberships:{community: new ObjectId(communityId), role: "VIEWER", interest: interest, accesses: [new Date()], created: new Date(), _id: new ObjectId()}}}).then(function(result){
+          if (result.modifiedCount==1)  {
+              Community.updateOne({_id:ObjectId(communityId)}, {$push:{members:user._id}}).then (function(result){
+                if (result.modifiedCount==0) {
                     res.json({login: false, result: " You are already registered in Textual Communities with the email "+email+", and you have been added to the membership of this community. Log in with your email."})
-                } else {res.json({error:err})}
+                } else {res.json({error:null})}
               })
-          } else {res.json({error: err})}
+          } else {res.json({error: null})}
         })
       }
     } else {
       //make a new user, then send an email
       var newUser= new User();
       newUser.local.email = email;
-      newUser._id=ObjectId();
+      newUser._id=new ObjectId();
       newUser.local.name =  name;
       newUser.local.created= new Date();
       newUser.local.password = newUser.generateHash(password);
-      newUser.memberships.push({community:ObjectId(communityId), role: "VIEWER", pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, interest: interest, accesses: [new Date()], created: new Date(), _id: ObjectId()})
+      newUser.memberships.push({community:new ObjectId(communityId), role: "VIEWER", pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, interest: interest, accesses: [new Date()], created: new Date(), _id: new ObjectId()})
       newUser.local.authenticated= "1";
-      newUser.save(function(err) {
-        if (!err) {
-          Community.collection.update({_id:ObjectId(communityId)}, {$push:{members:newUser._id}}, function(err, result){
-            if (!err) {
+      newUser.save().then (function(result) {
+//        console.log("it worked "+(typeof result.local != "undefined" ));
+      console.log("result of write new user "+JSON.stringify(result));
+        if (typeof result.local != "undefined" )  {
+        Community.updateOne({_id: new ObjectId(communityId)}, {$push:{members:newUser._id}}).then (function( result){
+          	console.log("result of update community "+JSON.stringify(result));
+            if (result.modifiedCount==1) {
+              console.log("set up viewer "+ newUser._id);
               req.logIn(newUser, function (err) {
                 if (!err) {
                   TCMailer.localmailer.sendMail({
@@ -2246,15 +2250,15 @@ router.post('/registerViewer', function(req, res, next) {
                     text: letter.replace(/<[^>]*>/g, '')
                   }, function (err, info) {
                     if (!err) {
-                      res.json({login: true, result: "You are now registered in Textual Communities with the email "+email+", and added as a VIEWER of this community. You will be logged in when you close this window! Happy viewing."});
+                      res.json({login: true, id: newUser._id, result: "You are now registered in Textual Communities with the email "+email+", and added as a VIEWER of this community. You will be logged in when you close this window! Happy viewing."});
                     } else {res.json({error: err})};
                   });
                 }
                 else {res.json({error: err})};
               });
-            } else {res.json({error: err})};
+            } else {res.json({error: null})};
           });
-        } else {res.json({error: err})};
+        } else {res.json({error: null})};
       });
     }
   })

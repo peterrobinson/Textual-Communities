@@ -210,7 +210,7 @@ a.splash {
    width: 12px;
    height: 100%;
    cursor: col-resize;
-    background-image: url("http://www.inklesseditions.com/TCR/common/images/splithandvert.png");
+    background-image: url("https://www.inklesseditions.com/TCR/common/images/splithandvert.png");
     background-color: black;
     background-size: 15px;
     background-repeat: no-repeat;
@@ -227,11 +227,11 @@ a.splash {
     background-position: 50%;
     background-size: 40px;
     cursor: row-resize;
-   background-image: url("http://www.inklesseditions.com/TCR/common/images/splithandhoriz.png");
+   background-image: url("https://www.inklesseditions.com/TCR/common/images/splithandhoriz.png");
 }
 
 .gutter.gutter-horizontal {
-	   background-image: url("http://www.inklesseditions.com/TCR/common/images/splithandvert.png");
+	   background-image: url("https://www.inklesseditions.com/TCR/common/images/splithandvert.png");
 	   background-size: 15px;
        cursor: col-resize;
 }

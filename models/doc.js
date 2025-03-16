@@ -38,6 +38,7 @@ var DocSchema = extendNodeSchema('Doc', {
   entities: [],
   tasks:[{name:String, status:{ type: String, index: true }, memberId:String, witname: [], date: {type: Date}, userId: { type: String, index: true }}],
   image: String,
+  origImage: String,
   meta: Schema.Types.Mixed,
   teiHeader: String,
   control: {transcripts: String, tmsg: String, images: String, imsg:String},

@@ -47,7 +47,7 @@ var ViewComponent = ng.core.Component({
     });
     this.collationEditor=false;
     this.callCollationEditor='';
-    this.rebuild=true; //temporary, to upgrade images
+//    this.rebuild=true; //temporary, to upgrade images
 	$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
    	.done ( function(res) {
 //   	  console.log("succeed");
@@ -267,30 +267,54 @@ var ViewComponent = ng.core.Component({
 					//url as value of image attribute
 					var options = {};
 					let image=config.IIIF_URL+self.state.community.attrs.abbr+"/"+mydoc.attrs.name+"/"+page.attrs.name;
-					if (res.success) {
-						self._docService.update(page.getId(), {
+					if (res.success) { //for some reason docService update is not working here
+						$.ajax({
+							  url: config.BACKEND_URL+'rewriteImageRef?page='+page.getId(),
+							  type: 'POST',
+							  data:  JSON.stringify({image:image}),
+							  accepts: 'application/json',
+							  contentType: 'application/json; charset=utf-8',
+							  dataType: 'json'
+							})
+					      .done(function( data ) {
+							    console.log("written new IIIF");
+							    callback2(null, []);
+							  })
+							 .fail(function( jqXHR, textStatus, errorThrown) {
+							  	console.log("We have a problem writing page "+page.attrs.name+". Image reference is "+page.attrs.image)
+								callback2(null, []);
+							});	
+					/*	self._docService.update(page.getId(), {
 						  image: image,
 						}, options).subscribe(function(mypage) {
 		//					  self.page = page;
 						  callback2(null, []);
-						});
+						}); */
 					} else {
 						//if we are here we have a problem
 						console.log("We have a problem on page "+page.attrs.name+". Image reference is "+page.attrs.image)
 						image=null;
-						self._docService.update(page.getId(), {
-						  image: image,
-						}, options).subscribe(function(mypage) {
-		//					  self.page = page;
-						  callback2(null, []);
-						});
-					}
+						$.ajax({
+							  url: config.BACKEND_URL+'rewriteImageRef?page='+page.getId(),
+							  type: 'POST',
+							  data:  JSON.stringify({image:image}),
+							  accepts: 'application/json',
+							  contentType: 'application/json; charset=utf-8',
+							  dataType: 'json'
+						})
+						.done (function(data){
+							callback2(null, []);
+						})
+						.fail(function( jqXHR, textStatus, errorThrown) {
+							callback2(null, []);
+						})
+					} 
 				})
 				.fail (function( jqXHR, textStatus, errorThrown ) {
 					console.log(jqXHR);
 					console.log(textStatus);
 					console.log(errorThrown );
-					callback(null);
+					callback2(null);
 				});
 		    };
 		}, function (err, results) {

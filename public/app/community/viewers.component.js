@@ -24,8 +24,9 @@ var CommunityMembersComponent = ng.core.Component({
     $.post(config.BACKEND_URL+'community/'+this.community._id+'/members/', function(res) {
       for (var i=0; i<res.length; i++) {
           var thisMembership=res[i].memberships.filter(function (obj){return String(obj.community) == String(self.community._id);})[0];
-          if (thisMembership.role=="VIEWER")
-            self.viewers.push({name:res[i].local.name, email: res[i].local.email, date:thisMembership.created, role:thisMembership.role, approvername: thisMembership.approvername, approvermail: thisMembership.approvermail, assigned:thisMembership.pages.assigned, inprogress:thisMembership.pages.inprogress, submitted:thisMembership.pages.submitted, approved:thisMembership.pages.approved, committed:thisMembership.pages.committed, _id:thisMembership._id, user:res[i], pageinstances: {assigned:[], inprogress:[], committed:[], submitted:[],approved:[], committed:[]}})
+          if (thisMembership.role=="VIEWER") {
+            self.viewers.push({name:res[i].local.name, email: res[i].local.email, date:thisMembership.created, interest:thisMembership.interest})
+          }
       }
     });
       //now, get the tasks for each member..

@@ -142,12 +142,12 @@ var ViewerComponent = ng.core.Component({
     	this.viewer = myviewer;
     }
   	let viewer=this.viewer;
-    if (this.page.attrs.facs && this.page.attrs.facs.startsWith("EXTERNAL:")) {
+/*    if (this.page.attrs.facs && this.page.attrs.facs.startsWith("EXTERNAL:")) {
 //    	$("#imageMap").html(""); this stops existing image display. But somehow stops all further images displaying
 		viewer.open([]);
     	this.image=this.page.attrs.facs;
     	this.imageExternal=this.page.attrs.facs.slice(9);
-    } else if (this.image) {
+    } else */ if (this.image) {
     let origIIIF="https://textualcommunities.org/loris/"; //remove once all images are done
       //could be a iiif reference, or a reference to our own iiif server. If the first, begins http...
       //another possibility: could be direct link to library ms page, which needs to go into an IFRAME. In this, case we start with IFRAME/ followed by image address
