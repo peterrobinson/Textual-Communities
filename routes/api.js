@@ -3935,7 +3935,7 @@ router.get('/ceconfig', function(req, res, next) {
 
 router.get('/getCollations', function(req, res, next) {
   var collations=[];
-  Collation.find({community:req.query.community, status:"approved"}, function (err, results){
+  Collation.find({community:req.query.community, status:"approved"}). then (function (results){
     results.forEach(function(result){
       collations.push(result.ce);
     });
