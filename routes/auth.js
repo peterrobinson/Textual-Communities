@@ -228,7 +228,7 @@ router.get('/resetpwExpired', function(req, res) {
 
 router.get('/resetpw', function(req, res) {
   // find the user with this hash; check datestamp; get a new password
-  User.findOne({ 'local.hash' :  req.query.hash }, function(err, user) {
+  User.findOne({ 'local.hash' :  req.query.hash }).then (function(user) {
     if (user) {
       //check the time stamp. If more than one hour ago, ask for redo
       var timeNow= new Date().getTime();
@@ -262,7 +262,7 @@ router.post('/resetpw',  function(req, res) {
     res.render('resetpw.ejs', {message: "Password must be at least five characters", name: req.body.displayName, email: req.body.email});
   } else {
     //       	console.log("Match!")
-    User.findOne({ 'local.email' :  req.body.email }, function(err, user) {
+    User.findOne({ 'local.email' :  req.body.email }).then (function(user) {
       if (user) {
         user.local.password = user.generateHash(req.body.password);
         user.local.hash="";

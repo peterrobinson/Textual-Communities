@@ -98,12 +98,21 @@ var BrowserFunctionService = {
 	return(s.serializeToString(myDOM)); 
   },
   download: function (content, filename, contentType)  {
-      if(!contentType) contentType = 'application/octet-stream';
+  /*    if(!contentType) contentType = 'application/octet-stream';
       var a = document.createElement('a');
       var blob = new Blob([content], {'type':contentType});
       a.href = window.URL.createObjectURL(blob);
       a.download = filename;
-      a.click();
+      a.click(); */
+      let file = new File([content], filename, {type: contentType});
+      let link = document.createElement('a')
+ 	  let url = URL.createObjectURL(file)
+	  link.href = url
+	  link.download = file.name
+	  document.body.appendChild(link)
+	  link.click()
+	  document.body.removeChild(link)
+	  window.URL.revokeObjectURL(url)
   },
   isImageViewable:function(page, state) {
     if (state.role=="CREATOR" || state.role=="LEADER") return true;   //always veiwable

@@ -106,7 +106,7 @@ var ViewComponent = ng.core.Component({
             if (err) alert(err.json().message);
         });
      }
-    if (this.state.authUser && this.state.authUser._id) {
+    if (this.state.authUser && this.state.authUser.attrs.memberships.length) {
       for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
         if (this.state.authUser.attrs.memberships[i].community.attrs._id==this.state.community.attrs._id)
           this.role=this.state.authUser.attrs.memberships[i].role;
