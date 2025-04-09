@@ -103,7 +103,7 @@
       </div>
     </div>
   </div>
-  <div class="form-group" style="margin-right:15px; margin-left: 15px">
+  <div class="form-group" style="width:100%; margin-right:15px; margin-left: 15px; margin-bottom: 0px">
       <label>Collation</label><br/>
       <input type="checkbox" style="margin-left: 10px" [(ngModel)]="edit.rebuildents">&nbsp;&nbsp;Rebuild collateable entities on each commit (takes longer)<br/>
       <input type="checkbox" style="margin-left: 10px" [(ngModel)]="edit.viewsuppliedtext">&nbsp;&nbsp;View supplied text
@@ -111,7 +111,13 @@
       <input type="checkbox" style="margin-left: 10px" [(ngModel)]="edit.viewcapitalization">&nbsp;&nbsp;View capitalization
       <input type="checkbox" style="margin-left: 10px" [(ngModel)]="edit.expandabbreviations">&nbsp;&nbsp;Expand abbreviations
       <input type="checkbox" style="margin-left: 10px" [(ngModel)]="edit.showpunctuation">&nbsp;&nbsp;Show punctuation
+      <br/>
       <input type="checkbox" style="margin-left: 10px" [(ngModel)]="edit.showxml">&nbsp;&nbsp;Show XML
+ </div>
+ <div class="form-group" style="width:100%; text-align: center;  margin-right:15px; margin-left: 15px;">
+      <span *ngIf="edit.collationents.length==0">No Collation Entities file loaded. Recommended for complex and long texts.</span> <span title="Click for information on a Collation Entities file" (click)="infoCEF()"> <b style="color:blue; font-size:120%">?</b> </span>
+      <span *ngIf="edit.collationents.length>0">Collation Entities file {{edit.collentsfilename}} loaded, containing {{edit.collationents.length}} enitities for collation.</span>
+      <input type="file" accept="text/javascript" id="coll-ents" (change)="loadCollEnts()" style="display: block; margin : auto; margin-top: 5px">
   </div>
   <div class="form-group" style="width:100%; margin-right:15px; margin-left: 15px">
     <form name="communityForm" >

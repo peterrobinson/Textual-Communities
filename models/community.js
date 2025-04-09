@@ -35,6 +35,8 @@ var CommunitySchema = new Schema({
   created: {type: Date},
   members: [{type: ObjectId, ref: 'User'}],
   ceconfig: {},
+  collationents: [String],
+  collentsfilename: String,
   documents: [{type: ObjectId, ref: 'Doc'}],
   entities: [{entityName: String, isTerminal: Boolean, name: String}],
   control: {transcripts: String, images: String, collations: String, tmsg: String, imsg: String, cmsg: String},

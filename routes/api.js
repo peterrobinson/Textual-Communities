@@ -1055,14 +1055,14 @@ router.post('/getMemberTasks', function(req, res, next) {
 
 router.post('/getSubDocEntities', function(req, res, next) {
 //    console.log("looking for "+req.query.id);
-    TEI.findOne({_id: req.query.id}, function(err, tei) {
+    TEI.findOne({_id: req.query.id}).then (function(tei) {
 //      console.log("error "+err);
 //      console.log("tei "+tei);
       var foundTEIS=[];
       var hits=0;
       for (var i=0; i<tei.entityChildren.length; i++) {
           var thisTeiId=tei.entityChildren[i];
-          TEI.findOne({_id: tei.entityChildren[i]}, function(err, oneTEI) {
+          TEI.findOne({_id: tei.entityChildren[i]}).then (function(oneTEI) {
             var hasChild=true;
             hits++;
             if (oneTEI.entityChildren.length==0) hasChild=false;
@@ -3933,15 +3933,221 @@ router.get('/ceconfig', function(req, res, next) {
   });
 });
 
-router.get('/getCollations', function(req, res, next) {
-  var collations=[];
-  Collation.find({community:req.query.community, status:"approved"}). then (function (results){
-    results.forEach(function(result){
-      collations.push(result.ce);
-    });
-    res.json(collations);
-  });
+router.post('/getCollations', function(req, res, next) {
+  	let ranges=req.body.ranges;
+	let collentities=req.body.collentities;
+	let community=req.query.community;
+	let output=req.body.output;
+    let partorall=req.body.partorall;
+	var collations=[];
+	console.log("ranges "+ranges.length+" partorall "+partorall+" choice "+output+" collentities.length "+collentities.length);
+	if (collentities.length==0) {
+	  if (partorall=='all') {
+	  	if (output=='JSON') {  //just find every damn one there is
+			  Collation.find({community:community, status:"approved", model:"collation"}). then (function (results){
+				results.forEach(function(result){
+				  let entity= result.entity.slice(result.entity.indexOf(":")+1);
+				  collations.push({entity: entity, collation: JSON.parse(result.ce)});
+				});
+				res.json(collations);
+			  });
+		} else { //deal with TEi
+		
+		}
+	  } else {//now for ranges, with no collentities file
+	  	async.mapSeries(ranges, function(range, cb) {
+//	  		console.log("range is "+JSON.stringify(range))
+	  		if (range.end=="") { //search for all collations in an entity..
+	  			let searchEnt=range.start.slice(range.start.indexOf("/")+1);
+	  			if (output=='JSON') {
+					Collation.find({community: community, model:"collation", status:"approved", entity:{$regex: searchEnt}}).then(function (results) {
+						results.forEach(function(result){
+							collations.push({entity:result.entity, collation:JSON.parse(result.ce)});
+						})
+						cb(null);
+					});
+				} else {//deal with TEI
+				
+				}
+	  		} else { //we have a range
+				let parts=range.start.slice(range.start.indexOf("/")+1).split(":");
+				let ancestor=community+":";
+				for (let i=0; i<parts.length-1;i++) {
+					ancestor+=parts[i];
+					if (i<parts.length-2) ancestor+=":"
+				}
+				let startEnt=range.start;
+				let endEnt=range.end;
+				let searchEntities=[];
+				Entity.find({ancestorName:ancestor}).then(function(entities) {
+					let i=0;
+					console.log("docs found "+entities.length+" example "+entities[i].entityName+" start "+startEnt)
+					for (i; i<entities.length; i++){
+						if (entities[i].entityName==range.start.replace("/",":")) {
+		//					console.log("found match "+entities[i].entityName);
+							break;
+						}
+					}
+					for (i; i<entities.length; i++) {
+						//add the entity to array
+						searchEntities.push(entities[i].entityName);
+						if  (entities[i-1].entityName==range.end.replace("/",":")) {
+		//					console.log("found end match "+entities[i].entityName);
+							break;
+						}
+					}
+					//now, get the collation for each entity
+					async.map(searchEntities, function(searchEntity, callback){
+//						console.log("search for "+searchEntity)
+					    if (output=="JSON") {
+							Collation.findOne({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (result) {
+								collations.push({entity:result.entity, collation:JSON.parse(result.ce)});
+			//					console.log("did we find one for "+searchEntity+" count "+count)
+								callback(null);
+							});
+						} else {  //get the tei
+						
+						}
+					}, function (err){ //finished this range
+						cb(null);
+					});
+				})
+	  		}	
+	  	}, function(err){ //done all the ranges
+	  		console.log("got here")
+	  		res.json(collations);
+	  	});
+	  }
+	} else {  // we have a collentities file
+		if (partorall=='all') {
+			if (output=='JSON') { 
+				async.mapSeries(collentities, function (entity, cb){
+					searchEntity=community+":"+entity;
+					Collation.findOne({entity: searchEntity, community:community, status:"approved", model:"collation"}).then (function(result){
+						collations.push({entity: searchEntity, collation: JSON.parse(result.ce)});
+						cb(null);
+					})
+				}, function(err){
+					res.json(collations);
+				})
+			} else { //tei format
+			
+			}
+		} else { //ranges
+			async.mapSeries(ranges, function (range, cb){
+		     	 if (range.end=="") {
+		    		var searchEnt=range.start.slice(range.start.indexOf("/")+1);
+				 	var matchEntities=collentities.filter(entity=>entity.indexOf(searchEnt)>-1);
+				 } else {
+				   var startEnt=range.start.replace(community+"/entity", "entity");
+				   var endEnt=range.end.replace(community+"/entity", "entity");
+				   var indexStart = collentities.findIndex(element => element==startEnt);
+				   var indexEnd =  collentities.findIndex(element => element==endEnt);
+				   var matchEntities=collentities.slice(indexStart,indexEnd+1);
+				 }
+				 async.mapSeries(matchEntities, function (matchEntity, cb1) {
+					   searchEntity=community+":"+matchEntity;
+					   if (output=="JSON") {
+						   Collation.findOne({entity: searchEntity, community:community, status:"approved", model:"collation"}).then (function(result){
+								collations.push({entity: searchEntity, collation: JSON.parse(result.ce)});
+								cb1(null);
+							});
+						} else {//TEI output
+						
+						}
+				   }, function (err){
+				   	  cb(null);
+				   });
+			 
+		 }, function (err){
+			res.json(collations);
+		 })
+	  }  //end ranges
+	}
 });
+
+router.get('/countCommunityCollations', function(req, res, next) {
+	let community=req.query.community;
+	console.log("community "+community);
+	Collation.countDocuments({community: community, model:"collation", status:"approved"}).then(function (count) {
+		console.log(count);
+		res.json({success: true, count: count});
+	});
+});
+
+router.post('/countRangeCollations', function(req, res, next) {
+	let range=req.body.range;
+	let collentities=req.body.collentities;
+	let community=req.query.community;
+	if (range.end=="") { //search for all collations in an entity...
+		//remove CTP2/
+		let searchEnt=range.start.slice(range.start.indexOf("/")+1);
+//		console.log("range and search entity"+range.start+" "+searchEnt);
+        if (collentities.length>0) {
+//        	console.log("searching "+collentities.length+" collentitities ");
+        	let count=collentities.filter(entity=>entity.indexOf(searchEnt)>-1).length;
+        	res.json({success: true, count: count});
+        } else {
+			Collation.countDocuments({community: community, model:"collation", status:"approved", entity:{$regex: searchEnt}}).then(function (count) {
+				res.json({success: true, count: count});
+			});
+		}
+	} else { //much more complex. We have to work from the entities list for this community
+		//so: identify the ancestor entity, and list all entities which have that as an ancestor
+		//then: starting from for the start position in that list, check if there is an approved collation for that Entity
+		//finish when we get to the end entity
+		//we only support ranges within the one ancestor (except for collentities file!)
+		let parts=range.start.slice(range.start.indexOf("/")+1).split(":");
+		let ancestor=community+":";
+		for (let i=0; i<parts.length-1;i++) {
+			ancestor+=parts[i];
+			if (i<parts.length-2) ancestor+=":"
+		}
+		let startEnt=range.start.replace(community+"/entity", "entity");
+		let endEnt=range.end.replace(community+"/entity", "entity");
+//		console.log("start "+startEnt)
+		if (collentities.length>0) { //way faster if we have collentities...
+			const indexStart = collentities.findIndex(element => element==startEnt);
+			const indexEnd =  collentities.findIndex(element => element==endEnt);
+			let result=indexEnd-indexStart+1;
+//			console.log("found "+result);
+			res.json({success: true, count: result});
+		} else {
+			let searchEntities=[];
+			Entity.find({ancestorName:ancestor}).then(function(entities) {
+				let i=0;
+//				console.log("docs found "+entities.length+" example "+entities[i].entityName+" start "+range.start)
+				for (i; i<entities.length; i++){
+					if (entities[i].entityName==range.start.replace("/",":")) {
+						console.log("found match "+entities[i].entityName);
+						break;
+					}
+				}
+				for (i; i<entities.length; i++) {
+					//add the entity to array
+					searchEntities.push(entities[i].entityName);
+					if  (entities[i-1].entityName==range.end.replace("/",":")) {
+						console.log("found end match "+entities[i].entityName);
+						break;
+					}
+				}
+				//now, check that there is a collation for each entity
+				let countCollations=0;
+				async.map(searchEntities, function(searchEntity, callback){
+					Collation.countDocuments({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (count) {
+						countCollations+=count;
+	//					console.log("did we find one for "+searchEntity+" count "+count)
+						callback(null);
+					});
+				}, function (err){
+	//				console.log(" found "+countCollations);
+					res.json({success: true, count: countCollations});
+				});
+			})
+		}
+	}
+//	console.log("base "+base+" community "+community+" range "+range.start);
+})
 
 router.get('/adjustModOrig', function(req, res, next) {
   var fetch=parseInt(req.query.fetch);
