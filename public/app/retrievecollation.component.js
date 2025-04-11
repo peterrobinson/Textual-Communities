@@ -1,6 +1,9 @@
 var $ = require('jquery')
+  , UIService = require('./services/ui')
   , CommunityService = require('./services/community')
   , config = require('./config')
+  , async = require('async')
+  , _ = require('lodash')
   , BrowserFunctionService = require('./services/functions')
 ;
 
@@ -12,13 +15,14 @@ var RetrieveCollationComponent = ng.core.Component({
     require('./directives/modaldraggable')
   ],
 }).Class({
-  constructor: [CommunityService, function(communityService) {
+  constructor: [CommunityService, UIService, function(communityService, uiService) {
 //    var Doc = TCService.Doc, doc = new Doc()
     this._communityService = communityService;
     this.message=this.success="";
     this.everycollation=true;
     this.nAllCollations=0;
     this.inSearch=false;
+    this.uiService = uiService;
     }],
   closeModalCE: function() {
     this.message=this.success="";
@@ -96,11 +100,15 @@ var RetrieveCollationComponent = ng.core.Component({
 	  	self.ranges[i].count=0;
 	  }
   },
+  infoRC: function(){
+  	alert("• TEI/XML: outputs apparatus in TEI/XML encoding. Use this form to create NEXUS files for phyloegenetic analysis and creation of VBase variant databases.\r• JSON: outputs apparatus in Collation Editor JSON format. Use this form to retrieve spelling information created during regularization.");
+  },
   submit: function(){
       var self=this;
       let choice=$("input[name='outputForm']:checked").val();
       let partorall="all"
-      if (!this.everycollation) partorall="part"
+      if (!this.everycollation) partorall="part";
+      self.success="Now assembling the collations. This may take a while! Make some coffee...";
       $.ajax({
       	url:config.BACKEND_URL+'getCollations?community='+self.community.attrs.abbr,
       	type: 'POST',
@@ -110,9 +118,17 @@ var RetrieveCollationComponent = ng.core.Component({
 		dataType: 'json'
 	})
 	 .done (function(result) {
-	 	  self.success="Collation for "+result.length+" block(s) found. Now downloading..Check your downloads folder; close this window when it is downloaded"
-          BrowserFunctionService.download(JSON.stringify(result), self.community.attrs.abbr+"-COLLATION.json", "application/json")
-	})
+	 	  if (choice=="TEI") {
+	 	  	self.success="Collation for "+result.length+" block(s) found. Now assembling the XML apparatus";
+	 	  	assembleXML(result, self, function (xml){
+     	      BrowserFunctionService.download(xml, self.community.attrs.abbr+"-COLLATION.xml", "application/xml")	 	  	
+	 	  	  self.success="Assembled the XML.  Now downloading.  Check your downloads folder; close this window when it is downloaded";
+	 	  	});
+ 	 	  } else {
+	 	  	self.success="Collation for "+result.length+" block(s) found. Now downloading. Check your downloads folder; close this window when it is downloaded";
+            BrowserFunctionService.download(JSON.stringify(result), self.community.attrs.abbr+"-COLLATION.json", "application/json")
+	 	  }
+  	})
      .fail (function(jqXHR, textStatus, errorThrown) {
          alert( "error" + errorThrown );
     });
@@ -126,6 +142,98 @@ function rangesReady(self) {
 	}
 	return true;
 }
+
+function assembleXML(lines, self, callback1) {
+	let myDate=(new Date()).toString();
+	let xml="";
+	let user=self.uiService.state.authUser.attrs.local.name;
+	let community=self.community.attrs.abbr;
+	let email=self.uiService.state.authUser.attrs.local.email;
+	let start='<?xml version="1.0" encoding="utf-8"?>\r<TEI xmlns="http://www.tei-c.org/ns/1.0">\r <teiHeader>\r <fileDesc><titleStmt><title>Collation output for '+user+' ('+email+'), generated at '+myDate+'</title></titleStmt><publicationStmt><p rend="ital">dummy</p></publicationStmt>\r  <sourceDesc>\r   <listWit>';
+	let currTopEntity="";
+	var uniqueWits=[]; //update each time we get a new top entity
+	let active=[];
+	async.mapSeries(lines, function(line, callback){
+		let myTES=line.entity.slice(line.entity.indexOf("=")+1);
+		let myTopEntity=myTES.slice(0, myTES.indexOf(":"));
+		if (myTopEntity!=currTopEntity) {
+		//which manuscripts have this entity?
+			$.get(config.host_url+"/uri/urn:det:tc:usask:"+community+"/entity="+myTopEntity+":document=*?type=list", function(wits) {
+				uniqueWits = _.uniqBy(wits, "name");
+				active=[];
+				for (var i=0; i<uniqueWits.length; i++) {	
+			//		start+="<witness>"+uniqueWits[i].name+"</witness>" do this at the end??
+					active.push(uniqueWits[i].name);
+				}
+				currTopEntity=myTopEntity;
+				xml+=processLine(line.collation, line.entity, active)
+				callback(null);
+			});
+		} else {
+			xml+=processLine(line.collation, line.entity, active);
+			callback(null);
+		}
+	}, function(err){ //add wit-list, including all mod and orig as witnesses
+		xml="<div>\r"+xml+"\r</div>";
+	    let myXMLDOM = new DOMParser().parseFromString(xml, "text/xml");
+	    let witnesses=myXMLDOM.getElementsByTagName("idno");  //ref for dante, idno for chaucer
+	    self.success= witnesses.length+" references to witnesses found";
+	    let witsfound=[];
+		 for (let i=0; i<witnesses.length; i++) {
+		 	if (!witsfound.includes($(witnesses[i]).html())) witsfound.push($(witnesses[i]).html());
+		 }
+		 //sort the wits!
+		 witsfound.sort();
+		 this.success=witsfound.length+" distinct witnesses found: "+witsfound.join(" ");
+		 for (let i=0; i<witsfound.length; i++) {
+		 	start+="<witness>"+witsfound[i]+"</witness>"
+		 }
+		 start+="\r  </listWit>\r  </sourceDesc>\r </fileDesc>\r </teiHeader>\r <text>\r  <body>\r  "
+		callback1 (start+xml+"\r  </body>\r </text>\r</TEI>");
+	});
+}
+
+function processLine(fullApp, entity,  active) {
+	let fullApp2=fullApp.replace("<?xml version='1.0' encoding='utf-8'?>","");	   			
+	let apparatus=new DOMParser().parseFromString(fullApp2, "text/xml");
+	let appLac=apparatus.querySelectorAll("app[type=lac]")[0];
+	if (appLac) {
+		var ids=appLac.querySelectorAll("idno");
+		var lacwits=[];
+		//deduce what mss reallu are omitted.. ie they have some text of the entity, just not tjis line or para
+		for (var i=0; i<ids.length; i++) {
+			var isActive=active.filter(function (obj){return obj== ids[i].innerHTML;})[0];
+			//if on both lists.. 
+			if (isActive) lacwits.push(isActive)
+		}
+		//rebuild lacWit to reflect actual omissions
+		if (lacwits.length>0) {
+			var rdgAttr=lacwits.join(" ");
+			var witel="<idno>"+lacwits.join("</idno><idno>")+"</idno>";
+			appLac.querySelectorAll("rdg")[0].setAttribute("wit",rdgAttr);
+			appLac.querySelectorAll("wit")[0].innerHTML=witel;
+		} else {//eliminate the app
+			appLac.parentNode.removeChild(appLac);
+		}
+	}
+	var xml=apparatus.getElementsByTagName('ab')[0].outerHTML;
+	if (xml.indexOf('"></rdg>"')>-1) {
+		alert("Error in line "+entity+". Possibly because there is a stray forwardslash character in the collation (eg. coming from a transcription with '<rdg type='orig' /> rather than <rdg type='orig'/> ). Check this");
+	}
+	var xml2=prettyfiXML(xml);
+	return xml2;
+}
+
+function prettyfiXML(inApp) {
+	inApp=inApp.replace(/<ab xmlns=\"http:\/\/www.tei-c.org\/ns\/1.0\" xml:id/g, "    <ab n");
+	inApp=inApp.replace(/<app /g, "\r         <app ");
+	inApp=inApp.replace(/<\/app>/g, "\r        <\/app>");
+	inApp=inApp.replace(/<\/ab>/g, "\r    <\/ab>\r");
+	inApp=inApp.replace(/<lem /g, "\r            <lem ");
+	inApp=inApp.replace(/<rdg /g, "\r            <rdg ");
+	return inApp;
+}
+
 
 function rangeReady(self, entity) {
 	if (entity=="") return true;

@@ -3952,7 +3952,13 @@ router.post('/getCollations', function(req, res, next) {
 				res.json(collations);
 			  });
 		} else { //deal with TEi
-		
+			  Collation.find({community:community, status:"xml/positive", model:"collation"}). then (function (results){
+				results.forEach(function(result){
+				  let entity= result.entity.slice(result.entity.indexOf(":")+1);
+				  collations.push({entity: entity, collation: result.ce});  //returns XML not JSON
+				});
+				res.json(collations);
+			  });
 		}
 	  } else {//now for ranges, with no collentities file
 	  	async.mapSeries(ranges, function(range, cb) {
@@ -3967,7 +3973,12 @@ router.post('/getCollations', function(req, res, next) {
 						cb(null);
 					});
 				} else {//deal with TEI
-				
+					Collation.find({community: community, model:"collation", status:"xml/positive", entity:{$regex: searchEnt}}).then(function (results) {
+						results.forEach(function(result){
+							collations.push({entity:result.entity, collation:result.ce});
+						})
+						cb(null);
+					});
 				}
 	  		} else { //we have a range
 				let parts=range.start.slice(range.start.indexOf("/")+1).split(":");
@@ -3981,7 +3992,7 @@ router.post('/getCollations', function(req, res, next) {
 				let searchEntities=[];
 				Entity.find({ancestorName:ancestor}).then(function(entities) {
 					let i=0;
-					console.log("docs found "+entities.length+" example "+entities[i].entityName+" start "+startEnt)
+//					console.log("docs found "+entities.length+" example "+entities[i].entityName+" start "+startEnt)
 					for (i; i<entities.length; i++){
 						if (entities[i].entityName==range.start.replace("/",":")) {
 		//					console.log("found match "+entities[i].entityName);
@@ -4002,11 +4013,13 @@ router.post('/getCollations', function(req, res, next) {
 					    if (output=="JSON") {
 							Collation.findOne({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (result) {
 								collations.push({entity:result.entity, collation:JSON.parse(result.ce)});
-			//					console.log("did we find one for "+searchEntity+" count "+count)
 								callback(null);
 							});
 						} else {  //get the tei
-						
+							Collation.findOne({community: community, model:"collation", status:"xml/positive", entity: searchEntity}).then(function (result) {
+								collations.push({entity:result.entity, collation:result.ce});
+								callback(null);
+							});
 						}
 					}, function (err){ //finished this range
 						cb(null);
@@ -4014,25 +4027,27 @@ router.post('/getCollations', function(req, res, next) {
 				})
 	  		}	
 	  	}, function(err){ //done all the ranges
-	  		console.log("got here")
 	  		res.json(collations);
 	  	});
 	  }
 	} else {  // we have a collentities file
 		if (partorall=='all') {
-			if (output=='JSON') { 
 				async.mapSeries(collentities, function (entity, cb){
 					searchEntity=community+":"+entity;
-					Collation.findOne({entity: searchEntity, community:community, status:"approved", model:"collation"}).then (function(result){
-						collations.push({entity: searchEntity, collation: JSON.parse(result.ce)});
-						cb(null);
-					})
+					if  (output=="JSON") {
+						Collation.findOne({entity: searchEntity, community:community, status:"approved", model:"collation"}).then (function(result){
+							collations.push({entity: searchEntity, collation: JSON.parse(result.ce)});
+							cb(null);
+						})
+					} else {
+						Collation.findOne({entity: searchEntity, community:community, status:"xml/positive", model:"collation"}).then (function(result){
+							collations.push({entity: searchEntity, collation: result.ce});
+							cb(null);
+						})
+					}
 				}, function(err){
 					res.json(collations);
 				})
-			} else { //tei format
-			
-			}
 		} else { //ranges
 			async.mapSeries(ranges, function (range, cb){
 		     	 if (range.end=="") {
@@ -4053,7 +4068,10 @@ router.post('/getCollations', function(req, res, next) {
 								cb1(null);
 							});
 						} else {//TEI output
-						
+							Collation.findOne({entity: searchEntity, community:community, status:"xml/positive", model:"collation"}).then (function(result){
+								collations.push({entity: searchEntity, collation: result.ce});
+								cb1(null);
+							});
 						}
 				   }, function (err){
 				   	  cb(null);

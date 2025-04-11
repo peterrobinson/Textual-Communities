@@ -255,7 +255,7 @@ var EditCommunityComponent = ng.core.Component({
     });
   },
   infoCEF: function () {
-  	alert("A Collation Entities file must begin 'var collentities=[',  hold a series of entity names e.g. 'entity=GP:line=1' each followed by a ',' and finishing with ']'. \rFor example:\r  var collentities=[\r    'entity=GP:line=1',\r    'entity=GP:line=2',\r   'entity=GP:line=3'\r  ] " )
+  	alert("A Collation Entities file must begin 'var collentities=[' and  hold a series of entity names (e.g. 'entity=GP:line=1'), each followed by a ',' and finishing with ']'. \rFor example:\r  var collentities=[\r    'entity=GP:line=1',\r    'entity=GP:line=2',\r   'entity=GP:line=3'\r  ] " )
   },
   upload: function (file) {
      var self=this;

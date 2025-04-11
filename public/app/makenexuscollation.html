@@ -18,6 +18,8 @@
   </div-->
   <div id="MMADXFdiv" class="form-group" style="margin-top: 25px;">
   <input type="checkbox" style="margin-left: 10px" [(ngModel)]="skipValidation">&nbsp;&nbsp;Validate the XML file on loading
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue" title="Click for information on file input for nexux conversion" (click)="infoMN()"> </span>
     <tc-filereader (filechange)="filechange($event)"></tc-filereader>
     <div style="text-align: center; margin-top: 10px">
       <button type="button" class="btn btn-primary" (click)="submit()">Load</button>

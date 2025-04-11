@@ -47,6 +47,7 @@ var ManageModalComponent = ng.core.Component({
     require('./community/getdocinf.component'),
     require('./createdefaulttranscripts.component'),
     require('./retrievecollation.component'),
+    require('./retrievespellingscollation.component'),
     require('./makenexuscollation.component'),
     require('./restoredocument.component'),
     require('./changecontrol.component'),
@@ -265,6 +266,9 @@ var ManageModalComponent = ng.core.Component({
         self.choice=event.type;
         self.vMap=event.vMap;
       } else if (event.type ==='makenexuscollation'){
+        self.choice=event.type;
+        self.community=event.community;
+      } else if (event.type=='retrievespellingscollation') {
         self.choice=event.type;
         self.community=event.community;
       } else if (event.type ==='createVarMaps'){

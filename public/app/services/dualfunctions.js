@@ -483,7 +483,7 @@ var DualFunctionService = {
           //get the next reading within this app
         appStart=content.indexOf("<app>", appStart+1);
 //        console.log("appstart now "+appStart);
-        if (appStart==-1) {
+        if (appStart==-1) {e
           //add rest of line to rdgContent
           rdgContent+=content.slice(endApp+6);
 //          console.log("content after adding end of string:"+rdgContent);
@@ -503,8 +503,21 @@ var DualFunctionService = {
     var matrix="MATRIX<br/>";
     var witsMap= new Map();
     var varnums=[0,1,2,3,4,5,6,7,8,9,"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+//create taxsets for mod and orig and others
+	var modtaxa=[];
+	var origtaxa=[];
+	var othertaxa=[];
     for (var i=0; i<wits.length; i++) {
       taxlabels+="&nbsp;&nbsp;&nbsp;&nbsp;["+i+"] "+wits[i].childNodes[0].nodeValue+"<br/>";
+      if (wits[i].childNodes[0].nodeValue.indexOf("-")>-1) {
+      	if (wits[i].childNodes[0].nodeValue.indexOf("-mod")>-1) {
+      		modtaxa.push(i);
+      	} else if (wits[i].childNodes[0].nodeValue.indexOf("-orig")>-1) {
+      		origtaxa.push(i);
+      	} else {
+      		othertaxa.push(i);
+      	}
+      }
       witsMap.set(wits[i].childNodes[0].nodeValue, i);
     }
     converted+="<br/>DIMENSIONS<br/>&nbsp;&nbsp;&nbsp;&nbsp;NTAX="+wits.length+"<br/>&nbsp;&nbsp;&nbsp;&nbsp;NCHAR="+apps.length+"<br/>;<br/>"
@@ -576,7 +589,17 @@ var DualFunctionService = {
     converted+=";<br/><br/>"
     converted+=taxlabels+";<br/><br/>";
     converted+=matrix+";<br/>";
-    converted+="endblock;<br/><br/>BEGIN ASSUMPTIONS;<br/>&nbsp;&nbsp;&nbsp;&nbsp;ancstates archetype=0: all;<br/>;<br/>endblock;"
+    converted+="endblock;<br/><br/>BEGIN ASSUMPTIONS;<br/>&nbsp;&nbsp;&nbsp;&nbsp;ancstates archetype=0: all;<br/>;<br/>"
+    if (modtaxa.length>0) {
+    	converted+="TAXSET modtaxa="+modtaxa.join(" ")+";<br/>";
+    }
+    if (origtaxa.length>0 ) {
+        converted+="TAXSET origtaxa="+origtaxa.join(" ")+";<br/>";
+    }
+    if (othertaxa.length>0) {
+        converted+="TAXSET othertaxa="+othertaxa.join(" ")+";<br/>";
+    }
+    converted+="endblock;";
     return(converted);
   },
   setCookie: function(cname, cvalue, exdays) {

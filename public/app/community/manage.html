@@ -26,7 +26,8 @@
                 <li><a class="dropdown-item" (click)="loadModal('collationeditor-choosebase')">Choose Base</a></li>
                 <li><a class="dropdown-item" (click)="loadModal('collationeditor-choosewitnesses')">Choose Witnesses</a></li>
                 <li><a class="dropdown-item" (click)="loadModal('collationeditor-retrievecollation')">Retrieve Collations</a></li>
-                <li><a class="dropdown-item" (click)="loadModal('collationeditor-makenexuscollation')">Convert Collation to NEXUS</a></li>
+                <li><a class="dropdown-item" (click)="loadModal('collationeditor-makenexuscollation')">Convert XML Collation to NEXUS</a></li>
+                <li><a class="dropdown-item" (click)="loadModal('collationeditor-retrievespellingscollation')">Retrieve Spellings from JSON Collation</a></li>
                 <li>
                 	<a class="dropdown-item" style="display:inline" (click)="setCollEnts()">Rebuild Collation Entities on Commit</a> 
                 	<span *ngIf="state.community.attrs.rebuildents"> <img class="menuimg" height="11" width="11" src="../../images/checked.png"></span>  
