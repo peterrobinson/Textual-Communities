@@ -1,0 +1,35 @@
+<div style="font-size: 110%; height:100%;">
+  <div modal-draggable class="modalHeader">Retrieve Spellings from JSON Collation Files for "{{uiService.state.community.attrs.name}}"
+    <button type="button" (click)="closeModalRSJ()" class="close" data-dismiss="modal" style="font-size:200%; font-weight:800; position: relative; left:-10px; top:-3px;">&times;</button>
+  </div>
+
+  <form>
+    <div *ngIf="message.length>0" class="alert alert-danger" style="margin-bottom: 3px; margin-top: 3px">
+      {{message}}
+    </div>
+    <div *ngIf="success.length>0" class="alert alert-success" style="margin-bottom: 3px; margin-top: 3px">
+      {{success}}
+    </div>
+  </form>
+  <!-- div id="MMADXTdiv" class="form-group" style="width: 100%; margin-top: 8px; margin-left: 20px; margin-right: 20px">
+    <label style="display: inline-block; vertical-align: top">XML&nbsp;&nbsp;</label>
+    <textarea [(ngModel)]="text" rows="11" cols="40">
+    </textarea>
+  </div-->
+  <div id="MMADXFdiv" class="form-group" style="margin-top: 10px; margin-left: 15px">Determine spelling forms to extract:<br/>
+  &nbsp;&nbsp;&nbsp;<input type="radio" name="selectRegMode" (click)="chooseMode(1)" [checked]="regMode==1">&nbsp;Organize spellings by regularized form against each variant lemma<br/>
+  <span *ngIf="regMode==1"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Output as: &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="TEI-1"> TEI/XML &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="NEXUS-1"> NEXUS &nbsp;&nbsp;&nbsp;&nbsp;<br/></span>
+  &nbsp;&nbsp;&nbsp;<input type="radio" name="selectRegMode" (click)="chooseMode(2)" [checked]="regMode==2">&nbsp;Organize spellings by regularized form within each line<br/>
+   <span *ngIf="regMode==2"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Output as: &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="TEI-2"> TEI/XML &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="NEXUS-2"> NEXUS &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" name="JSON"> JSON<br/></span>
+ &nbsp;&nbsp;&nbsp;<input type="radio" name="selectRegMode" (click)="chooseMode(3)" [checked]="regMode==3">&nbsp;Organize spellings by unregularized form only<br/>
+    <span *ngIf="regMode==3"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Output as JSON<br/></span>
+   <hr style="border: 1px solid #8c8b8b; margin-bottom: 5px; margin-top:0px; position: relative; top: 12px ">
+    <div style="margin-top: 10px">
+    	<span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue; top:20px"  title="Click for information on file input for spelling retrieval" (click)="infoRSJ()"> </span> 
+   		 <tc-filereader (filechange)="filechange($event)"></tc-filereader>     
+   	</div>
+    <div style="text-align: center; margin-top: 10px">
+      <button type="button" class="btn btn-primary" (click)="submit()">Load</button>
+    </div>
+  </div>
+</div>

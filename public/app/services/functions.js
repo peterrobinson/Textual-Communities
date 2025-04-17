@@ -220,6 +220,141 @@ var BrowserFunctionService = {
   	} else {
   		return(false);
   	}
+  },
+  createAllSpellingsJSON: function(xml) {
+	let myXMLDOM = new DOMParser().parseFromString(xml, "text/xml");
+  	let apps=myXMLDOM.getElementsByTagName("app");
+  	let spellings=[];
+	for (let i=0; i<apps.length; i++) {
+		let rdgs=apps[i].getElementsByTagName("rdg");
+		for (let j=0; j<rdgs.length; j++) {
+			try {
+				if (typeof rdgs[j].childNodes[0].nodeValue== "undefined") {
+					var rdg="Omitted";
+				} else {
+					var rdg="_"+rdgs[j].childNodes[0].nodeValue;
+				 }  //we preface with _ to get around javascript array reserved words (length, at, with etc)
+				if (typeof spellings[rdg]=="undefined") {
+					spellings[rdg]={};
+				} 
+				let witIds=rdgs[j].getElementsByTagName("wit")[0].getElementsByTagName("idno");
+				for (let k=0; k<witIds.length; k++) {
+					if (typeof witIds[k].childNodes[0].nodeValue == undefined) {
+						var  witId= "dummy"
+					} else {var witId=witIds[k].childNodes[0].nodeValue;}
+					if (typeof spellings[rdg][witId]=="undefined") {
+						spellings[rdg][witId]=1;
+					} else {
+						spellings[rdg][witId]++;
+					}
+				}
+			}
+			catch(err) {
+				var foo=1;
+				alert("err");
+			}
+		}
+	}
+	var sorted=sortObjectByKeys(spellings)
+	let convert= JSON.stringify(sorted); 
+  	//do we here remove all the leading _? Yes...
+  	//prettify!
+  	var rex3= /}},/g;
+  	var rex4='}},\r\r';
+  	var rex5=/},"/g;
+  	var rex6='},\r\t"';
+  	var rex1=/\r"([^"]*)":{/g;
+  	var rex2='\r"$1":{\r\t';
+  	convert=convert.replaceAll(rex3, rex4);
+  	convert=convert.replaceAll(rex5, rex6);
+  	convert=convert.replaceAll(rex1, rex2); 
+  	convert=convert.replaceAll('"_', '"'); 
+  	let nLemmata=0;
+  	let nForms=0;
+  	var sorted=sortObjectByKeys(spellings)
+  	for (const key in spellings) {
+  		nLemmata++;
+  		const theseSpellings = spellings[key];
+  		for (const keySp in theseSpellings) {
+  			const theseMss = theseSpellings[keySp];
+  			nForms+=theseMss;
+  		}
+	}
+  	return {source: convert, forms: nLemmata, instances: nForms};
+  },
+  processSpellings: function  (xml, spellings) {
+	var myXMLDOM = new DOMParser().parseFromString(xml, "text/xml");
+  	let apps=myXMLDOM.getElementsByTagName("app");
+  	for (let i=0; i<apps.length; i++) {
+ //   	this.success="Processing "+(i+1)+" of "+apps.length+" apps found";
+		var rdgs=apps[i].getElementsByTagName("rdg");
+  		for (let j=0; j<rdgs.length; j++) {
+  			try {
+				if (typeof rdgs[j].childNodes[0].nodeValue== "undefined") {
+					var rdg="Omitted";
+				} else {var rdg=rdgs[j].childNodes[0].nodeValue;}  //we preface with _ to get around javascript array reserved words (length, at, with etc)
+				if (typeof rdgs[0].childNodes[0].nodeValue == "undefined") {
+					 var lemma="Omitted";
+				} else { var lemma=rdgs[0].childNodes[0].nodeValue;}
+				if (j==0) {
+					if (typeof spellings[lemma]=="undefined") {
+						spellings[lemma]={};
+					} 
+				}
+				if (typeof spellings[lemma][rdg]=="undefined") {
+					spellings[lemma][rdg]={};
+				}
+				let witIds=rdgs[j].getElementsByTagName("wit")[0].getElementsByTagName("idno");
+				for (let k=0; k<witIds.length; k++) {
+					if (typeof witIds[k].childNodes[0].nodeValue == undefined) {
+						var  witId= "dummy"
+					} else {var witId=witIds[k].childNodes[0].nodeValue;}
+					if (typeof spellings[lemma][rdg][witId]=="undefined") {
+						spellings[lemma][rdg][witId]=1;
+					} else {
+						spellings[lemma][rdg][witId]++;
+					}
+				}
+			}
+			catch(err) {
+				var foo=1;
+				alert("err");
+			}
+  		}
+  	}
+  	let nLemmata=0;
+  	let nSpellings=0;
+  	let nForms=0;
+  	var sorted=sortObjectByKeys(spellings)
+  	for (const key in spellings) {
+  		nLemmata++;
+  		const theseSpellings = spellings[key];
+  		for (const keySp in theseSpellings) {
+  			nSpellings++;
+  			const theseMss = theseSpellings[keySp];
+  			for (const keyMs in theseMss ) {
+  				nForms+=theseMss[keyMs];
+  			}
+  		}
+	}
+  	let convert= JSON.stringify(sorted); 
+  	//do we here remove all the leading _?
+  	//prettify!
+  	var rex3= /}},/g;
+  	var rex4='}},\r\r';
+  	var rex5=/},"/g;
+  	var rex6='},\r\t"';
+  	var rex1=/\r"([^"]*)":{/g;
+  	var rex2='\r"$1":{\r\t';
+  	convert=convert.replaceAll(rex3, rex4);
+  	convert=convert.replaceAll(rex5, rex6);
+  	convert=convert.replaceAll(rex1, rex2);
+  	return {source: convert, nLemmata:nLemmata, nSpellings: nSpellings, nForms: nForms};
   }
 }
+
+function sortObjectByKeys(o) {
+    return Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {});
+}
+
 module.exports = BrowserFunctionService;

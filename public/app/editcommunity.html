@@ -118,7 +118,9 @@
  
       <span *ngIf="edit.collationents.length==0">No Collation Entities file loaded. Recommended for complex and long texts.</span> 
       <span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue" title="Click for information on a Collation Entities file" (click)="infoCEF()"> </span>
-      <span *ngIf="edit.collationents.length>0">Collation Entities file {{edit.collentsfilename}} loaded, containing {{edit.collationents.length}} enitities for collation.</span>
+      <span *ngIf="edit.collationents.length>0">Collation Entities file {{edit.collentsfilename}} loaded, containing {{edit.collationents.length}} enitities for collation.
+      	      <span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue" title="Click to see the contents of the loaded Collation Entities file" (click)="showCollEnts()"> </span>
+      </span>
       <input type="file" accept="text/javascript" id="coll-ents" (change)="loadCollEnts()" style="display: block; margin : auto; margin-top: 5px">
   </div>
   <div class="form-group" style="width:100%; margin-right:15px; margin-left: 15px">

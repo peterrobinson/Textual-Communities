@@ -87,7 +87,7 @@ var RetrieveCollationComponent = ng.core.Component({
 		  })
 		   .done(function(data){
 		//	if (data.success) self.success="Found "+data.count+" approved collations"
-			 self.ranges[i].count=data.count-1;
+			 self.ranges[i].count=data.count;
 			 self.success="";
 			 self.inSearch=false;
 		   })
@@ -249,5 +249,7 @@ function rangeReady(self, entity) {
 	}
 	return true;
 }
+
+
 
 module.exports = RetrieveCollationComponent;

@@ -493,8 +493,9 @@ var DualFunctionService = {
     }
     return(rdgsContent);
   },
-  makeNEXUS: function(source) {
-    var converted="#NEXUS<br/>BEGIN DATA;<br/>";
+  makeNEXUS: function(source, fileN, user, email) {
+  	let myDate=(new Date()).toString();
+    var converted="[NEXUS file created by Textual Communities from file "+fileN+" by "+user+" ("+email+") at "+myDate+"]<br/>#NEXUS<br/>BEGIN DATA;<br/>";
     source=source.replace(/&lt;/gi, "<").replace(/&nbsp;/gi," ");
     var myXMLDOM = new DOMParser().parseFromString(source, "text/xml");
     var apps=myXMLDOM.getElementsByTagName("app");
