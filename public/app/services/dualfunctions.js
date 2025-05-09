@@ -483,7 +483,7 @@ var DualFunctionService = {
           //get the next reading within this app
         appStart=content.indexOf("<app>", appStart+1);
 //        console.log("appstart now "+appStart);
-        if (appStart==-1) {e
+        if (appStart==-1) {
           //add rest of line to rdgContent
           rdgContent+=content.slice(endApp+6);
 //          console.log("content after adding end of string:"+rdgContent);

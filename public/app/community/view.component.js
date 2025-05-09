@@ -77,7 +77,7 @@ var ViewComponent = ng.core.Component({
     });
   }],
   ngOnInit: function() {
-    if (this.state.community.attrs.entities.length>0 && this.state.community.attrs.entities[0].attrs.name=="") {
+    if (this.state.community.attrs.entities.length==0 || this.state.community.attrs.entities[0].attrs.name=="") {
       var self=this;
       if (confirm('The entity list in the "'+this.state.community.attrs.name+'" commmunity has been corrupted. Click OK to repair it.')) {
         //do the repair here...
@@ -543,7 +543,7 @@ var ViewComponent = ng.core.Component({
          	if (!this.state.community.attrs.hasOwnProperty('expandabbreviations')) this.state.attrs.community.expandabbreviations=true;   	
          	if (!this.state.community.attrs.hasOwnProperty('showpunctuation')) this.state.attrs.community.showpunctuation=false;   	
          	if (!this.state.community.attrs.hasOwnProperty('showxml')) this.state.attrs.community.showxml=false;   	
-         	var src=config.COLLATE_URL+"/collation/?dbUrl="+config.BACKEND_URL+"&entity="+entity.entityName+"&community="+this.state.community.attrs.abbr+"&user="+self.state.authUser.attrs._id+"&viewsuppliedtext="+this.state.community.attrs.viewsuppliedtext+"&viewuncleartext="+this.state.community.attrs.viewuncleartext+"&viewcapitalization="+this.state.community.attrs.viewcapitalization+"&expandabbreviations="+this.state.community.attrs.expandabbreviations+"&showpunctuation="+this.state.community.attrs.showpunctuation+"&showxml="+this.state.community.attrs.showxml;
+         	var src=config.COLLATE_URL+"/collation/?dbUrl="+config.BACKEND_URL+"&entity="+entity.entityName+"&community="+this.state.community.attrs.abbr+"&user="+self.state.authUser.attrs._id+"&mode=reg";
          	$('#ce_iframe').attr('src', src);
           } else {
           	alert("Only project leaders or creators can use the collation tool.");

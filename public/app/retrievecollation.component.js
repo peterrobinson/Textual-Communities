@@ -101,7 +101,7 @@ var RetrieveCollationComponent = ng.core.Component({
 	  }
   },
   infoRC: function(){
-  	alert("• TEI/XML: outputs apparatus in TEI/XML encoding. Use this form to create NEXUS files for phyloegenetic analysis and creation of VBase variant databases.\r• JSON: outputs apparatus in Collation Editor JSON format. Use this form to retrieve spelling information created during regularization.");
+  	alert("• TEI/XML: outputs apparatus in TEI/XML encoding. Use this form to create NEXUS files for phylogenetic analysis and creation of VBase variant databases.\r• JSON: outputs apparatus in Collation Editor JSON format. Use this form to retrieve spelling information created during regularization.");
   },
   submit: function(){
       var self=this;

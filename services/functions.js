@@ -11,7 +11,8 @@ var $ = require('jquery')
 var FunctionService = {
   loadTEIContent: function(version, content) {
     var deferred = defer();
-//    console.log("in loadteicontent"); console.log(version.children)
+//    console.log("in loadteicontent"); 
+//      console.log(version.children)
 //now, if there is a next attribute on this version.. we need to do somethng about it... create a series of children for eacah
     if (version.children.length) {
       async.map(version.children, procTEIs, function (err, results) {

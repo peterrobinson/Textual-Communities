@@ -14,7 +14,7 @@ var TestCollationConversionComponent = ng.core.Component({
     this._communityService = communityService;
     this.message=this.success=this.header=""
     }],
-  closeModalCE: function() {
+  closeModalRV: function() {
     this.message=this.success="";
     $('#MMADdiv').css("margin-top", "30px");
     $('#MMADbutton').css("margin-top", "20px");
