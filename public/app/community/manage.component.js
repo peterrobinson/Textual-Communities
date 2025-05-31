@@ -43,6 +43,7 @@ var ManageCommunityComponent = ng.core.Component({
     else if (which=='collationeditor-retrievespellingscollation') this._uiService.manageModal$.emit({type: "retrievespellingscollation", community: this.community});
    else if (which=='collationeditor-createVarMaps') this._uiService.manageModal$.emit({type: "createVarMaps", community: this.community});
     else if (which=='collationeditor-editVarMaps') this._uiService.manageModal$.emit({type: "editvMaps", community: this.community});
+    else if (which=='community-repair') this._uiService.manageModal$.emit({type: "repairCommunity", community: this.community});
     else this._uiService.manageModal$.emit(which);
   },
   isLeader: function() {

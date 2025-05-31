@@ -30,6 +30,7 @@ var Community = _.inherit(Model, {
     entities: Model.OneToManyField(Entity),
     documents: Model.OneToManyField(Doc),
     collentsfilename:'',
+    collationparallelsfilename:'',
     css: '',
     js: '',
     dtd: '',

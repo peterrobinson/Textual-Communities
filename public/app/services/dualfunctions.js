@@ -15,7 +15,7 @@ function isCEPunctuation(myChar) {
 //this is for functions accessible on both client and server sides
 var DualFunctionService = {
  makeJsonList: function (content, witness) {
-//    console.log("in "+witness+" for "+content);
+    console.log("Dual function in "+witness+" for "+content);
     var thistext="";
     //remove line breaks,tabs, etc
   //  thistext+=content.replace(/(\r\n|\n|\r)/gm,"");

@@ -40,6 +40,10 @@
       </tr>
      </table>  
    </div>
+   <div *ngIf="reportProgress" style="margin: 15px">
+   		<p>Now getting collation for {{currEntity}}, {{currN}} of {{nAllCollations}} collations.</p>
+   		<button (click)="stopRetrieval()">Stop Retrieval</button>
+   </div>
   <hr style="border: 1px solid #8c8b8b; margin-bottom: 5px; margin-top:0px; position: relative; top: 2px ">
     <div style="text-align:center"> Output as: 
    		<input type="radio" name="outputForm" value="TEI" checked /> TEI/XML &nbsp;&nbsp;&nbsp;&nbsp;

@@ -23,12 +23,23 @@ var RetrieveCollationComponent = ng.core.Component({
     this.nAllCollations=0;
     this.inSearch=false;
     this.uiService = uiService;
+    this.reportProgress=false;
+    this.currEntity="";
+    this.currN=0;
+    this.stop=false;
     }],
   closeModalCE: function() {
     this.message=this.success="";
+    this.inSearch=false;
+    this.currN=0;
+    this.reportProgress=false;
+    this.nAllCollations=0;
     $('#MMADdiv').css("margin-top", "30px");
     $('#MMADbutton').css("margin-top", "20px");
+     $('#manageModal').width("700px");
+    $('#manageModal').height("310px");
     $('#manageModal').modal('hide');
+
   },
   ngOnInit: function() {
     this.header="Retrieve Collations for "+this.community.attrs.name;
@@ -67,6 +78,9 @@ var RetrieveCollationComponent = ng.core.Component({
   	this.ranges.splice(i, 1);
   	 let height=$('#manageModal').height();
   	$('#manageModal').height(height-20);
+  },
+  stopRetrieval: function() {
+  	this.stop=true;
   },
   clickEntity: function(i) {
   	  let self=this;
@@ -108,7 +122,12 @@ var RetrieveCollationComponent = ng.core.Component({
       let choice=$("input[name='outputForm']:checked").val();
       let partorall="all"
       if (!this.everycollation) partorall="part";
+      self.stop=false;
       self.success="Now assembling the collations. This may take a while! Make some coffee...";
+//instead of a single function: we will do it in stages a line at a time
+//first we pull back the entities, all of them or ranges of them
+//then we go get the collations
+//first get back a list of all the 
       $.ajax({
       	url:config.BACKEND_URL+'getCollations?community='+self.community.attrs.abbr,
       	type: 'POST',
@@ -117,8 +136,43 @@ var RetrieveCollationComponent = ng.core.Component({
 		contentType: 'application/json; charset=utf-8',
 		dataType: 'json'
 	})
-	 .done (function(result) {
-	 	  if (choice=="TEI") {
+	 .done (function(entities) {
+	 	//we have a set of entities to download. Now grab all the collations
+	 	 self.reportProgress=true;
+	 	 let collations=[];
+	 	 self.nAllCollations=entities.length;
+	 	 async.mapSeries(entities, function(entity, callback){
+	 	 	self.currEntity=entity;
+	 	 	self.currN++;
+	 	 	if (self.stop) {
+	 	 		callback("retrieval stopped")
+	 	 	} else {
+				$.get(config.BACKEND_URL+'getCollation?entity='+entity+'&output='+choice+'&community='+self.community.attrs.abbr, function(collation) {
+					if (collation.success)	{
+						collations.push(collation.collation);
+					} else {
+						self.message+="No approved collation found for "+entity+". "
+					}
+					callback(null)
+				})
+			}
+	 	 }, function(err) {
+	 	 	if (err=="retrieval stopped") {
+	 	 		self.message+="Collation retrieval stopped."
+	 	 	} else {
+	 	 		if (choice=="TEI") {
+					self.success="Collation for "+collations.length+" block(s) found. Now assembling the XML apparatus";
+					assembleXML(collations, self, function (xml){
+					  BrowserFunctionService.download(xml, self.community.attrs.abbr+"-COLLATION.xml", "application/xml")	 	  	
+					  self.success="Assembled the XML.  Now downloading.  Check your downloads folder; close this window when it is downloaded";
+					});
+				  } else {
+					self.success="Collation for "+collations.length+" block(s) found. Now downloading. Check your downloads folder; close this window when it is downloaded";
+					BrowserFunctionService.download(JSON.stringify(collations), self.community.attrs.abbr+"-COLLATION.json", "application/json")
+				  } 
+	 	 	}
+	 	 });
+/*	 	  if (choice=="TEI") {
 	 	  	self.success="Collation for "+result.length+" block(s) found. Now assembling the XML apparatus";
 	 	  	assembleXML(result, self, function (xml){
      	      BrowserFunctionService.download(xml, self.community.attrs.abbr+"-COLLATION.xml", "application/xml")	 	  	
@@ -127,7 +181,7 @@ var RetrieveCollationComponent = ng.core.Component({
  	 	  } else {
 	 	  	self.success="Collation for "+result.length+" block(s) found. Now downloading. Check your downloads folder; close this window when it is downloaded";
             BrowserFunctionService.download(JSON.stringify(result), self.community.attrs.abbr+"-COLLATION.json", "application/json")
-	 	  }
+	 	  } */
   	})
      .fail (function(jqXHR, textStatus, errorThrown) {
          alert( "error" + errorThrown );

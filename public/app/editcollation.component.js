@@ -3,6 +3,8 @@ var $ = require('jquery')
   , UpdateDbService = require('./services/updatedb')
 ;
 
+ 
+
 var EditCollationComponent = ng.core.Component({
   selector: 'tc-managemodal-editcollation',
   templateUrl: '/app/editcollation.html',
@@ -14,7 +16,6 @@ var EditCollationComponent = ng.core.Component({
   constructor: [CommunityService, function(communityService) {
 //    var Doc = TCService.Doc, doc = new Doc()
     this._communityService = communityService;
-    this.documents=this._communityService._docService.state.community.attrs.documents;
     this.witsdone=false;
     $('#manageModal').width("300px");
     $('#manageModal').height("100px");
@@ -26,33 +27,46 @@ var EditCollationComponent = ng.core.Component({
     $('#manageModal').modal('hide');
     this.witsdone=false;
   },
+  ngOnInit: function() {
+ 	   this.documents=this._communityService._docService.state.community.attrs.documents;
+  },
   ngOnChanges: function() {
 //    this.communi
     this.message="";
     this.success="";
     $('#manageModal').width("300px");
     $('#manageModal').height("610px");
-    var witnesses=this._communityService._docService.state.community.attrs.ceconfig.witnesses;
-    if (this.action=="chooseBase") {
-      this.base=this._communityService._docService.state.community.attrs.ceconfig.base_text;
-      this.header="Choose Base Text for Collation";
-    } else if (this.action=="chooseWitnesses") {
-      this.header="Choose Witnesses for Collation";
-    }
+    if ( typeof this._communityService._docService.state.community.attrs.ceconfig.witnesses!="undefined") {
+		var witnesses=this._communityService._docService.state.community.attrs.ceconfig.witnesses;
+		if (this.action=="chooseBase") {
+		  this.base=this._communityService._docService.state.community.attrs.ceconfig.base_text;
+		  this.header="Choose Base Text for Collation";
+		} else if (this.action=="chooseWitnesses") {
+		  this.header="Choose Witnesses for Collation";
+		}
+	}
   },
  ngAfterViewChecked: function (){
-    var witnesses=this._communityService._docService.state.community.attrs.ceconfig.witnesses;
-    if (this.action=="chooseWitnesses" && !this.witsdone) {
-      if (witnesses.length==0)  $('input').prop( "checked", true );
-      else {
-          $('input').prop( "checked", false );
-          for (var i = 0; i < witnesses.length; i++) {
-            var choice="#"+witnesses[i];
-            $(choice).prop( "checked", true );
-          }
-      }
-      this.witsdone=true;
-    }
+ 	if ( typeof this._communityService._docService.state.community.attrs.ceconfig.witnesses!="undefined") {
+		var witnesses=this._communityService._docService.state.community.attrs.ceconfig.witnesses;
+		//this is a hack, but needed because we don't seem to be able to update this.documents dynamically. so reload..
+		if (JSON.stringify(this._communityService._docService.state.community.attrs.documents)!=JSON.stringify(this.documents)) {
+			window.location.href="/app/community/?id="+this._communityService._docService.state.community.attrs._id+"&route=view";
+		} else {
+	//		this.documents=this._communityService._docService.state.community.attrs.documents;
+			if (this.action=="chooseWitnesses" && !this.witsdone) {
+			  if (witnesses.length==0)  $('input').prop( "checked", true );
+			  else {
+				  $('input').prop( "checked", false );
+				  for (var i = 0; i < witnesses.length; i++) {
+					var choice='[id="'+witnesses[i]+'"]';
+					$(choice).prop( "checked", true );
+				  }
+			  }
+			  this.witsdone=true;
+			}
+		}
+	}
   },
   submit: function(){
       var self=this;
@@ -68,11 +82,11 @@ var EditCollationComponent = ng.core.Component({
          });
       } else {
         //make an array of all the input values
-        var documents=this._communityService._docService.state.community.attrs.documents;
+       var documents=this._communityService._docService.state.community.attrs.documents;
         var witnesses=[];
         var cewitnesses=[];
         for (var i = 0; i < documents.length; i++) {
-          var choice="#"+documents[i].attrs.name;
+          var choice='[id="'+documents[i].attrs.name+'"]';
           if ($(choice).prop("checked")) {
             witnesses.push('"'+documents[i].attrs.name+'"');
             cewitnesses.push(documents[i].attrs.name);

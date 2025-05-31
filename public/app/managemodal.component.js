@@ -56,6 +56,7 @@ var ManageModalComponent = ng.core.Component({
     require('./makevarmaps.component'),
     require('./editvmap.component'),
     require('./editvmaps.component'),
+    require('./repaircommunity.component'),
     require('./testcollationconversion.component'),
     require('./writecommentary.component'),
     require('./writevbase.component')
@@ -275,6 +276,9 @@ var ManageModalComponent = ng.core.Component({
         self.choice=event.type;
         self.community=event.community;
       } else if (event.type ==='editvMaps'){
+        self.choice=event.type;
+        self.community=event.community;
+      } else if (event.type ==='repairCommunity'){
         self.choice=event.type;
         self.community=event.community;
       } else if (event.type ==='restoredocument') {

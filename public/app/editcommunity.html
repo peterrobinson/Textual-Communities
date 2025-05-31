@@ -116,14 +116,23 @@
  </div>
  <div class="form-group" style="width:100%; text-align: center;  margin-right:15px; margin-left: 15px;">
  
-      <span *ngIf="edit.collationents.length==0">No Collation Entities file loaded. Recommended for complex and long texts.</span> 
       <span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue" title="Click for information on a Collation Entities file" (click)="infoCEF()"> </span>
+      <span *ngIf="edit.collationents.length==0">No Collation Entities file loaded. Recommended for complex and long texts.</span> 
       <span *ngIf="edit.collationents.length>0">Collation Entities file {{edit.collentsfilename}} loaded, containing {{edit.collationents.length}} enitities for collation.
       	      <span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue" title="Click to see the contents of the loaded Collation Entities file" (click)="showCollEnts()"> </span>
       </span>
       <input type="file" accept="text/javascript" id="coll-ents" (change)="loadCollEnts()" style="display: block; margin : auto; margin-top: 5px">
   </div>
-  <div class="form-group" style="width:100%; margin-right:15px; margin-left: 15px">
+  <div class="form-group" style="width:100%; text-align: center;  margin-right:15px; margin-left: 15px;">
+ 
+      <span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue" title="Click for information on a Collation Parallels file" (click)="infoCPF()"> </span>
+      <span *ngIf="edit.collationparallels==''">No Collation Parallels file loaded. Use when you want to collate the same text in different entities.</span> 
+       <span *ngIf="edit.collationparallels!=''">Collation Parallels file {{edit.collationparallelsfilename}} loaded, containing {{nParallels}} parallel entities for collation.
+      	      <span class="glyphicon glyphicon-info-sign" onmouseout="this.style.fontSize='15px'" onmouseover="this.style.fontSize='30px'" style="font-size: 15px; color:blue" title="Click to see the contents of the loaded Collation Parallels file" (click)="showCollPars()"> </span>
+      </span>
+      <input type="file" accept="text/javascript" id="coll-pars" (change)="loadCollPars()" style="display: block; margin : auto; margin-top: 5px">
+  </div>
+ <div class="form-group" style="width:100%; margin-right:15px; margin-left: 15px">
     <form name="communityForm" >
       <label>Choose community image (max. {{picFile.maxWidth}}x{{picFile.maxHeight}})</label> <br/>
       <div style="width: 600px; margin-left:auto; margin-right:auto;  text-align:center">

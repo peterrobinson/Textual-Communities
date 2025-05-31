@@ -47,6 +47,7 @@ var ViewComponent = ng.core.Component({
     });
     this.collationEditor=false;
     this.callCollationEditor='';
+//    this.documents=this._communityService._docService.state.community.attrs.documents;
 //    this.rebuild=true; //temporary, to upgrade images
 	$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
    	.done ( function(res) {
@@ -77,36 +78,10 @@ var ViewComponent = ng.core.Component({
     });
   }],
   ngOnInit: function() {
-    if (this.state.community.attrs.entities.length==0 || this.state.community.attrs.entities[0].attrs.name=="") {
-      var self=this;
-      if (confirm('The entity list in the "'+this.state.community.attrs.name+'" commmunity has been corrupted. Click OK to repair it.')) {
-        //do the repair here...
-        $.get(config.BACKEND_URL+'repairEntities/?community='+this.state.community.attrs.abbr, function(res) {
-            var i=0;
-            for (i=0; i<res.foundEntities.length; i++) {
-              if (i<self.state.community.attrs.entities.length) {
-                self.state.community.attrs.entities[i].attrs.name=res.foundEntities[i].name;
-                self.state.community.attrs.entities[i].attrs.entityName=res.foundEntities[i].entityName;
-              } else self.state.community.attrs.entities.push({name:res.foundEntities[i].name, entityName:res.foundEntities[i].entityName});
-            }
-            if (i<self.state.community.attrs.entities.length) {
-              while (i<self.state.community.attrs.entities.length) {
-                self.state.community.attrs.entities.pop();
-              }
-            }
-            alert("Entity list repaired.")
-        });
-      }
-    }
-    if (this.state.community.attrs.rebuildents==undefined) {
-    	this.state.community.attrs.rebuildents=false;
-    	this._communityService.createCommunity(this.state.community.attrs).subscribe(function(community) {
-    	  //all ok
-    	},function(err) {
-            if (err) alert(err.json().message);
-        });
-     }
-    if (this.state.authUser && this.state.authUser.attrs.memberships.length) {
+    if (this.state.authUser && this.state.community.attrs.abbr!="" && (this.state.community.attrs.entities.length==0 || this.state.community.attrs.entities[0].attrs.name=="") ) {
+       alert('The entity list in the "'+this.state.community.attrs.name+'" commmunity may have been corrupted. Reload the community, or Use Manage->Community Management->Repair Community to fix it');
+  	}    
+     if (this.state.authUser && this.state.authUser.attrs.memberships.length) {
       for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
         if (this.state.authUser.attrs.memberships[i].community.attrs._id==this.state.community.attrs._id)
           this.role=this.state.authUser.attrs.memberships[i].role;

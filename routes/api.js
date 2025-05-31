@@ -802,9 +802,9 @@ router.post('/upload', function(req, res, next) {
 	var page=req.query.page;
 	var doc=req.query.doc;
 	var community=req.query.community;
-//	console.log("doc "+doc+" page "+page+" community"+community);
+	console.log("doc "+doc+" page "+page+" community"+community);
 	var TCIdestination=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0";
-//	console.log("copy to "+TCIdestination);
+	console.log("copy to "+TCIdestination);
 //	var TCIdestination="/Volumes/Macintosh HD/Users/pmr906_1/venv/TCangular/tc/public/app/data/tcimages/CTP2/Ad1/41v/full/full/0";
     var storage = multer.diskStorage({
     	destination: TCIdestination,
@@ -816,8 +816,8 @@ router.post('/upload', function(req, res, next) {
     var upload = multer({ storage : storage}).any();
 
     upload(req,res,function(err) {
-        if(err) {
-  //          console.log(err);
+        if (err) {
+            console.log(err);
             return res.end("Error uploading file.");
         } else {
   //         console.log(req.body);
@@ -825,7 +825,7 @@ router.post('/upload', function(req, res, next) {
   //           console.log(f);
              // and move file to final destination...
            });
- //          console.log("ready to write the IIIF!")
+           console.log("ready to write the IIIF!")
            exec("ls '"+TCIdestination+"'", (error, stdout, stderr) => {
 			if (error) { console.log(`error: ${error.message}`); res.json(req.files);return}
 			if (stderr) {console.log(`stderr: ${stderr}`);res.json(req.files);return}
@@ -3296,7 +3296,7 @@ router.get('/getRevisions', function(req, res, next) {
   });
 });
 
-function getWitness (witness, community, entity, base, override, recallback) {
+function getWitness (witness, community, entity, suffix, base, override, recallback) {
   	var thisDoc, errorMessage="";
   	var deleteTEIs=[];
 //  	console.log("seeking "+entity+" in "+witness+" community "+community.abbr);
@@ -3435,7 +3435,8 @@ function getWitness (witness, community, entity, base, override, recallback) {
 				}
 			},
 			function (teis, cb) {
-			  var content='{"_id": "'+witness+'_'+entity+'", "context": "'+entity+'","tei":"", "transcription": "'+witness+'","transcription_siglum": "'+witness+'","siglum": "'+witness+'"';
+			  console.log("witness "+witness+" suffix "+suffix);
+			  var content='{"_id": "'+witness+suffix+'_'+entity+'", "context": "'+entity+'","tei":"", "transcription": "'+witness+'","transcription_siglum": "'+witness+'","siglum": "'+witness+'"';
 			  var teiContent={"content":""}; //make this a loop if more than one wit here
 			  //put third line back
 			  content+=',"witnesses":['
@@ -3486,7 +3487,9 @@ function getWitness (witness, community, entity, base, override, recallback) {
 //	                       console.log("counter "+counter);
   //                    console.log(thisTei);
 					  if (teis.length==1) {
-						thisWitness=witness;
+						if (witness!=base) {
+							thisWitness=witness+suffix; //deal with simple cases
+						} else thisWitness=witness;
 						cb3(null, []);
 					  } else {
 						//assuming that page is always a direct child of document
@@ -3502,7 +3505,7 @@ function getWitness (witness, community, entity, base, override, recallback) {
 //							  console.log("checking for "+nextDocId)
 							  Doc.findOne({_id: nextDocId}).then (function(thisDoc) {
 								if (!thisDoc) console.log("can't find doc "+nextDocId+" "+thisTei.docs[1])
-								if (depth==1) thisWitness=witness+"("+thisDoc.name;
+								if (depth==1) thisWitness=witness+suffix+"("+thisDoc.name;
 								else {
 								  if (typeof thisDoc.name!= "undefined") {
 									thisWitness+="."+thisDoc.label[0]+thisDoc.name;
@@ -3536,11 +3539,11 @@ function getWitness (witness, community, entity, base, override, recallback) {
 					},
 					function (results, cb3) {
 						teiContent.content="";
-//							console.log("XXX in "+thisTei.attrs.n)
+						console.log("XXX in ")
 						FunctionService.loadTEIContent(thisTei, teiContent).then(function (){
 						//if our content has an empty t element: we have a problem. So let's send a warning and remove the offending word
 						  if (teiContent.content!="") {
-//	//						  	console.log("TEI content for witness "+witness+": "+teiContent.content)
+							  	console.log("TEI content for witness "+thisWitness+" origwitness "+witness+": "+teiContent.content)
 //								what comes back is a series of raw elements for a JSON array. Make it an array now to handle it
 							var thisCollation="["+DualFunctionService.makeJsonList(teiContent.content, thisWitness)+"]";
 							if (detectUnescapedEscapes(thisCollation).length) {
@@ -3622,49 +3625,74 @@ function detectUnescapedEscapes(str) {
 
 router.post('/getCEWitnesses', function(req, res, next) {
 	var community=req.query.community;
-	var thisCommunity={};
-	var witlist=req.body.witnesses;
+	var thisCommunity={};    //when getting parallels for different communities .. will need to change this
+	var witlist=req.body.witnesses;   //when getting parallels for different communities .. will need to change this
 	var base=req.body.base;
 	var entity=req.body.entity;
 	var override=req.body.override;
-	var results=[];
+	var parallels=req.body.parallels;
+	var allresults=[];
+	
 	var errorMessage="";
 //	console.log("in get ce wtinesses "+base)
-	async.waterfall([
-		function (cb) {
-		  Community.findOne({'abbr':community}).then ( function (myCommunity) {
-				thisCommunity=myCommunity;
-				cb(null, myCommunity.documents);
-		  });
-		}
-	], function (err) {
-//		console.log("witness list "+witlist);
-		async.mapSeries(witlist, function(witness, callback){
-//			console.log("witness "+witness);
-			getWitness (witness, thisCommunity, entity, base, override, function(err, result, thisDoc, errorRead ){
-				errorMessage+=errorRead;
+	console.log("we have parallels .. "+parallels.length);
+	let index=0;
+	async.mapSeries(parallels, function (parallel, callback1){
+		console.log("looking for: "+parallel.entity+" "+parallel.suffix);
+		console.log("looking now")
+	    var results=[];
+	    index++;
+		async.waterfall([
+			function (cb) {
+			  Community.findOne({'abbr':community}).then ( function (myCommunity) {
+					thisCommunity=myCommunity;
+					cb(null, myCommunity.documents);
+			  });
+			}
+		], function (err) {
+			async.mapSeries(witlist, function(witness, callback){
+				console.log("index "+index+" witness "+witness+" base "+base)
+			    if (index>1 && witness==base) {
+			    	index++;
+			    	console.log("written base once")
+			    	callback(null);
+			    } else {
+//				console.log("witness "+witness);		
+					getWitness (witness, thisCommunity, parallel.entity, parallel.suffix, base, override, function(err, result, thisDoc, errorRead ){
+						errorMessage+=errorRead;
+						if (!err) {
+						   console.log("got witness "+witness+" "+parallel.suffix+" text "+result);
+						   TEI.updateOne({docs: thisDoc._id, entityName: parallel.entity}, {$set: {collateX: result}}).then (function (written){
+							 results.push(result);
+							 callback(null);
+						   });
+						 } else {   //have to do it this way else screw up comparing string and json object
+						   var thisexists=(err.error=="has Collatex");
+						   var thismissing=(err.error=="no witness");
+						   if (thismissing) {
+							 //just don't add it to the array
+							 callback(null);
+						   }  else if (thisexists) {
+							 results.push(result);
+							 callback(null);
+						   } else callback(err)
+						 }
+					});
+				}
+			}, function (err) {
 				if (!err) {
-				   TEI.updateOne({docs: thisDoc._id, entityName: entity}, {$set: {collateX: result}}).then (function (written){
-					 results.push(result);
-					 callback(null);
-				   });
-				 } else {   //have to do it this way else screw up comparing string and json object
-				   var thisexists=(err.error=="has Collatex");
-				   var thismissing=(err.error=="no witness");
-				   if (thismissing) {
-					 //just don't add it to the array
-					 callback(null);
-				   }  else if (thisexists) {
-					 results.push(result);
-					 callback(null);
-				   } else callback(err)
-				 }
-			});
-		}, function (err) {
-			if (!err)
-				res.json({success:true, result:results, errorMessage: errorMessage});
-			else res.json({success:false, error: err});
-		})
+					console.log("we have results")
+					allresults=allresults.concat(results);
+					callback1(null);
+				} else {
+					callback1(err);
+				}
+			})
+		});
+	}, function (err){
+		if (!err)
+			res.json({success:true, result:allresults, errorMessage: errorMessage});
+		else res.json({success:false, error: err});
 	});
 });
 
@@ -3688,7 +3716,7 @@ router.get('/cewitness', function(req, res, next) {
 		  });
 		},
 		function (myCommunity, cb) {
-		  getWitness (req.query.witness, myCommunity, thisEntity, base, override, function(err, result, thisDoc, errorRead){
+		  getWitness (req.query.witness, myCommunity, thisEntity, "", base, override, function(err, result, thisDoc, errorRead){
 		  	 errorMessage+=errorRead;
 			 if (!err) {
 			   TEI.updateOne({docs: thisDoc._id, entityName: thisEntity}, {$set: {collateX: result}}).then (function (results){
@@ -4001,6 +4029,50 @@ router.get('/repairEntities', function(req, res, next) {
   })
 });
 
+router.get('/getTEIGhosts',  function(req, res, next) {
+  //grab all the entities which have no ancestor but belong to this community
+  //this assumes that toplevel entities can NOT be terminal. Is there a community where this is not the case??
+  var community=req.query.community;
+  var page = req.query.page;
+  var docStr=req.query.docStr;
+  var pageStr=req.query.pageStr;
+  var foundEntities=[];
+//  console.log("checking for ghosts in "+community+" page "+page)
+  let foundGhosts=[];
+  TEI.find({community:community, docs: new ObjectId(page), isTerminal: true}). then (function(teis){
+//  	console.log("found so many teis for this page "+teis.length)
+  	async.mapSeries(teis, function(tei, cb){
+  		//make an array of all docs referenced below this and see if they exist
+  		var mydocs=[];
+  		for (let i=2; i<tei.docs.length; i++) {
+  			mydocs.push(tei.docs[i]);
+  		}
+  		async.mapSeries(mydocs, function(mydoc, cb2){
+  			Doc.findOne({_id: new ObjectId(mydoc)}). then( function (isDoc) {
+  				if (!isDoc) {
+  					//but if there is only one of these, no duplicate
+  					TEI.find({entityName:tei.entityName}).then (function(elements){
+  						if (elements.length>1) {
+  							 foundGhosts.push({tei: tei, page: pageStr, doc: docStr});
+							 cb2(null);
+  						} else {
+  							cb2(null);
+  						}
+  					})
+  				} else {
+  			   	 	cb2(null);
+  			    }
+  			});
+  		}, function(err) {
+  			cb(null);
+  		})
+  	}, function (err){
+  		//return here
+  		res.json({nTEIs: teis.length, nGhosts: foundGhosts.length, ghosts: foundGhosts});
+  	})
+  })
+});
+
 // wrinkle: populate witnesses field from documents array...
 //now: use what is in ceconfig witnesses
 //NOTE if we get an error here it is because there is a document in the witness list which no longer exists
@@ -4012,6 +4084,7 @@ router.get('/ceconfig', function(req, res, next) {
 //  if ceconfig.witnesses is not empty -- use it!!!
     if (community.ceconfig.witnesses && community.ceconfig.witnesses.length>0) {
     	community.ceconfig.collationents=community.collationents;
+    	community.ceconfig.collationparallels=community.collationparallels;
     	res.json(community.ceconfig);
     }  else {
       async.mapSeries(community.documents, function(mydocument, callback) {
@@ -4050,7 +4123,146 @@ router.post('/getSavedCollations', function(req, res, next) {
 	});
 });
 
+router.get('/getCollation',  function(req, res, next) {
+	let entity=req.query.entity;
+	let output=req.query.output;
+	let community=req.query.community;
+//	console.log("about to get collation for "+entity)
+	if (output=="JSON") {
+		Collation.findOne({community: community, model:"collation", status:"approved", entity: entity}).then(function (result) {
+			if (!result) {
+				res.json({success: false})
+			} else {
+				res.json({success: true, collation: {entity:result.entity, collation:JSON.parse(result.ce)}});
+			}
+		})
+	} else { // get me the tei
+		Collation.findOne({community: community, model:"collation", status:"xml/positive", entity: entity}).then(function (result) {
+			if (!result) {
+				res.json({success: false})
+			} else {
+				res.json({success: true, collation: {entity:result.entity, collation:result.ce}})
+			}
+		});
+	}
+});
+
 router.post('/getCollations', function(req, res, next) {
+  	let ranges=req.body.ranges;
+	let collentities=req.body.collentities;
+	let community=req.query.community;
+	let output=req.body.output;
+    let partorall=req.body.partorall;
+	var collations=[];
+//	console.log("range 1 "+ranges[0].start+"ranges "+ranges.length+" partorall "+partorall+" choice "+output+" collentities.length "+collentities.length);
+	if (collentities.length==0) {
+	  if (partorall=='all') {
+	  	 Collation.find({community:community, status:"approved", model:"collation"}). then (function (results){
+	  	 	results.forEach(function(result){
+	  	 		collations.push(result.entity);
+	  	 	})
+	  	 	res.json(collations);
+	  	 })
+	  } else {//now for ranges, with no collentities file
+	  	async.mapSeries(ranges, function(range, cb) {
+//	  		console.log("range is "+JSON.stringify(range))
+	  		if (range.end=="") { //search for all collations in an entity..
+	  			let searchEnt=range.start.slice(range.start.indexOf("/")+1);
+	  			Collation.find({community: community, model:"collation", status:"approved", entity:{$regex: searchEnt}}).then(function (results) {
+					results.forEach(function(result){
+						collations.push(result.entity);
+					})
+				 cb(null);
+				});
+	  		} else { //we have a range
+	  			//if we are looking at just one Entity
+	  			if (range.start==range.end) {
+	  				let searchEntity=range.start.replace("/",":");
+					Collation.findOne({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (result) {
+						collations.push(result.entity);
+						cb(null);
+					});
+	  			} else {
+					let parts=range.start.slice(range.start.indexOf("/")+1).split(":");
+					let ancestor=community+":";
+					for (let i=0; i<parts.length-1;i++) {
+						ancestor+=parts[i];
+						if (i<parts.length-2) ancestor+=":"
+					}
+					let startEnt=range.start;
+					let endEnt=range.end;
+					let searchEntities=[];
+					Entity.find({ancestorName:ancestor}).then(function(entities) {
+						let i=0;
+	//					console.log("docs found "+entities.length+" example "+entities[i].entityName+" start "+startEnt)
+						for (i; i<entities.length; i++){
+							if (entities[i].entityName==range.start.replace("/",":")) {
+			//					console.log("found match "+entities[i].entityName);
+								break;
+							}
+						}
+						for (i; i<entities.length; i++) {
+							//add the entity to array
+							searchEntities.push(entities[i].entityName);
+							if  (entities[i-1].entityName==range.end.replace("/",":")) {
+			//					console.log("found end match "+entities[i].entityName);
+								break;
+							}
+						}
+						//now, get the collation for each entity
+						async.map(searchEntities, function(searchEntity, callback){
+	//						console.log("search for "+searchEntity)
+							Collation.findOne({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (result) {
+								collations.push(result.entity);
+								callback(null);
+							});
+						}, function (err){ //finished this range
+							cb(null);
+						});
+					});
+	  			}
+	  		}	
+	  	}, function(err){ //done all the ranges
+	  		res.json(collations);
+	  	});
+	  }
+	} else {  // we have a collentities file
+		if (partorall=='all') {
+			collentities.forEach(function(entity){
+				let searchEntity=community+":"+entity;
+				collations.push(searchEntity);
+			})
+			res.json(collations);
+		} else { //ranges
+			async.mapSeries(ranges, function (range, cb){
+		     	 if (range.end=="") {
+		    		var searchEnt=range.start.slice(range.start.indexOf("/")+1);
+				 	var matchEntities=collentities.filter(entity=>entity.indexOf(searchEnt)>-1);
+				 } else {
+				   var startEnt=range.start.replace(community+"/entity", "entity");
+				   var endEnt=range.end.replace(community+"/entity", "entity");
+				   var indexStart = collentities.findIndex(element => element==startEnt);
+				   var indexEnd =  collentities.findIndex(element => element==endEnt);
+				   var matchEntities=collentities.slice(indexStart,indexEnd+1);
+				 }
+				 async.mapSeries(matchEntities, function (matchEntity, cb1) {
+					   searchEntity=community+":"+matchEntity;
+					   Collation.findOne({entity: searchEntity, community:community, status:"approved", model:"collation"}).then (function(result){
+							collations.push(searchEntity);
+							cb1(null);
+						});
+				   }, function (err){
+				   	  cb(null);
+				   });
+			 
+		 }, function (err){
+			res.json(collations);
+		 })
+	  }  //end ranges
+	}
+});
+
+router.post('/getCollationsOrig', function(req, res, next) {
   	let ranges=req.body.ranges;
 	let collentities=req.body.collentities;
 	let community=req.query.community;
