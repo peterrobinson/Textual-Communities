@@ -14,7 +14,7 @@
   	<p *ngIf="isChecked" style="margin: 15px; text-align: center"><button type="button" (click)="deleteEntities()">Delete Toplevel Terminal Entities</button></p>
   	<p><button type="button" (click)="checkTEIGhosts()">Check Ghost TEI elements</button> Ghost TEI elements present in the database?</p>
   	<p *ngIf="inSearch">Checking in {{currPage}}, page {{currNPage}} of {{currNPages}} pages in {{currDoc}}, document {{currNDoc}} of {{nDocs}} documents. <br>{{ghosts.length}} ghost TEIs found in {{nTEIs}} checked. 
-  	<button *ngIf="stopSearchButton" type="button" (click)="stop()">Stop search</button></p>
+  	<button *ngIf="stopSearchButton" type="button"  (click)="stop()">Stop search</button></p>
   	<p *ngIf="deleteGhosts"><button type="button" (click)="seeFoundGhosts()">See Ghost Elements</button> 
   	</p>
   </div>

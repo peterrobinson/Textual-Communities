@@ -166,7 +166,7 @@ var RepairCommunityComponent = ng.core.Component({
   	 });    
    },
   seeFoundGhosts: function() {
-  	 this.deleteGhosts=false;
+  	 this.deleteGhosts=false;     //test change here
   	 var ghostStr="";
   	 for (i=0; i<this.ghosts.length; i++) {
   	 	if (i>0) ghostStr+="; "

@@ -224,6 +224,9 @@ var ViewComponent = ng.core.Component({
   //refresh the document...
     }
   },
+  showPageInf: function(pageInf) {
+  	alert("IIIF page reference is: "+pageInf+"/info.json");
+  },
   createIIIF: function(doc) {
   	let index=1;
   	let self=this;

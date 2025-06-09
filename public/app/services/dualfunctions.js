@@ -15,7 +15,7 @@ function isCEPunctuation(myChar) {
 //this is for functions accessible on both client and server sides
 var DualFunctionService = {
  makeJsonList: function (content, witness) {
-    console.log("Dual function in "+witness+" for "+content);
+//    console.log("Dual function in "+witness+" for "+content);
     var thistext="";
     //remove line breaks,tabs, etc
   //  thistext+=content.replace(/(\r\n|\n|\r)/gm,"");
@@ -93,11 +93,11 @@ var DualFunctionService = {
         if (myWords[i].expanword=="") var expanded="";
         else var expanded=',"expanded":"'+myWords[i].expanword+'"';
         if (myWords[i].xmlword=="") var xmlWordStr="";
-        else var xmlWordStr=',"fullxml":"'+myWords[i].xmlword.replace(" ","&nbsp;")+'"';
+        else var xmlWordStr=',"fullxml":"'+myWords[i].xmlword.replaceAll(" ","&nbsp;")+'"';
         if (myWords[i].punctbefore=="") var punctbeforeStr="";
-        else var punctbeforeStr=',"pc_before":"'+myWords[i].punctbefore.replace(" ","&nbsp;")+'"';
+        else var punctbeforeStr=',"pc_before":"'+myWords[i].punctbefore.replaceAll(" ","&nbsp;")+'"';
         if (myWords[i].punctafter=="") var punctafterStr="";
-        else var punctafterStr=',"pc_after":"'+myWords[i].punctafter.replace(" ","&nbsp;")+'"';
+        else var punctafterStr=',"pc_after":"'+myWords[i].punctafter.replaceAll(" ","&nbsp;")+'"';
         //test: are there expansions for this word? does this word contain <am>/<ex>? look for xml forms too
 
         if (myWords[i].expanword!="" && myWords[i].xmlword!="") {
