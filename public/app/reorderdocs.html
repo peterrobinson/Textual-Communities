@@ -1,0 +1,22 @@
+<div id="reorderModal" style="font-size: 110%; height:100%;">
+  <div  modal-draggable class="modalHeader"><span *ngIf="!isDocText">Reorder {{community.attrs.documents.length}} documents in community {{community.attrs.name}}</span>
+    <button type="button" (click)="closeModalRD()" class="close" data-dismiss="modal" style="font-size:200%; font-weight:800; position: relative; left:-10px; top:-3px;">&times;</button>
+  </div>
+  <div style="height:520px; overflow:scroll; position:absolute; width:100%">
+    <div *ngIf="message.length>0" class="alert alert-danger" style="margin-bottom: 1px;">
+      {{message}}
+    </div>
+    <div *ngIf="success.length>0" class="alert alert-success" style="margin-bottom: 1px">
+      {{success}}
+    </div>
+    <ul id="TCReorderDocs" class="TCsortableContainer" (ngModel)="documents" style="width:100%; text-align: center">
+      <li  class="ui-state-default TCsortableItem" style="width: 300px; height: 30px; margin: auto; margin-top: 3px; margin-bottom: 3px" (mousedown)="nullSuccess()"  *ngFor="#document of community.attrs.documents"  data-id="{{document.attrs._id}}">
+      	{{document.attrs.name}}
+      </li>
+    </ul>
+  </div>
+<hr style="border: 1px solid #8c8b8b; margin-bottom: 5px; margin-top:0px; position: relative; top: 522px ">
+  <div class="form-group" style="text-align: center; height: 18px; position: relative; top: 524px">
+    <button type="button" class="btn btn-primary" (click)="submit()">Save</button>
+  </div>
+</div>

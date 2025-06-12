@@ -3623,6 +3623,23 @@ function detectUnescapedEscapes(str) {
   return unescaped ? unescaped : [];
 }
 
+router.post('/reorderDocs', function (req, res, next){
+	var community=req.body.community;
+	var newlist=req.body.newDocIds;
+	var newConfigCE=req.body.newConfigCE;
+	var newdocs=[];
+	console.log("reordering "+newlist.length+" documents ceconfigwits "+newConfigCE.length+ " in community "+community);
+	console.log("about to update 1")
+	for (let i=0; i<newlist.length; i++) {
+		newdocs.push(new ObjectId(newlist[i]));
+	}
+	console.log("about to update 2")
+	Community.updateOne({'abbr': community}, {$set: {documents: newdocs, "ceconfig.witnesses": newConfigCE}}).then (function(result){
+    	console.log("we have a result "+JSON.stringify(result));
+    	res.json({success:true});
+    })
+})
+
 //gets witnesses one at a time...
 router.post('/fetchCEWitness', function(req, res, next) {
 	var community=req.query.community;
