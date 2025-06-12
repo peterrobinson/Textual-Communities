@@ -42,11 +42,11 @@ var TranscriberHistoryComponent = ng.core.Component({
     var self=this;
     this.periods=[];
     this.message="Gathering information about the transcriptions. This may take a few moments."
-    if (!this.state.community.attrs.created) {
-      if (this.state.community.attrs.abbr=="CTP2") var time=new Date("2012-01-01");
-      else if (this.state.community.attrs.abbr=="JDDP") var time=new Date("2013-01-01");
+    if (!this.community.attrs.created) {
+      if (this.community.attrs.abbr=="CTP2") var time=new Date("2012-01-01");
+      else if (this.community.attrs.abbr=="JDDP") var time=new Date("2013-01-01");
       else var time=new Date("2018-01-01");
-    } else var time=new Date(this.state.community.attrs.created);
+    } else var time=new Date(this.community.attrs.created);
      var secs=time.getTime();
     $.get(config.BACKEND_URL+'getTranscriberRecord/?userId='+this.userid+'&since='+secs+'&community='+this.community.attrs.abbr+'&period=default', function(res) {
       self.message="";

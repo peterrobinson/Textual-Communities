@@ -8,7 +8,8 @@ var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
 //emailer ======================================================================
 var TCMailer=require('./localmailer');
-var TCAddresses=TCMailer.addresses;
+var TCAddresses=TCMailer.addresses, TCLocalmailer=TCMailer.localmailer;
+ 
 
 // load up the user model
 var User = require('./models/user');
@@ -156,9 +157,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
       // all is well, go send an email here!
       else {
         resetpass(email, user, done, config.host_url!= ''? config.host_url : req.protocol + '://' + req.get('host'));
-        user.save(function(err) {
-          if (err)
-            throw err;
+        user.save().then (function(err) {
+  //        if (err)
+  //          throw err;
           return done(null, user);
         });
       }
@@ -215,8 +216,9 @@ if (config.localDevel) TCMailer = require('./TCMailer');
             newUser.facebook.name  = profile.name.givenName + ' ' + profile.name.familyName;
             newUser.facebook.email = profile.emails[0].value;
 
-            newUser.save().then(function(result) {
-//              if (err)  throw err;
+            newUser.save(function(err) {
+              if (err)
+                throw err;
               return done(null, newUser);
             });
           }
@@ -407,7 +409,8 @@ function resetpass (email, user, done, thisURL) {
 //  console.log( TCAddresses.replyto+" "+TCAddresses.from);
   user.local.timestamp=new Date().getTime();
   user.local.hash=hash;
-  TCMailer.localmailer.sendMail({
+//  console.log("TCAddresses "+JSON.stringify(TCAddresses));
+  TCLocalmailer.sendMail({
     from: TCAddresses.from,
     to: email,
     subject: 'Reset your Textual Communities password',

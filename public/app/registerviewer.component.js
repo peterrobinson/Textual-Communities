@@ -2,6 +2,7 @@ var CommunityService = require('./services/community')
   , UIService = require('./services/ui')
   , RESTService = require('./services/rest')
   , config = require('./config')
+  , DualFunctionService = require('./services/dualfunctions')
 ;
 
 var RegisterViewerComponent = ng.core.Component({
@@ -68,8 +69,8 @@ var RegisterViewerComponent = ng.core.Component({
         this.message="A password is required";
         return;
       }
-      if (this.password.length<8) {
-        this.message="The password must have at least 8 characters";
+      if (this.password.length<6) {
+        this.message="The password must have at least 6 characters";
         return;
       }
       if (this.password!=this.confirmpassword) {
@@ -79,7 +80,7 @@ var RegisterViewerComponent = ng.core.Component({
       this.message="";
       //ok.. let's register this person
       var letter="Dear "+this.name+"<br/><br/> You have now been registered as a viewer of Textual Community \""+self.community.attrs.name+"\'."
-      letter+="You can log in by clicking on <img height='20' src='https://textualcommunities.org/images/login.png'> at the top of the screen. "
+      letter+="You can log in by clicking on <img height='20' src='https://textualcommunities.com/images/login.png'> at the top of the screen. "
       letter+="You can log in as: <ul style='list-style:none'><li>User name: "+self.email+"</li><li>Password: "+self.password+"</li></ul>";
       letter+="<br/>Once you are logged in, you can go to 'Login Profile' to log in by social media.<br/><br/>Happy viewing!"
       $.ajax({
@@ -90,9 +91,10 @@ var RegisterViewerComponent = ng.core.Component({
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
       })
-       .done(function( data ) {
+       .done(function( data ) { //lets's return the userid and put it in the cookie
          self.reload=data.login
          self.success=data.result;
+          DualFunctionService.setCookie("TCUser", data.id, 30);
         })
        .fail(function( jqXHR, textStatus, errorThrown) {
         alert( "error" + errorThrown );

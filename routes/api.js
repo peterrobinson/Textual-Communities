@@ -1,6 +1,8 @@
 var _ = require('lodash')
   , ejs = require('ejs')
   , fs = require('fs')
+  , fetch = require("node-fetch")
+  , https = require('https')
   , path = require('path')
   , crypto = require('crypto')
   , async = require('async')
@@ -33,6 +35,7 @@ var _ = require('lodash')
   , ObjectId = mongoose.Types.ObjectId
   , FunctionService = require('../services/functions')
   , DualFunctionService = require('../public/app/services/dualfunctions')
+  , { exec } = require("child_process");
 ;
 
 
@@ -103,9 +106,9 @@ router.get('/communities/:id/memberships/', function(req, res, next) {
 
 router.post('/getCommunity/:id', function(req, res, next) {
  var communityId = req.params.id;
- console.log("looking for ..."+communityId)
+// console.log("looking for ..."+communityId)
  Community.findOne({ _id: new ObjectId(communityId)}).then (function(community){
-    console.log("found it? "+community.name)
+ //   console.log("found it? "+community.name)
   	res.json(community);
   })
 });
@@ -213,7 +216,7 @@ router.post('/writeMakeEdition', function(req, res, next) {
 
 router.get('/getMakeEdition', function(req, res, next) {
 	var editionID= req.query.editionID;
-	MakeEdition.findOne ({identifier:editionID}, function(err, edition) {
+	MakeEdition.findOne ({identifier:editionID}).then (function(edition) {
 		if (edition) {
 //			console.log("found an edition")
 			res.json({success: 1, html: edition.html});
@@ -233,7 +236,7 @@ router.get('/deleteMakeEdition', function(req, res, next) {
 
 router.get('/isMakeEdition', function(req, res, next) {
 	var editionID= req.query.editionID;
-	MakeEdition.findOne ({identifier:editionID}, function(err, edition) {
+	MakeEdition.findOne ({identifier:editionID}).then (function(edition) {
 		if (edition) {
 			res.json({success: 1});
 		} else {
@@ -358,21 +361,15 @@ router.post('/isEntity',  function(req, res, next) {
 
 router.post('/isAlreadyVMap',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VMap.findOne({community: community, name: name }, function(err, vmap) {
-	 	if (err) res.json({success: 0});
-	 	else {
+	VMap.findOne({community: community, name: name }).then (function(vmap) {
 	 		if (vmap) {res.json({success: 1, isDuplicate: 1})}
 		 	else {res.json({success: 1, isDuplicate: 0})}
-	 	}
 	 });
 });
 
 router.post('/community/:abbr/vmaps/', function(req, res, next) {
   var community = req.params.abbr;
-   VMap.find({community: community}, function(err, vmaps) {
-  	if (err) {
-  		res.json({result: err});
-  	} else {
+   VMap.find({community: community}).then (function( vmaps) {
 		if (vmaps.length) {
 			 var VMaps=[];
 			 vmaps.forEach(function(vmap){
@@ -382,22 +379,21 @@ router.post('/community/:abbr/vmaps/', function(req, res, next) {
 		 } else {
 			 res.json({result:"success", nvars:0});
 		 }
-	  }
 	}); 
 });
 
 router.post('/getVMap',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VMap.findOne({community: community, name: name }, function(err, vmap) {
-		if (err || !vmap) res.json({success: 0});
+	VMap.findOne({community: community, name: name }).then (function(vmap) {
+		if (!vmap) res.json({success: 0});
 		else res.json({success:1, vmap: vmap});
 	});	
 });
 
 router.post('/deleteVMap',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VMap.collection.remove({community: community, name: name }, function(err, result) {
-		if (err || !result) res.json({success: 0});
+	VMap.collection.remove({community: community, name: name }).then (function(result) {
+		if (!result) res.json({success: 0});
 		else res.json({success:1});
 	});	
 });
@@ -411,14 +407,15 @@ router.post('/community/:abbr/vbases/', function(req, res, next) {
 //  console.log("getting vBases");
   var community = req.params.abbr;
    VBase.find({community: community}).then (function(vbases) {
+ //    console.log("so many vbases "+vbases.length)
      if (vbases.length) {
 			 var VBases=[];
 			 vbases.forEach(function(vbase, index){
 			 	var nVars=vbase.varsites.length;
 			 	var nRdgs=0;
-			 	for (var j=0; j<vbase.varsites.length; j++) {nRdgs+=vbase.varsites[j].variants.length};
-		 		if (index==0) VBases.push({name:vbase.name, community: community, witlist: vbase.witlist,  origname: vbase.name, nRdgs: nRdgs, nVars:nVars, varsites: vbase.varsites, saved: true, indb: true, selected: true, conditionsets: vbase.conditionsets});
-		 		else VBases.push({name:vbase.name, nRdgs: nRdgs, nVars:nVars, origname: vbase.name, saved: true, indb: true, selected: false, varsites:[]});
+			 	for (var j=0; j<vbase.varsites.length; j++) {nRdgs+=vbase.varsites[j].variants.length};		 		
+			 	if (index==0) VBases.push({name:vbase.name, community: community, witlist: vbase.witlist,  origname: vbase.name, nRdgs: nRdgs, nVars:nVars, varsites: vbase.varsites, saved: true, indb: true, selected: true, conditionsets: vbase.conditionsets});
+		 		else VBases.push({name:vbase.name, nRdgs: nRdgs, nVars:nVars, origname: vbase.name, saved: true, indb: true, selected: false, varsites:[], conditionsets:[] });
 			 });
 			res.json({result:"success", nvars:1, vBases: VBases});
 		 } else {
@@ -431,8 +428,8 @@ router.post('/community/:abbr/vbases/', function(req, res, next) {
 
 router.post('/saveVBName', function (req, res, next){ //new search saved
 	var community=req.query.community, vBase=req.query.vBase;
-	VBase.collection.update({community: community, name:vBase}, 
-		{$push: {conditionsets: req.body}}, function (err) {
+	VBase.updateOne({community: community, name:vBase}, 
+		{$push: {conditionsets: req.body}}).then (function (err) {
 		if (!err) res.json({success: 1});
 		else res.json({success:0, error:err});
 	});
@@ -442,10 +439,10 @@ router.post('/insertVBConditions', function (req, res, next){ //new search saved
 //wierd behaviour. Have to remove the condition and then add it back. Can't just replace the conditions
 	var community=req.query.community, vBase=req.query.vBase;
 	var offset=req.body.offset, name=req.body.name, conditions=req.body.conditions;
-	VBase.collection.update({community: community, name:vBase}, 
-		{$push: {conditionsets: {$each: [{"name":name, "conditions": conditions}], $position:offset}}}, function (err, result) {
-		if (!err) res.json({success: 1});
-		else res.json({success:0, error:err});
+	VBase.updateOne({community: community, name:vBase}, 
+		{$push: {conditionsets: {$each: [{"name":name, "conditions": conditions}], $position:offset}}}).then (function (result) {
+		if (result.modifiedCount==1) res.json({success: 1});
+		else res.json({success:0, error:result});
 	});
 });
 
@@ -453,36 +450,33 @@ router.post('/insertVBConditions', function (req, res, next){ //new search saved
 router.post('/deleteVBCondition', function (req, res, next){ //new search saved
 //wierd behaviour. Have to remove the condition and then add it back. Can't just replace the conditions
 	var community=req.query.community, vBase=req.query.vBase, condition=req.query.condition;
-	VBase.collection.update({community: community, name:vBase}, 
-		{$pull: {conditionsets:{name: condition}}}, {multi: true}, function (err, result) {
-		if (!err) res.json({success: 1});
-		else res.json({success:0, error:err});
+	VBase.updateOne({community: community, name:vBase}, 
+		{$pull: {conditionsets:{name: condition}}}, {multi: true}).then (function (result) {
+		if (result.modifiedCount==1) res.json({success: 1});
+		else res.json({success:0, error:result});
 	});
 });
 
 router.post('/isAlreadyVBase',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VBase.findOne({community: community, name: name }, function(err, vbase) {
-	 	if (err) res.json({success: 0});
-	 	else {
+	VBase.findOne({community: community, name: name }).then (function(vbase) {
 	 		if (vbase) {res.json({success: 1, isDuplicate: 1})}
 		 	else {res.json({success: 1, isDuplicate: 0})}
-	 	}
 	 });
 });
 
 router.post('/getVBase',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VBase.findOne({community: community, name: name }, function(err, vbase) {
-		if (err || !vbase) res.json({success: 0});
+	VBase.findOne({community: community, name: name }).then (function(vbase) {
+		if (!vbase) res.json({success: 0});
 		else res.json({success:1, varsites: vbase.varsites, conditionsets: vbase.conditionsets, witlist: vbase.witlist});
 	});	
 });
 
 router.post('/getVBaseConditions',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VBase.findOne({community: community, name: name }, function(err, vbase) {
-		if (err || !vbase) res.json({success: 0, error: err});
+	VBase.findOne({community: community, name: name }).then (function(vbase) {
+		if (!vbase) res.json({success: 0, error: "can't find VBase"});
 		else res.json({success:1, conditionsets: vbase.conditionsets});
 	});	
 });
@@ -507,12 +501,16 @@ router.post('/changeVBaseName',  function(req, res, next) {
 router.post('/saveVBase', function(req, res, next) {
 	var vbase=req.body;
 	var community=req.query.community, name=req.query.name;
-//	console.log(vbase.varsites[0].entity);
-	VBase.collection.update({community: vbase.community, name: vbase.origname}, 
-	     {$set: {name: name, witlist: vbase.witlist, community: community, varsites:vbase.varsites, conditionsets: vbase.conditionsets}}, {upsert: true}, function(err){
-		if (!err) res.json({success: 1});
-		else res.json({success: 0});
-	})
+//	console.log("vbase name "+vbase.origname);
+//	console.log("vbase "+JSON.stringify(vbase));
+	VBase.updateOne({community: vbase.community, name: vbase.origname}, 
+	     {$set: {name: name, witlist: vbase.witlist, community: community, varsites:vbase.varsites, conditionsets: vbase.conditionsets}}, {upsert: true}).then (function(err){
+			if (!err) res.json({success: 1});
+			else {
+//				console.log("save failed")
+				res.json({success: 0, error: err});
+			}
+		})
 });
 
 //ok -- also add to members array
@@ -693,7 +691,7 @@ function validateAction(action) {
 }
 
 router.get('/actions/:id', function(req, res, next) {
-  console.log("confirming membership");
+//  console.log("confirming membership");
   Action.findOne({_id: new ObjectId(req.params.id)}).then (function(action) {
     var payload = action.payload
       , role = payload.role
@@ -710,7 +708,7 @@ router.get('/actions/:id', function(req, res, next) {
         var user = results[0]
           , community = results[1]
         ;
-        console.log("user "+user._id+" community "+community._id);
+//        console.log("user "+user._id+" community "+community._id);
         community.members.push(user._id);
         user.memberships.push({
           community: community._id,
@@ -786,16 +784,124 @@ router.get('/auth', function(req, res, next) {
 }, userResource.detail());
 
 
+/* const storage = multer.diskStorage({
+  destination: TCIdestination,
+  filename: function (req, file, cb) {
+  	console.log("request is here"+JSON.stringify(req.body));
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    console.log("about to write in file" +file.fieldname + '-' + uniqueSuffix);
+//    cb(null, file.fieldname + '-' + uniqueSuffix)
+	  cb(null, "testwrite.jpg")
+  }
+ })
 
 var upload = multer({
-  storage: gridfs,
-});
-router.post('/upload', upload.any(), function(req, res, next) {
-//  console.log(req.files);
-  res.json(req.files);
+  storage: storage,
+}); */
+router.post('/upload', function(req, res, next) {
+	var page=req.query.page;
+	var doc=req.query.doc;
+	var community=req.query.community;
+	console.log("doc "+doc+" page "+page+" community"+community);
+	var TCIdestination=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0";
+	console.log("copy to "+TCIdestination);
+//	var TCIdestination="/Volumes/Macintosh HD/Users/pmr906_1/venv/TCangular/tc/public/app/data/tcimages/CTP2/Ad1/41v/full/full/0";
+    var storage = multer.diskStorage({
+    	destination: TCIdestination,
+//        destination: config.TCIMAGE_STORAGE+community+"/"+doc+"/"+page+"full/full/0",
+        filename: function (req, file, cb) {
+        	 cb(null, "default.jpg");
+        }
+     });
+    var upload = multer({ storage : storage}).any();
+
+    upload(req,res,function(err) {
+        if (err) {
+            console.log(err);
+            return res.end("Error uploading file.");
+        } else {
+  //         console.log(req.body);
+           req.files.forEach( function(f) {
+  //           console.log(f);
+             // and move file to final destination...
+           });
+           console.log("ready to write the IIIF!")
+           exec("ls '"+TCIdestination+"'", (error, stdout, stderr) => {
+			if (error) { console.log(`error: ${error.message}`); res.json(req.files);return}
+			if (stderr) {console.log(`stderr: ${stderr}`);res.json(req.files);return}
+			if (stdout.trim()=="default.jpg") {
+				console.log("done write default image");
+				//now make the magic 
+				let srcFile=TCIdestination+"/default.jpg";
+				let dstDir=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page;
+				let iiifId=config.host_url+"/app/data/tcimages/"+community+"/"+doc;
+				let vipsParam="'"+srcFile+"' '"+dstDir+"' --layout iiif --id '"+iiifId+"'";	
+//				console.log("param is "+vipsParam);
+				exec("vips dzsave "+vipsParam, (error, stdout, stderr) => {
+					if (error) { console.log(`error: ${error.message}`); res.json(req.files);return}
+					if (stderr) {console.log(`stderr: ${stderr}`);res.json(req.files);return}
+//					console.log("succcessfully made IIIF image; output is "+stdout);
+					req.files[0]._id=iiifId+"/"+page;
+					res.json(req.files);
+				})
+			} else {
+//				console.log("failed to write default image "+stdout)
+			}
+		   });
+        }
+    });
 });
 
+router.get('/makeIIIFImage', function(req, res, next) {
+	var page=req.query.page;
+	var doc=req.query.doc;
+	var community=req.query.community;
+	let srcFile=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0/default.jpg";
+	let dstDir=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page;
+	let iiifId=config.host_url+"/app/data/tcimages/"+community+"/"+doc;
+//	console.log("we will make the file here in makeIIIFImage");
+	let vipsParam="'"+srcFile+"' '"+dstDir+"' --layout iiif --id '"+iiifId+"'";	
+	exec("vips dzsave "+vipsParam, (error, stdout, stderr) => {
+		if (error) { console.log(`error: ${error.message}`); res.json({success:false});return}
+		if (stderr) {console.log(`stderr: ${stderr}`);res.json({success:false});return}
+		console.log("successfully made IIIF image ");
+		res.json({success:true});
+   })
+});
+
+async function downloadImage(req, result, next){
+    //imageurl https://example.com/uploads/image.jpg
+    var page=req.query.page;
+	var doc=req.query.doc;
+	var community=req.query.community;
+	var image=req.query.image;
+//	console.log("in makeDefaultIIIF "+community+" "+doc+" "+page+" "+image);
+	let directory=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0";
+	exec("mkdir -p '"+directory+"'", async (error, stdout, stderr) => {
+		if (error) { console.log(`error: ${error.message}`);result.json({success:false});return}
+		if (stderr) {console.log(`stderr: ${stderr}`);result.json({success:false});return}
+		let fName=directory+"/default.jpg";
+		let imageUrl="https://textualcommunities.org/loris/"+image+"/full/full/0/default.jpg";
+		const imageres = await fetch(imageUrl);
+		const fileStream = fs.createWriteStream(fName);
+		await new Promise((resolve, reject) => {
+			imageres.body.pipe(fileStream);
+			imageres.body.on("error", reject);
+			fileStream.on("finish", resolve);
+		  });
+//		console.log("finished?");
+		result.json({success:true})
+	});
+  };
+  
+router.get('/makeDefaultIIIF', function(req, res, next) {
+	downloadImage(req, res, next);
+	return;
+});
+
+
 router.get('/gridfs/:id',  function(req, res, next) {
+  console.log(req.params.id );
   gridfs.gfs.findOne({ _id: req.params.id }, function(err, file) {
     if (err || !file) {
       return next(err, file);
@@ -821,17 +927,17 @@ router.post('/sendmail', function(req, res, next) {
 
 router.post('/SUgetAllCommunities', function (req, res, next){
   if (req.user.local.email!="peter.robinson@usask.ca") res.json({error:"Not superuser"});
-  Community.find({}, function(err, communities) {
+  Community.find({}).then (function(communities) {
     async.mapSeries(communities, function(community, callback){
       //get info on each membership..could be no members!
         async.map(community.members, function (member, cb1) {
           if (!member) cb1(null, {user: "none", role: "none"})
-          User.findOne({_id:member}, function(err, myUser){
+          User.findOne({_id:member}).then (function(myUser){
             //find membership matching this communitu] -- if it is the leader or creator, say so, else move on
 //          console.log(myUser)
 //          console.log(community._id)
            var thisMember=myUser.memberships.filter(function (obj){return String(obj.community)== String(community._id);})[0];
-            cb1(err, {user: myUser.local.email, role: thisMember.role})
+            cb1(null, {user: myUser.local.email, role: thisMember.role})
           })
         }, function (err, members) {
               callback(err, {name:community.name, abbr:community.abbr, public: community.public, ndocs: community.documents.length, nmembers: community.members.length, created: community.created, members: members, _id:community._id});
@@ -850,8 +956,8 @@ router.post('/SUgetAllUsers', function(req, res, next){
   User.find({}, function(err, users){
      async.mapSeries(users, function(user, callback){
        async.map(user.memberships, function(membership, cb1){
-         Community.findOne({_id: membership.community}, function (err, myCommunity) {
-             cb1(err, {name: myCommunity.name, role:membership.role, userdocs: myCommunity.documents.length, _id: myCommunity._id});
+         Community.findOne({_id: membership.community}).then (function (myCommunity) {
+             cb1(null, {name: myCommunity.name, role:membership.role, userdocs: myCommunity.documents.length, _id: myCommunity._id});
          });
        }, function (err, communities){
          callback(err, {username:user.local.name, useremail:user.local.email, communities: communities, created: user.local.created, _id:user._id});
@@ -874,7 +980,8 @@ router.post('/getSubEntities', function(req, res, next) {
 
 router.post('/getEntities', function(req, res, next) {
   var foundEntities=[];
-  Community.findOne({abbr: req.query.community}, function(err, community) {
+  console.log("looking for more shit")
+  Community.findOne({abbr: req.query.community}).then (function(community) {
     if (community) {
       for (var i=0; i<community.entities.length; i++) {
         foundEntities.push({"attrs":{"name":community.entities[i].name, "isTerminal":community.entities[i].isTerminal, "entityName": community.entities[i].entityName}});
@@ -886,7 +993,8 @@ router.post('/getEntities', function(req, res, next) {
 
 router.post('/getDocEntities', function(req, res, next) {
   var foundDocEntities=[];
-  Doc.findOne({_id: req.query.document}, function(err, document) {
+  console.log("looking for shit")
+  Doc.findOne({_id: req.query.document}).then (function(document) {
     if (document) {
       for (var i=0; i<document.entities.length; i++) {
 //        console.log(document);
@@ -942,14 +1050,14 @@ router.post('/getMemberTasks', function(req, res, next) {
 
 router.post('/getSubDocEntities', function(req, res, next) {
 //    console.log("looking for "+req.query.id);
-    TEI.findOne({_id: req.query.id}, function(err, tei) {
+    TEI.findOne({_id: req.query.id}).then (function(tei) {
 //      console.log("error "+err);
 //      console.log("tei "+tei);
       var foundTEIS=[];
       var hits=0;
       for (var i=0; i<tei.entityChildren.length; i++) {
           var thisTeiId=tei.entityChildren[i];
-          TEI.findOne({_id: tei.entityChildren[i]}, function(err, oneTEI) {
+          TEI.findOne({_id: tei.entityChildren[i]}).then (function(oneTEI) {
             var hasChild=true;
             hits++;
             if (oneTEI.entityChildren.length==0) hasChild=false;
@@ -970,14 +1078,14 @@ router.post('/zeroDocument', function(req, res, next) {
   var deleteTeis=[];
   async.waterfall([
       function(cb) {
-        TEI.findOne({docs: ObjectId(docroot), name:"pb"}, function(err, pbel){
+        TEI.findOne({docs: ObjectId(docroot), name:"pb"}).then (function(err, pbel){
           var firstAnc=pbel.ancestors[pbel.ancestors.length-1];
           deleteTeis=pbel.ancestors.slice(1);
           cb(null, firstAnc);
         })
       },
       function(firstAnc, cb) {
-        TEI.findOne({_id: ObjectId(firstAnc)}, function(err, firstancel){
+        TEI.findOne({_id: ObjectId(firstAnc)}).then (function(firstancel){
           if (firstancel.name!="text") {
             var textEl=firstancel.ancestors[0];
             var pbchildren=firstancel.children;
@@ -989,7 +1097,7 @@ router.post('/zeroDocument', function(req, res, next) {
   //      console.log("parameter "); console.log(thisAnc);
         if (!thisAnc) cb(null, null);   //all fine! no need to do anything at all
         else {
-          TEI.findOne({_id: ObjectId(thisAnc.textEl)}, function(err, textel){
+          TEI.findOne({_id: ObjectId(thisAnc.textEl)}).then (function(err, textel){
             if (textel.name=="text") {
               //set the children of text to children of the p element
               var pbchildren=thisAnc.pbchildren;
@@ -1048,7 +1156,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
   //delete all docs all entitiees all revisions...
     async.waterfall([
       function(cb) {
-        Doc.findOne({_id: docroot}, function(err, document) {
+        Doc.findOne({_id: docroot}).then (function(document) {
  //         console.log("starting out in deletoindocument");
           pages=document.children;
           globalDoc=document;
@@ -1059,7 +1167,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
       },
       function(argument, cb) {
         //get all the teis in this document
-        TEI.find({docs: {$in: pages}}, function(err, teis) {
+        TEI.find({docs: {$in: pages}}).then (function(teis) {
  //         console.log("number of teis "+teis.length)
           nTeis=teis.length;
           if (nTeis<3000) {
@@ -1124,7 +1232,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
           //more than 3000.. do top down removL
           globalNentels=0;
           globalDeleteEntities=[];
-          Community.findOne({'abbr': globalCommAbbr}, function(err, myCommunity){
+          Community.findOne({'abbr': globalCommAbbr}).then (function(myCommunity){
             async.map(myCommunity.entities, topDownDeleteEntity, function (err, results){
   //            console.log("getting rid of "+globalNentels);
               Entity.collection.remove({_id: {$in: globalDeleteEntities}}, function(err, result){
@@ -1158,7 +1266,7 @@ router.post('/deleteDocumentText', function(req, res, next) {
   //        console.log("got the pbs now "+allTeiPbs);
           //now get the text element..
   //        console.log(allTeiPbs[0]);
-          TEI.findOne({_id: ObjectId(allTeiPbs[0].ancestors[0])}, function (err, textEl){
+          TEI.findOne({_id: ObjectId(allTeiPbs[0].ancestors[0])}).then (function (err, textEl){
             async.forEachOf(allTeiPbs, function(thisPb) {
               const cb2 = _.last(arguments);
               TEI.update({_id: thisPb._id}, {$set: {ancestors: [textEl._id]}}, function (err){
@@ -1354,7 +1462,7 @@ var globalEntitiesRemoved;
 function topDownDeleteEntity(thisEntity, callback) {
   //given an entity: checks if there are any tei which have this entity. If not, wipe it out
   //note! find is FAR faster than findOne
-  TEI.find({entityName:thisEntity.entityName}, function(err, results){
+  TEI.find({entityName:thisEntity.entityName}).then (function(results){
     if (results.length==0) {
   //      console.log("missing at "+thisEntity.entityName);
 //      Entity.collection.remove({entityName:thisEntity.entityName}, function(err, result){
@@ -1365,16 +1473,16 @@ function topDownDeleteEntity(thisEntity, callback) {
 //          console.log("about to remove "+thisEntity.entityName);
           Community.update({abbr:globalCommAbbr},{$pull: {entities:  {entityName:thisEntity.entityName}}}, function (err, result) {
             if (!thisEntity.isTerminal) {
-              Entity.find({ancestorName: thisEntity.entityName}, function(err, results){
-                if (!results.length) callback(err);
-                else async.map(results, topDownDeleteEntity, function(err, results){callback(err)});
+              Entity.find({ancestorName: thisEntity.entityName}).then (function(results){
+                if (!results.length) callback(null);
+                else async.map(results, topDownDeleteEntity, function(err, results){callback(null)});
               });
             } else {callback(null);}
           });
         } else {
           if (!thisEntity.isTerminal) {
-            Entity.find({ancestorName: thisEntity.entityName}, function(err, results){
-              if (!results.length) callback(err);
+            Entity.find({ancestorName: thisEntity.entityName}).then (function(results){
+              if (!results.length) callback(null);
               else async.map(results, topDownDeleteEntity, function(err){callback(err)});
             });
           } else {callback(null);}
@@ -1382,8 +1490,8 @@ function topDownDeleteEntity(thisEntity, callback) {
 //      })
     } else {
       if (!thisEntity.isTerminal) {
-        Entity.find({ancestorName: thisEntity.entityName}, function(err, results){
-          if (!results.length) callback(err);
+        Entity.find({ancestorName: thisEntity.entityName}).then (function(results){
+          if (!results.length) callback(null);
           else async.map(results, topDownDeleteEntity, function(err){callback(err)});
         });
       } else {callback(null);}
@@ -1407,7 +1515,7 @@ function deleteEntityName(thisTei, callback) {
   }
   //first check there are no other teis for this entity name, if we are looking
   if (isBaseEntity) {
-    TEI.find({entityName:thisTei.entityName}, function(err, results) {
+    TEI.find({entityName:thisTei.entityName}).then (function(esults) {
 //      //("finding to delete "+teiel);
       //a bit tricky here. Need to see if entity exists -- might already have been deleted
       //if not deleted: delete. Regardless: go up the entity path checking each level
@@ -1432,7 +1540,7 @@ function deleteEntityName(thisTei, callback) {
       }
     });
   } else {
-    TEI.find({entityAncestor:thisTei.entityName}, function(err, results) {
+    TEI.find({entityAncestor:thisTei.entityName}).then (function(results) {
       //a bit tricky here. Need to see if entity exists -- might already have been deleted
       //if not deleted: delete. Regardless: go up the entity path checking each level
       if (results.length==0) {
@@ -1464,7 +1572,7 @@ function vaporizeEntity (entityEl, isTopEntity, callback) {
     async.waterfall ([
       function identifyPage (cb1) {
         if (globalDoc.ancestors.length) {
-            Doc.findOne({_id: globalDoc.ancestors[0]}, function(err, doc) {
+            Doc.findOne({_id: globalDoc.ancestors[0]}).then (function(doc) {
               cb1(err, doc);
             });
         } else {
@@ -1499,7 +1607,7 @@ function getEntityPaths  (entityTEI, callback) {
     if (!entityTEI.isEntity || entityTEI.ancestorName=="") {
       callback(null, entityTEI);
     } else {
-      Entity.findOne({entityName: entityTEI.ancestorName}, function (err, entity) {
+      Entity.findOne({entityName: entityTEI.ancestorName}).then (function (entity) {
         if (entity) {
           entityTEI.entityPath.push(entity.entityName);
           entityTEI.ancestorName=entity.ancestorName;
@@ -1523,20 +1631,20 @@ router.post('/getTranscribersInf', function(req, res, next){
   var transcriberEmail="", transcriberName="", leaders=[];
   async.waterfall([
       function(cb) {
-        User.findOne({_id:ObjectId(transcriberId)}, function(err, user){
+        User.findOne({_id:ObjectId(transcriberId)}).then (function(user){
           transcriberEmail=user.local.email;
           transcriberName=user.local.name;
           cb(err,[]);
         })
       },
       function(argument, cb) {  //identify leaders
-        Community.findOne({_id:ObjectId(communityId)}, function(err, mycommunity){
+        Community.findOne({_id:ObjectId(communityId)}).then (function(mycommunity){
           async.map(mycommunity.members, function(member, cb1) {
             User.findOne({_id:ObjectId(member)}, function(err, myMember){
               var thisComm=myMember.memberships.filter(function (obj){return String(obj.community)==communityId;})[0];
               if (thisComm && (thisComm.role=="LEADER" || thisComm.role=="CREATOR"))
                 leaders.push({name:myMember.local.name, email:myMember.local.email});
-              cb1(err);
+              cb1(null);
             });
           }, function (err){
             cb(err, []);
@@ -1818,17 +1926,12 @@ router.post('/statusTranscript', function(req, res, next) {
 });
 
 router.post('/getDocumentPage', function(req, res, next){
-  Doc.findOne({_id: ObjectId(req.query.docid)}, function(err, document) {
-    if (!err) {
-  //    console.log(document);
-      Doc.findOne({_id: ObjectId(req.query.pageid)}, function(err, page) {
+  Doc.findOne({_id: ObjectId(req.query.docid)}).then (function(document) {
+       Doc.findOne({_id: ObjectId(req.query.pageid)}).then (function(page) {
   //      console.log(page)
-        if (!err) {
-          res.json({document: document, page:page});
-        } else res.json({error: err});
-      });
-    } else res.json({error: err});
-  });
+           res.json({document: document, page:page});
+       });
+   });
 });
 
 router.post('/getDocPages', function(req, res, next){
@@ -1874,40 +1977,40 @@ router.post('/notifyTranscriptApprover', function(req, res, next) {
   //we need to create a task for the page for the approver
   async.waterfall([
     function(cb){
-      User.findOne({_id:ObjectId(userId)}, function(err, user){
+      User.findOne({_id:ObjectId(userId)}).then (function(user){
         myUser=user;
-        cb(err);
+        cb(null);
       })
     },
     function(cb){
-      User.findOne({_id:ObjectId(approverId)}, function(err, approver){
+      User.findOne({_id:ObjectId(approverId)}).then (function( approver){
         myApprover=approver;
         var myApproverMembership=myApprover.memberships.filter(function (obj){return String(obj.community)==communityId;})[0];
         myApproverMembershipId=String(myApproverMembership._id);
-        cb(err);
+        cb(null);
       })
     },
     function(cb){
-      Community.findOne({_id:ObjectId(communityId)}, function(err, community){
+      Community.findOne({_id:ObjectId(communityId)}).then (function(community){
         myCommunity=community;
-        cb(err);
+        cb(null);
       })
     },
     function(cb){
-      Doc.findOne({_id:ObjectId(documentId)}, function(err, doc){
+      Doc.findOne({_id:ObjectId(documentId)}).then (function(doc){
         myDocument=doc;
-        cb(err);
+        cb(null);
       })
     },
     function(cb){
-      Doc.findOne({_id:ObjectId(pageId)}, function(err, page){
+      Doc.findOne({_id:ObjectId(pageId)}).then (function( page){
         myPage=page;
-        cb(err);
+        cb(null);
       })
     },
     function(cb){
-      User.collection.update({_id:ObjectId(approverId), "memberships.community":ObjectId(communityId)}, {$inc: {"memberships.$.pages.submitted":1}}, function(err, result) {
-        cb(err);
+      User.collection.update({_id:ObjectId(approverId), "memberships.community":ObjectId(communityId)}, {$inc: {"memberships.$.pages.submitted":1}}).then (function(result) {
+        cb(null);
       })
     }
   ], function(err) {
@@ -1944,9 +2047,9 @@ router.post('/notifyTranscriptApprover', function(req, res, next) {
 });
 
 router.post('/changeApprover', function(req, res, next) {
-  User.findOne({_id:ObjectId(req.query.userId)}, function (err, user) {
-    User.collection.update({"memberships._id": ObjectId(req.query.memberId)}, {$set: {"memberships.$.approvername":user.local.name, "memberships.$.approvermail":user.local.email, "memberships.$.approverid": user._id}}, function(err, result){
-      res.json({error: err});
+  User.findOne({_id:ObjectId(req.query.userId)}).then (function (user) {
+    User.collection.update({"memberships._id": ObjectId(req.query.memberId)}, {$set: {"memberships.$.approvername":user.local.name, "memberships.$.approvermail":user.local.email, "memberships.$.approverid": user._id}}).then (function(result){
+      res.json({error: null});
     });
   });
 });
@@ -1957,15 +2060,15 @@ router.post('/deleteAssignPages', function(req, res, next) {
   var membership=deselected[0].record.memberId;
   var user=deselected[0].record.userId;
   async.map(deselected, deleteAP, function (err) {
-    User.collection.update({_id: ObjectId(user), "memberships._id": ObjectId(membership)}, {$inc: {"memberships.$.pages.assigned":-deselected.length}}, function (err, result){
-      res.json({error: err});
+    User.collection.update({_id: ObjectId(user), "memberships._id": ObjectId(membership)}, {$inc: {"memberships.$.pages.assigned":-deselected.length}}).then (function (result){
+      res.json({error: null});
     })
   });
 });
 
 function deleteAP (deleteAP, callback) {
-  Doc.collection.update({_id: ObjectId(deleteAP.pageId)},{$pull: {"tasks":{userId:deleteAP.record.userId}}}, function (err) {
-    callback(err)
+  Doc.collection.update({_id: ObjectId(deleteAP.pageId)},{$pull: {"tasks":{userId:deleteAP.record.userId}}}).then (function (err) {
+    callback(null)
   });
 }
 
@@ -2011,13 +2114,13 @@ router.post('/saveCommunityAuxFile', function (req, res, next){
   set[filetype]=req.body;
   if (filetype=="css"||filetype=="js"||filetype=="dtd") {
     var communityId=req.query.community;
-    Community.collection.update({_id:ObjectId(communityId)}, {$set: set}, function (err) {
+    Community.collection.update({_id:ObjectId(communityId)}, {$set: set}).then (function (err) {
       res.json({result:err});
     });
   } else if (filetype=="teiHeader") {
     var documentId=req.query.document;
-    Doc.update({_id:ObjectId(documentId)}, {$set: set}, function (err, result) {
-      res.json({result:err});
+    Doc.update({_id:ObjectId(documentId)}, {$set: set}).then (function (result) {
+      res.json({result:result});
     });
   }
 });
@@ -2063,9 +2166,9 @@ router.post('/sendTranscriberMessages', function(req, res, next){
 
 router.get('/getCommunityLeader', function(req, res, next) {
   var communityId=req.query.community;
-  Community.findOne({_id: ObjectId(communityId)}, function(err, community) {
+  Community.findOne({_id: ObjectId(communityId)}).then (function(community) {
     async.mapSeries(community.members, function(member, callback) {
-      User.findOne({ _id: member}, function(err, user){
+      User.findOne({ _id: member}).then (function(user){
           var found=[];
           //filter memberships till we find the one who is the creator or the leader of this community...
           for (var i=0; i<user.memberships.length; i++) {
@@ -2073,7 +2176,7 @@ router.get('/getCommunityLeader', function(req, res, next) {
                 found = user.local.email;
             }
           }
-          callback(err, found);
+          callback(null, found);
       });
     }, function (err, results) {
       res.json(results);
@@ -2091,36 +2194,40 @@ router.post('/registerViewer', function(req, res, next) {
   var leaderEmail=req.body.leaderEmail;
   var letter=req.body.letter;
   var interest=req.body.interest;  //maybe already a viewer or otherwise of the community,, just forgot!
-  User.findOne({"local.email":email}, function(err, user){
+  User.findOne({"local.email":email}). then (function(user){
     if (user) {
       var is_member=user.memberships.filter(function(obj){return String(obj.community) == communityId;})[0];
       if (is_member) res.json({login: false, result: "You are already registered with the email "+email+" and you are already a "+is_member.role+" of this community. Log in with your email."})
       else {
         //add membership to user, and member to community
-        User.collection.update({_id: user._id}, {$push: {memberships:{community:ObjectId(communityId), role: "VIEWER", interest: interest, accesses: [new Date()], created: new Date(), _id: ObjectId()}}}, function(err, result){
-          if (!err) {
-              Community.collection.update({_id:ObjectId(communityId)}, {$push:{members:user._id}}, function(err, result){
-                if (!err) {
+        User.updateOne({_id: user._id}, {$push: {memberships:{community: new ObjectId(communityId), role: "VIEWER", interest: interest, accesses: [new Date()], created: new Date(), _id: new ObjectId()}}}).then(function(result){
+          if (result.modifiedCount==1)  {
+              Community.updateOne({_id:ObjectId(communityId)}, {$push:{members:user._id}}).then (function(result){
+                if (result.modifiedCount==0) {
                     res.json({login: false, result: " You are already registered in Textual Communities with the email "+email+", and you have been added to the membership of this community. Log in with your email."})
-                } else {res.json({error:err})}
+                } else {res.json({error:null})}
               })
-          } else {res.json({error: err})}
+          } else {res.json({error: null})}
         })
       }
     } else {
       //make a new user, then send an email
       var newUser= new User();
       newUser.local.email = email;
-      newUser._id=ObjectId();
+      newUser._id=new ObjectId();
       newUser.local.name =  name;
       newUser.local.created= new Date();
       newUser.local.password = newUser.generateHash(password);
-      newUser.memberships.push({community:ObjectId(communityId), role: "VIEWER", pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, interest: interest, accesses: [new Date()], created: new Date(), _id: ObjectId()})
+      newUser.memberships.push({community:new ObjectId(communityId), role: "VIEWER", pages: {"assigned":0,"inprogress":0,"submitted":0, "approved":0, "committed":0}, interest: interest, accesses: [new Date()], created: new Date(), _id: new ObjectId()})
       newUser.local.authenticated= "1";
-      newUser.save(function(err) {
-        if (!err) {
-          Community.collection.update({_id:ObjectId(communityId)}, {$push:{members:newUser._id}}, function(err, result){
-            if (!err) {
+      newUser.save().then (function(result) {
+//        console.log("it worked "+(typeof result.local != "undefined" ));
+//      console.log("result of write new user "+JSON.stringify(result));
+        if (typeof result.local != "undefined" )  {
+        Community.updateOne({_id: new ObjectId(communityId)}, {$push:{members:newUser._id}}).then (function( result){
+ //         	console.log("result of update community "+JSON.stringify(result));
+            if (result.modifiedCount==1) {
+ //             console.log("set up viewer "+ newUser._id);
               req.logIn(newUser, function (err) {
                 if (!err) {
                   TCMailer.localmailer.sendMail({
@@ -2133,15 +2240,15 @@ router.post('/registerViewer', function(req, res, next) {
                     text: letter.replace(/<[^>]*>/g, '')
                   }, function (err, info) {
                     if (!err) {
-                      res.json({login: true, result: "You are now registered in Textual Communities with the email "+email+", and added as a VIEWER of this community. You will be logged in when you close this window! Happy viewing."});
+                      res.json({login: true, id: newUser._id, result: "You are now registered in Textual Communities with the email "+email+", and added as a VIEWER of this community. You will be logged in when you close this window! Happy viewing."});
                     } else {res.json({error: err})};
                   });
                 }
                 else {res.json({error: err})};
               });
-            } else {res.json({error: err})};
+            } else {res.json({error: null})};
           });
-        } else {res.json({error: err})};
+        } else {res.json({error: null})};
       });
     }
   })
@@ -2212,7 +2319,7 @@ router.post('/getPbTEIs', function(req, res, next){
   var docid=req.query.docid;
 //  console.log(docid);
   var pages=[];
-  TEI.find({name:"pb", "docs.0":ObjectId(docid)}, function(err, teis){
+  TEI.find({name:"pb", "docs.0":ObjectId(docid)}).then (function( teis){
 //    console.log(teis.length);
     teis.forEach(function(teiEl){
       pages.push({attrs: teiEl.attrs, name:teiEl.attrs.n})
@@ -2233,7 +2340,7 @@ router.post('/moveTC1Transcripts', function(req, res, next){
     async.map(page.revisions, function(revision, cb2) {
       var myUser=users.filter(function (obj){return (obj.email==revision.email);})[0]
       if (!myUser) {
-        User.findOne({"local.email":revision.email}, function(err, user){
+        User.findOne({"local.email":revision.email}).then (function(user){
           if (user) {
             users.push({email:revision.email, _id: user._id});
             revisions.push({doc: ObjectId(revision.doc), community: cAbbrev, text: revision.text, user: user._id, committed: testNull(revision.committed), created: new Date(revision.created), status: revision.status});
@@ -2241,7 +2348,7 @@ router.post('/moveTC1Transcripts', function(req, res, next){
           } else {
             myUser=users.filter(function (obj){return (obj.email=="peter.robinson@usask.ca");})[0]
             if (!myUser) {
-              User.findOne({"local.email":"peter.robinson@usask.ca"}, function(err, user){
+              User.findOne({"local.email":"peter.robinson@usask.ca"}).then (function(user){
                 users.push({email:"peter.robinson@usask.ca", _id: user._id});
                 revisions.push({doc: ObjectId(revision.doc), community: cAbbrev, text: revision.text, user: user._id, committed: testNull(revision.committed), created: new Date(revision.created), status: revision.status});
                 cb2(null);
@@ -2261,7 +2368,7 @@ router.post('/moveTC1Transcripts', function(req, res, next){
       async.map(page.tasks, function(task, cb3){
         var taskUser=users.filter(function (obj){return (obj.email==task.email);})[0]
         if (!taskUser) {
-          User.findOne({"local.email":task.email}, function(err, thisuser){
+          User.findOne({"local.email":task.email}).then (function(thisuser){
             if (thisuser) {
               users.push({email: task.email, _id: thisuser._id})
               var taskMember=memberships.filter(function (obj){return (obj.email==task.email);})[0];
@@ -2275,7 +2382,7 @@ router.post('/moveTC1Transcripts', function(req, res, next){
   //            console.log("cant find "+task.email)
               taskUser=users.filter(function (obj){return (obj.email=="peter.robinson@usask.ca");})[0];
               if (!taskUser)  {
-                User.findOne({"local.email":"peter.robinson@usask.ca"}, function(err, thisuser){
+                User.findOne({"local.email":"peter.robinson@usask.ca"}).then (function(thisuser){
     //              console.log("found me "+thisuser)
                   users.push({email: "peter.robinson@usask.ca", _id: thisuser._id})
                   var taskMember=memberships.filter(function (obj){return (obj.email=="peter.robinson@usask.ca");})[0];
@@ -2289,7 +2396,7 @@ router.post('/moveTC1Transcripts', function(req, res, next){
               } else {
                 var taskMember=memberships.filter(function (obj){return (obj.email=="peter.robinson@usask.ca");})[0]; //this must work
                 if (!taskMember) {
-                    User.findOne({"local.email":"peter.robinson@usask.ca"}, function(err, thisuser){
+                    User.findOne({"local.email":"peter.robinson@usask.ca"}).then (function(thisuser){
                       taskMember=thisuser.memberships.filter(function (obj){return (String(obj.community)==String(communityid));})[0];
                       tasks.push({name:task.name, status: task.status, date: new Date(), memberId:String(taskMember._id), witname: task.witname, userId: String(taskUser._id)});
                       memberships.push({email: "peter.robinson@usask.ca", _id:taskMember._id});
@@ -2305,7 +2412,7 @@ router.post('/moveTC1Transcripts', function(req, res, next){
         } else {  //we have a user for this task. Need a memberid please..
           var taskMember=memberships.filter(function (obj){return (obj.email==task.email);})[0];
           if (!taskMember) { //ok -- but we have a taskUser, so load her up
-              User.findOne({_id: taskUser._id}, function(err, thisuser){
+              User.findOne({_id: taskUser._id}).then (function(thisuser){
                 taskMember=thisuser.memberships.filter(function (obj){return (String(obj.community)==String(communityid));})[0];
                 memberships.push({email: task.email, _id:taskMember._id});
                 tasks.push({name:task.name, status: task.status, date: new Date(), memberId:String(taskMember._id), witname: task.witname, userId: String(taskUser._id)});
@@ -2321,7 +2428,7 @@ router.post('/moveTC1Transcripts', function(req, res, next){
 //        console.log("at end of call "+page.doc)
         if (tasks.length==0) cb1(null)
         else {
-          Doc.update({_id: ObjectId(page.doc)}, {$push: {tasks:{$each: tasks}}}, function(err){
+          Doc.update({_id: ObjectId(page.doc)}, {$push: {tasks:{$each: tasks}}}).then (function(err){
             cb1(null)
           });
         }
@@ -2547,9 +2654,8 @@ function getTeiDoc(page, callback) {
 }
 
 function getTeiEl(page, callback) {
-  TEI.findOne({docs: ObjectId(page), name:"pb"}, function(err, pageTei){
-    if (err) callback(err);
-    else callback(null, pageTei);
+  TEI.findOne({docs: ObjectId(page), name:"pb"}).then (function(pageTei){
+		callback(null, pageTei);
   })
 }
 
@@ -2565,47 +2671,47 @@ function replaceVals(replace, callback) {
 function removeAllDocs(req, res, deleteCommunity) {
     var ndocs=0, ndocels=0, nentels=0, cAbbrev="", nTEIels=0, ncollels=0, npagetrans=0;
     //delete all docs all entitiees all revisions...
-    Community.findOne({_id: req.query.id}, function(err, community) {
+    Community.findOne({_id: req.query.id}).then (function(community) {
       cAbbrev=community.abbr;
       ndocs=community.documents.length;
       async.parallel([
         function(cb1) {
-          Doc.collection.remove({community: cAbbrev}, function (err, result){
+          Doc.collection.remove({community: cAbbrev}).then (function (result){
             ndocels+=result.result.n;
-            cb1(err);
+            cb1(null);
           });
         },
         function(cb1) {
-            TEI.collection.remove( {community: cAbbrev}, function (err, result){
+            TEI.collection.remove( {community: cAbbrev}).then (function (result){
               nTEIels=result.result.n;
-              cb1(err);
+              cb1(null);
             });
         },
         function(cb1) {
-          Entity.collection.remove({community: cAbbrev}, function (err, result){
+          Entity.collection.remove({community: cAbbrev}).then (function (result){
             nentels=result.result.n;
-            cb1(err);
+            cb1(null);
           });
         },
         function(cb1) {
-          Collation.remove({community: cAbbrev}, function (err, result){
+          Collation.remove({community: cAbbrev}).then (function (result){
             ncollels=result.result.n;
-            cb1(err);
+            cb1(null);
           });
         },
         function(cb1) {
-          Revision.remove({community: cAbbrev}, function (err, result){
+          Revision.remove({community: cAbbrev}).then (function (result){
             npagetrans=result.result.n;
-            cb1(err);
+            cb1(null);
           });
         },
         function(cb1) {
-          User.collection.update({"memberships.community":ObjectId(req.query.id)}, {$set: {"memberships.$.pages.assigned":0, "memberships.$.pages.committed":0, "memberships.$.pages.approved":0, "memberships.$.pages.submitted":0, "memberships.$.pages.inprogress":0}}, {multi: true}, cb1);
+          User.collection.update({"memberships.community":ObjectId(req.query.id)}, {$set: {"memberships.$.pages.assigned":0, "memberships.$.pages.committed":0, "memberships.$.pages.approved":0, "memberships.$.pages.submitted":0, "memberships.$.pages.inprogress":0}}, {multi: true}).then (cb1);
         },
         function(cb1) {
-          if (!deleteCommunity) Community.update({_id:req.query.id}, {$set: {documents:[], entities:[]}}, cb1);
+          if (!deleteCommunity) Community.update({_id:req.query.id}, {$set: {documents:[], entities:[]}}).then (cb1);
           else {  //delete the community, and all membership references to it
-            Community.remove({_id: ObjectId(req.query.id)}, function (err, result){
+            Community.remove({_id: ObjectId(req.query.id)}).then (function ( result){
   //            console.log("result "+result.result.n)
               User.collection.update({"memberships.community":ObjectId(req.query.id)}, {$pull:{'memberships':{'community':ObjectId(req.query.id)}}}, {multi: true}, cb1);
              })
@@ -2621,13 +2727,13 @@ router.post('/deleteUser', function(req, res,next){
   User.findOne({_id:ObjectId(req.query.id)}, function(err, user){
     //remove from all communities..
     async.map(user.memberships, function(membership, callback) {
-      Community.collection.update({_id:membership.community}, {$pull:{members:user._id}}, function(err, result){
-        callback(err);
+      Community.collection.update({_id:membership.community}, {$pull:{members:user._id}}).then (function(result){
+        callback(null);
       });
     }, function (err){
       //remove the user here
-      User.collection.remove({_id:ObjectId(req.query.id)}, function(err, result){
-        res.json({result:err})
+      User.collection.remove({_id:ObjectId(req.query.id)}).then (function(result){
+        res.json({result:null})
       });
     });
   });
@@ -2645,8 +2751,8 @@ router.post('/deleteAllDocs', function(req, res, next) {
 
 
 function getPagesInDocs (pageID, callback) {
-  Doc.findOne({_id: ObjectId(pageID)}, function(err, page) {
-    callback(err, page.children);
+  Doc.findOne({_id: ObjectId(pageID)}).then (function(page) {
+    callback(null, page.children);
   });
 }
 
@@ -2681,11 +2787,11 @@ router.post('/deletePage', function(req, res, next) {
       })
     },
     function(argument, cb) {
-      TEI.findOne({name:"pb", docs: ObjectId(req.query.pageid)}, function (err, pbEl){
-        if (err || !pbEl) cb("error", []);
+      TEI.findOne({name:"pb", docs: ObjectId(req.query.pageid)}).then (function ( pbEl){
+        if (!pbEl) cb("error", []);
         else {
-          TEI.collection.remove({_id:pbEl._id}, function (err, result){
-            if (err || result.result.n==0) cb("error", []);
+          TEI.collection.remove({_id:pbEl._id}).then (function (result){
+            if (result.result.n==0) cb("error", []);
             else cb(null, pbEl);
           });
         }
@@ -2693,7 +2799,7 @@ router.post('/deletePage', function(req, res, next) {
     },
     function (pbTei, cb) {
       //take this out of the text element
-        TEI.collection.update({_id: ObjectId(pbTei.ancestors[0]), name:"text"}, {$pull: {children: pbTei._id}}, function (err) {
+        TEI.collection.update({_id: ObjectId(pbTei.ancestors[0]), name:"text"}, {$pull: {children: pbTei._id}}).then (function (err) {
           if (err) cb(err, []);
           else cb(null, []);
         });
@@ -2854,17 +2960,17 @@ router.use(function(err, req, res, next) {
 
 //here we add page references to all revision documents
 router.get('/getBasicRestore', function(req, res, next){
-    Doc.findOne({_id: req.query.docid}, function(err, document) {
+    Doc.findOne({_id: req.query.docid}).then (function(document) {
       var docinf=[];
-      if (!document) res.json({error:err})
+      if (!document) res.json({error:null})
       else {
         docinf.push({name:document.name, _id:document._id, teiHeader: document.teiHeader, meta: document.meta})
         async.mapSeries(document.children, function(page, callback) {
-          Doc.findOne({ _id: page}, function(err, pageinf){
-			Revision.collection.update({doc: page}, {$set: {parent: document.name, name: pageinf.name}}, {multi: true}, function(err, result){
+          Doc.findOne({ _id: page}).then (function( pageinf){
+			Revision.collection.update({doc: page}, {$set: {parent: document.name, name: pageinf.name}}, {multi: true}).then (function(result){
  				if (pageinf.tasks && pageinf.tasks.length>0)
-				  callback(err, {name:pageinf.name, facs: pageinf.facs, image: pageinf.image, tasks: pageinf.tasks, _id: pageinf._id});
-				else callback(err, {name:pageinf.name, facs: pageinf.facs, image: pageinf.image, _id: pageinf._id});
+				  callback(null, {name:pageinf.name, facs: pageinf.facs, image: pageinf.image, tasks: pageinf.tasks, _id: pageinf._id});
+				else callback(null, {name:pageinf.name, facs: pageinf.facs, image: pageinf.image, _id: pageinf._id});
 			});
           });
         }, function(err, results) {
@@ -2921,7 +3027,7 @@ router.get('/getTranscriberRecord', function(req, res, next){
   async.map(periods, function(period, cb1) {
     async.parallel([
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"IN_PROGRESS", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"IN_PROGRESS", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.inprogress={n: docs.length};
           if (docs.length) {
             var inprogarray=[];
@@ -2932,11 +3038,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.inprogarray=inprogarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"SUBMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"SUBMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.submitted={n: docs.length};
           if (docs.length) {
             var submarray=[];
@@ -2947,11 +3053,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.submarray=submarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"COMMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"COMMITTED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.committed={n: docs.length};
           if (docs.length) {
             var commarray=[];
@@ -2962,11 +3068,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.commarray=commarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"APPROVED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"APPROVED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.approved={n:docs.length};
           if (docs.length) {
             var apparray=[];
@@ -2977,11 +3083,11 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.apparray=apparray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
       function(cb2) {
-        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"ASSIGNED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}, function(err, docs){
+        Doc.find({label:"pb", community:community, "tasks": {"$elemMatch": {"status":"ASSIGNED", "userId": userId, "date": {$lt: new Date(period.to), $gte:new Date(period.from)}}}}).then (function(docs){
           period.assigned={n: docs.length};
           if (docs.length) {
             var assarray=[];
@@ -2992,7 +3098,7 @@ router.get('/getTranscriberRecord', function(req, res, next){
             });
             period.assarray=assarray;
           }
-          cb2(err);
+          cb2(null);
         });
       },
     ], function(err){
@@ -3160,12 +3266,12 @@ router.get('/getDocNames', function(req, res, next) {
 
 router.get('/getDocNamesCommunity', function(req, res, next) {
   var abbr=req.query.community;
-  Community.findOne({abbr: abbr}, function(err, myCommunity){
+  Community.findOne({abbr: abbr}).then (function(myCommunity){
     if (!myCommunity) res.json({});
     else {
       async.map(myCommunity.documents, function(myDoc, cb){
-        Doc.findOne({_id: myDoc}, function (err, thisDoc){
-          cb(err, {name: thisDoc.name, npages: thisDoc.children.length, control: thisDoc.control });
+        Doc.findOne({_id: myDoc}).then (function (thisDoc){
+          cb(null, {name: thisDoc.name, npages: thisDoc.children.length, control: thisDoc.control });
         })
       }, function (err, results){
       	if (err) res.json({error:"failure in get docnames routine"})
@@ -3190,18 +3296,23 @@ router.get('/getRevisions', function(req, res, next) {
   });
 });
 
-function getWitness (witness, community, entity, base, override, recallback) {
+function getWitness (witness, community, entity, suffix, base, override, recallback) {
   	var thisDoc, errorMessage="";
+  	var deleteTEIs=[];
+//  	console.log("seeking "+entity+" in "+witness+" community "+community.abbr);
 	async.waterfall([
 		function (cb) {
-		  Doc.findOne({_id: {$in: community.documents}, name: witness}).then ( function (aDoc) {
+		  Doc.findOne({name: String(witness), community: String(community.abbr)}).then ( function (aDoc) {
 			  thisDoc=aDoc;
+//			  console.log(" found a doc ")  
 			  cb(null, aDoc);
 		  })
 		},
 		function (myDoc, cb) {
+//			console.log("mydoc "+myDoc.name)
 			TEI.find({docs: myDoc._id, entityName: entity}).then (function(teis){
 			 //have to deal with case where this entity is absent from the document
+//			 	console.log("teis "+teis.length)
 				if (teis.length==0) {
 				  cb({error:"no witness"}, []);
 				} else if (override=="false" && teis[0].collateX && teis[0].collateX!="") {
@@ -3209,186 +3320,295 @@ function getWitness (witness, community, entity, base, override, recallback) {
 				} else {  //we have to deal with multiple texts for this witness
 				 //if this is the base .. we CANNOT have more than one version. Toss all others haha
 				  if (teis.length>1) {
-//				  	console.log("base is "+base+" witness is "+witness);
-				  	//it's possible one of these could BOTH have a n="x" attribute, and itself be the target of a next call from another element
-				 //in that case .. warn and remove...
-				 //we can check for this by cycling through the teis found and removing those which are referenced by a next
-				  	for (let i=0; i<teis.length; i++) {
-				  		if (teis[i].attrs.hasOwnProperty('xml:id')) {
-				  			for (let k=0; k<teis.length; k++) {
-				  				if (teis[k].attrs.hasOwnProperty('next') && (teis[k].attrs.next==teis[i].attrs['xml:id'])) {
-				  					 errorMessage+="'n' attribute '"+teis[k].attrs.n+"' found on element with xml:id '"+teis[i].attrs['xml:id']+"', which is referenced by a 'next' attribute also on a '"+teis[k].name+"' element with the entity name '"+teis[k].entityName+"'. This is an error. You should either remove the n attribute from the element with the xml:id attribute '"+teis[i].attrs['xml:id']+"' or remove the next attribute from the element pointing at this element \r";
-				  					 teis.splice(i, 1);
-				  				}
-				  			}
-				  		} 	
-				  	}
-				    if (witness==base && teis.length>1) { //no! can't have more than one version of a block in the base haha
-				    	errorMessage+="More than one version of '"+teis[0].entityName+" in witness '"+witness+"'. You have selected this witness as the base for collation. You cannot have more than one version of a collateable block in the base. \r";
-				    	for (let i=1; i<teis.length; i++) {
-				    		teis.splice(i, 1);
-				    	}
-				    }
-				  }
-//	              console.log("versions "+teis.length); console.log(teis);
-				  var content='{"_id": "'+witness+'_'+entity+'", "context": "'+entity+'","tei":"", "transcription_id": "'+witness+'","transcription_siglum": "'+witness+'","siglum": "'+witness+'"';
-				  var teiContent={"content":""}; //make this a loop if more than one wit here
-				  //put third line back
-				  content+=',"witnesses":['
-				  var counter=1, thisWitness="", witnesses=[];
-				  //ok this is where we check for next
-				  //we need to make this a waterfall -- get this first
-	//              console.log(counter+" "+thisTei)
-					async.mapSeries(teis, function(thisTei){
-					const cb2 = _.last(arguments);
-					thisWitness="";
-						//we have to do this
-					async.waterfall([
-						function (cb3) {
-						  if (thisTei.attrs && thisTei.attrs.next) {//use async to find it, of course
-//	                         console.log("dealing with the tei next now"); console.log(thisTei); console.log(thisTei.attrs.next)
-							 var nextTEI=thisTei.attrs.next;
-							 async.whilst (
-							   function () {return nextTEI!=null},
-							   function(callback) {
-								 //find the next tei and add it to children of thisTei
-								 TEI.findOne({"attrs.xml:id":nextTEI}).then (function (version) {
-//								   console.log("got next"); console.log(version);
-								   if (!version) {
-								   	 errorMessage+="Cannot find next element with xml:id '"+nextTEI+"' in witness '"+witness+"' \r";
-								   	 nextTEI=null;
-								   } else {
-									   for (let i=0; i<version.children.length; i++) {
-										 thisTei.children.push(version.children[i]);
-									   }
-									   if (version.attrs.next)  nextTEI=version.attrs.next;
-									   else nextTEI=null;
-								   }
-								   callback(null, null);
-								 });
-							   },
-							   function (err, nextTEI) {
-								 cb3(null, []);
-								 //add the teis we have won on to the children of thisTEI and go...
-							   }
-							 )
-						   } else { cb3(null, []);}
-						  //move through the next values here, appending them to the teis...
-						},
-						function (results, cb3) {//what page are we on in this tei?
-	  //                    console.log("counter "+counter);
-	  //                    console.log(thisTei);
-						  if (teis.length==1) {
-							thisWitness=witness;
-							cb3(null, []);
-						  } else {
-							//assuming that page is always a direct child of document
-							//bad idea... better start at highest level doc and work our way down...
-							//a job for async.whilst!!!
-							var nextDocId=thisTei.docs[1];
-							var depth=1, lastDoc;
-							async.whilst (
-							  function () {return nextDocId!=null},
-							  function(callback) {
-								  Doc.findOne({_id: nextDocId}).then (function(thisDoc) {
-									if (depth==1) thisWitness=witness+"("+thisDoc.name;
-									else {
-									  if (typeof thisDoc.name!= "undefined") {
-										thisWitness+="."+thisDoc.label[0]+thisDoc.name;
-									  } else { //just count the columns or numbers
-										var k=0;
-										while (String(lastDoc.children[k])!=String(nextDocId) && k<lastDoc.children.length) {k++};
-										thisWitness+="."+thisDoc.label[0]+k;
-									  }
-									}
-									if (++depth<thisTei.docs.length) {
-									  nextDocId=thisTei.docs[depth];
-									} else {nextDocId=null}
-									lastDoc=thisDoc;
-									callback(null, null);
-								  });
-							  },
-							  function (err, nextTEI) {
-								//got this sigil already.. make sure we do NOT duplicate
-	  //                          console.log("witnesses "+witnesses+" this "+thisWitness)
-								if (_.includes(witnesses, thisWitness)) {
-								  thisWitness+="-"+counter;
-								}
-								witnesses.push(thisWitness);
-	//                            console.log("witnesses2 "+witnesses)
-								thisWitness+=")";
-								cb3(null, []);
-								//add the teis we have won on to the children of thisTEI and go...
-							  }
-							)
-						  }
-						},
-						function (results, cb3) {
-							teiContent.content="";
-							FunctionService.loadTEIContent(thisTei, teiContent).then(function (){
-							//if our content has an empty t element: we have a problem. So let's send a warning and remove the offending word
-							  if (teiContent.content!="") {
-//	//						  	console.log("TEI content for witness "+witness+": "+teiContent.content)
-//								what comes back is a series of raw elements for a JSON array. Make it an array now to handle it
-								var thisCollation="["+DualFunctionService.makeJsonList(teiContent.content, thisWitness)+"]";
-//								console.log(thisCollation);
-								var myWitCollation=JSON.parse(thisCollation);
-	//							console.log(myWitCollation.tokens);
-								for (let x=0; x<myWitCollation.length; x++) {
-									for (let i=0; i<myWitCollation[x].tokens.length; i++) {
-										if (myWitCollation[x].tokens[i].t=="") {
-											errorMessage+="Empty token in conversion of xml for collation in witness '"+witness+"'. This could be caused by a space or punctuation token in a <am> or <ex> element. That word removed from the collation. The erroneous converted element is '"+JSON.stringify(myWitCollation[x].tokens[i])+"' \r" ;
-											var currIndex=myWitCollation[x].tokens[i].index
-											myWitCollation[x].tokens.splice(i, 1);
-											for (let j=i; j<myWitCollation[x].tokens.length; j++) {
-												var prevIndex=myWitCollation[x].tokens[j].index;
-												myWitCollation[x].tokens[j].index=currIndex;
-												currIndex=prevIndex;
+				    //there is an issue on 10r of Ra2 and numerous other pages in KT (and elsewhere?): for some reason, we have duplicate tei-s for all lines on this page, though none are repeated
+				    //we fix this. Check that the lowest line-level document (Ie a line) actually exists. If not, delete this tei
+				    //no idea how this happened for EVERY line on the page. Weird. Possibly a problem with update teis? dunno
+				    //should be no side effects. Once deleted it can not be found. As a tei it does not have an ancestor as such
+				    //however, its children should be deleted, and their children, all the way down 
+				    //so: first check that all the docs which allegedly contain this TEI exist...
+ //		            console.log("found different versions? "+teis.length+" docId "+myDoc._id+" name "+myDoc.name+" in entity "+entity); 
+//		            console.log(teis);
+					let ghostTeis=[];
+					let index=1;
+					async.mapSeries(teis, function (thisTei, callback){
+						//if the tei is a ghost then the document it is in does not exist
+		//				console.log("warn us...Possible ghost TEI found in "+entity+", witness "+witness+" . You should check this \r");
+						if (index==1) errorMessage+="Possible ghost TEI found in "+entity+", witness "+witness+" . You should check this \r"
+						index++;
+			//			console.log(thisTei);
+		//				teis.splice(1,1);  //just throw it back in the mix
+						// is this a real tei? Check that the documents dealing with it really exist
+						let index2=0;
+						async.mapSeries(thisTei.docs, function (theDoc, callback2){
+							if (index2<thisTei.docs.length-1) {
+								index2++;
+								callback2(null);
+							} else {
+							//only check the last one...
+		//						 console.log("looking for doubtful doc "+theDoc+" in witness "+witness)
+								 Doc.findOne({_id: theDoc}).then (function(docFound){
+									if (!docFound) {
+										//this one does not exist!!!
+		//						 		console.log("identified ghost doc "+theDoc+" in tei "+thisTei._id+" witness "+witness+" entity "+entity);
+										ghostTeis.push({tei: thisTei._id, doc: theDoc});
+										callback2(null)
+									} else {
+										//this one does  exist!!!
+		//						 		console.log("identified real doc "+theDoc);
+										//hold on! It might exist BUT might not be the child of any document. So again we throw it out
+										Doc.findOne({children: theDoc}).then (function(docFound){
+											if (!docFound) {
+	//											console.log("No page owns this line "+theDoc)
+												ghostTeis.push({tei: thisTei._id, doc: theDoc});
+											} else {
+	//											console.log("A page owns this line "+theDoc)
 											}
-										}
+											callback2(null);
+										});
 									}
-								}
-								//another check. If we are in the base, we must have at least ONE witness with id=base. 
-								//for example: if there is a <app> element in the base, this will yield witnesses with id "base-mod" "base-orig" etc
-								if (witness==base) {
-									var baseFound=false;
-									var basesFound="";
-									for (let x=0; x<myWitCollation.length; x++) {
-										if (myWitCollation[x].id==base) baseFound=true;
-										else basesFound+="'"+myWitCollation[x].id+"' "
-									}
-									if (!baseFound) { //houston! problem!
-										errorMessage+="You have specified '"+base+"' as the collation base. But preparing '"+base+"' for collation found witness ids "+basesFound+". This could occur because the collation base block for '"+entity+"' contains an <app> element. The id '"+myWitCollation[0].id+"' has been renamed '"+base+"', and all but the first version removed, to allow collation to proceed. But you should fix this";
-										myWitCollation[0].id=base;
-										for (let x=0; x<myWitCollation[0].tokens.length; x++) {
-											myWitCollation[0].tokens[x].reading=base;
-										}
-									    myWitCollation.splice(1, myWitCollation.length-1);
-									}
-								}
-//						 		console.log(JSON.stringify(myWitCollation));
-								for (let x=0; x<myWitCollation.length; x++) {
-									if (counter>1) {
-									  content+=","+JSON.stringify(myWitCollation[x]);
-									}
-									else content+=JSON.stringify(myWitCollation[x]);
-									counter++;
-								}
-								cb3(null);
-							  } else cb3(null);
-							});
-						  },
-					  ], function(err) {
-							//put back content line below here
-							  cb2(null, content);
+								 })
+							 }
+						}, function (err, result){
+							callback(null);
 						});
-					}, function(err, result){
-	//                    console.log(result);
-						content+=']}';
-						cb(null, content);
-					});
+					}, function (err, result){
+				  	//it's possible one of these could BOTH have a n="x" attribute, and itself be the target of a next call from another element
+				 	//in that case .. warn and remove...
+					 //we can check for this by cycling through the teis found and removing those which are referenced by a next
+//					    console.log("found some ghosts "+ghostTeis.length+" first is "+ghostTeis[0]);
+//					    console.log("teis are "+teis)
+					    //get rid of each ghost tei from teis list
+					    if (ghostTeis.length>0) {
+							for (let i=0; i<teis.length; i++) {
+								for (let j=0; j<ghostTeis.length; j++) {
+//									console.log("checking "+ghostTeis[j]+" against "+teis[i]._id)
+									if (ghostTeis[j].tei==teis[i]._id) {
+										//delete the tei
+//										console.log("deleting ... local "+ghostTeis[j].tei+" for ghost doc "+ghostTeis[j].doc);
+										//deletion is simple .. just find every tei that has 
+										teis.splice(i, 1);  //delete nothing yet, just adjust local teis list
+										i--;
+										errorMessage+="Inconsistency found in "+entity+", in "+witness+". Fixed.\r";
+										//now delete
+										deleteTEIs.push(ghostTeis[j].doc);
+									}
+								}
+							}
+					    }
+						for (let i=0; i<teis.length; i++) {
+							if (teis[i].attrs.hasOwnProperty('xml:id')) {
+								for (let k=0; k<teis.length; k++) {
+									if (teis[k].attrs.hasOwnProperty('next') && (teis[k].attrs.next==teis[i].attrs['xml:id'])) {
+										 errorMessage+="'n' attribute '"+teis[k].attrs.n+"' found on element with xml:id '"+teis[i].attrs['xml:id']+"', which is referenced by a 'next' attribute also on a '"+teis[k].name+"' element with the entity name '"+teis[k].entityName+"'. This is an error. You should either remove the n attribute from the element with the xml:id attribute '"+teis[i].attrs['xml:id']+"' or remove the next attribute from the element pointing at this element \r";
+										 teis.splice(i, 1);
+									}
+								}
+							} 	
+						}
+						if (witness==base && teis.length>1) { //no! can't have more than one version of a block in the base haha
+							errorMessage+="More than one version of '"+teis[0].entityName+" in witness '"+witness+"'. You have selected this witness as the base for collation. You cannot have more than one version of a collateable block in the base. \r";
+							for (let i=1; i<teis.length; i++) {
+								teis.splice(i, 1);
+							}
+				        }
+				  	    cb(null, teis);
+					})
+		              //test: just discard all the teis except the first one. Brutal.Should work... then tackle
+				  } else { //just one tei
+//				  	console.log("got a tei "+teis)
+				  	cb(null, teis);
+				  }
 				}
-			});
+			  })
+			},
+			function (teis, cb) {  //any ghosts found we delete here
+				if (deleteTEIs.length>0) {
+					async.mapSeries(deleteTEIs, function (deleteTEI, cb2){
+						TEI.collection.deleteMany({docs: new ObjectId(deleteTEI)}).then(function(result){
+							cb2(null);	
+						})
+					}, function (err){
+						cb(null, teis);
+					})
+				} else {
+					cb(null, teis);
+				}
+			},
+			function (teis, cb) {
+			  console.log("witness "+witness+" suffix "+suffix);
+			  var content='{"_id": "'+witness+suffix+'_'+entity+'", "context": "'+entity+'","tei":"", "transcription": "'+witness+'","transcription_siglum": "'+witness+'","siglum": "'+witness+'"';
+			  var teiContent={"content":""}; //make this a loop if more than one wit here
+			  //put third line back
+			  content+=',"witnesses":['
+			  var counter=1, thisWitness="", witnesses=[];
+			  //ok this is where we check for next
+			  //we need to make this a waterfall -- get this first
+//              console.log(counter+" "+thisTei)
+			  async.mapSeries(teis, function(thisTei){
+//				console.log("this tei "+thisTei.attrs.n)
+				const cb2 = _.last(arguments);
+				thisWitness="";
+					//we have to do this
+				async.waterfall([
+					function (cb3) {
+					  if (thisTei.attrs && thisTei.attrs.next) {//use async to find it, of course
+ //                        console.log("dealing with the tei next now"); 
+  //                       console.log(thisTei); 
+ //                        console.log(thisTei.attrs.next)
+						 var nextTEI=thisTei.attrs.next;
+						 async.whilst (
+						   function () {return nextTEI!=null},
+						   function(callback) {
+							 //find the next tei and add it to children of thisTei
+							 TEI.findOne({"attrs.xml:id":nextTEI}).then (function (version) {
+//								   console.log("got next"); console.log(version);
+							   if (!version) {
+								 errorMessage+="Cannot find next element with xml:id '"+nextTEI+"' in witness '"+witness+"' \r";
+								 nextTEI=null;
+							   } else {
+								   for (let i=0; i<version.children.length; i++) {
+									 thisTei.children.push(version.children[i]);
+								   }
+								   if (version.attrs.next)  nextTEI=version.attrs.next;
+								   else nextTEI=null;
+							   }
+							   callback(null, null);
+							 });
+						   },
+						   function (err, nextTEI) {
+							 cb3(null, []);
+							 //add the teis we have won on to the children of thisTEI and go...
+						   }
+						 )
+					   } else { cb3(null, []);}
+					  //move through the next values here, appending them to the teis...
+					},
+					function (results, cb3) {//what page are we on in this tei?
+//	                       console.log("counter "+counter);
+  //                    console.log(thisTei);
+					  if (teis.length==1) {
+						if (witness!=base) {
+							thisWitness=witness+suffix; //deal with simple cases
+						} else thisWitness=witness;
+						cb3(null, []);
+					  } else {
+						//assuming that page is always a direct child of document
+						//bad idea... better start at highest level doc and work our way down...
+						//a job for async.whilst!!!
+//							console.log("looking for multiple documents ");
+						var nextDocId=thisTei.docs[1];
+						var depth=1, lastDoc;
+//							console.log("looking for multiple documents2 "+nextDocId);
+						async.whilst (
+						  function test(cb) { cb(null, nextDocId!=null); },
+						  function iter(callback) {
+//							  console.log("checking for "+nextDocId)
+							  Doc.findOne({_id: nextDocId}).then (function(thisDoc) {
+								if (!thisDoc) console.log("can't find doc "+nextDocId+" "+thisTei.docs[1])
+								if (depth==1) thisWitness=witness+suffix+"("+thisDoc.name;
+								else {
+								  if (typeof thisDoc.name!= "undefined") {
+									thisWitness+="."+thisDoc.label[0]+thisDoc.name;
+								  } else { //just count the columns or numbers
+									var k=0;
+									while (String(lastDoc.children[k])!=String(nextDocId) && k<lastDoc.children.length) {k++};
+									thisWitness+="."+thisDoc.label[0]+k;
+								  }
+								}
+								if (++depth<thisTei.docs.length) {
+								  nextDocId=thisTei.docs[depth];
+								} else {nextDocId=null}
+								lastDoc=thisDoc;
+								callback(null, null);
+							  });
+						  },
+						  function (err, nextTEI) {
+							//got this sigil already.. make sure we do NOT duplicate
+  //                          console.log("witnesses "+witnesses+" this "+thisWitness)
+							if (_.includes(witnesses, thisWitness)) {
+							  thisWitness+="-"+counter;
+							}
+							witnesses.push(thisWitness);
+//                            console.log("witnesses2 "+witnesses)
+							thisWitness+=")";
+							cb3(null, []);
+							//add the teis we have won on to the children of thisTEI and go...
+						  }
+						)
+					  }
+					},
+					function (results, cb3) {
+						teiContent.content="";
+						console.log("XXX in ")
+						FunctionService.loadTEIContent(thisTei, teiContent).then(function (){
+						//if our content has an empty t element: we have a problem. So let's send a warning and remove the offending word
+						  if (teiContent.content!="") {
+							  	console.log("TEI content for witness "+thisWitness+" origwitness "+witness+": "+teiContent.content)
+//								what comes back is a series of raw elements for a JSON array. Make it an array now to handle it
+							var thisCollation="["+DualFunctionService.makeJsonList(teiContent.content, thisWitness)+"]";
+							if (detectUnescapedEscapes(thisCollation).length) {
+//								console.log("found unescaped characters \\ in "+witness+", with text "+thisCollation);
+								errorMessage+="Found unescaped characters \\ in  '"+witness+"'. This will cause the JSON conversion to fail. TC will fix this here by replacing the \\ by \\\\. Check your transcription: if you must use the escape, write it as \\\\";
+								const regex = /(?<!\\)\\(?!(\\|['"nrtvbf0-7ux]))/g;
+								thisCollation=thisCollation.replace(regex, "\\\\");	
+								console.log("after replacement "+thisCollation)
+							}
+							var myWitCollation=JSON.parse(thisCollation);
+//							console.log(myWitCollation.tokens);
+							for (let x=0; x<myWitCollation.length; x++) {
+								for (let i=0; i<myWitCollation[x].tokens.length; i++) {
+									if (myWitCollation[x].tokens[i].t=="") {
+										errorMessage+="Empty token in conversion of xml for collation in witness '"+witness+"'. This could be caused by a space or punctuation token in a <am> or <ex> element. That word removed from the collation. The erroneous converted element is '"+JSON.stringify(myWitCollation[x].tokens[i])+"' \r" ;
+										var currIndex=myWitCollation[x].tokens[i].index
+										myWitCollation[x].tokens.splice(i, 1);
+										for (let j=i; j<myWitCollation[x].tokens.length; j++) {
+											var prevIndex=myWitCollation[x].tokens[j].index;
+											myWitCollation[x].tokens[j].index=currIndex;
+											currIndex=prevIndex;
+										}
+									}
+								}
+							}
+							//another check. If we are in the base, we must have at least ONE witness with id=base. 
+							//for example: if there is a <app> element in the base, this will yield witnesses with id "base-mod" "base-orig" etc
+							if (witness==base) {
+								var baseFound=false;
+								var basesFound="";
+								for (let x=0; x<myWitCollation.length; x++) {
+									if (myWitCollation[x].id==base) baseFound=true;
+									else basesFound+="'"+myWitCollation[x].id+"' "
+								}
+								if (!baseFound) { //houston! problem!
+									errorMessage+="You have specified '"+base+"' as the collation base. But preparing '"+base+"' for collation found witness ids "+basesFound+". This could occur because the collation base block for '"+entity+"' contains an <app> element. The id '"+myWitCollation[0].id+"' has been renamed '"+base+"', and all but the first version removed, to allow collation to proceed. But you should fix this";
+									myWitCollation[0].id=base;
+									for (let x=0; x<myWitCollation[0].tokens.length; x++) {
+										myWitCollation[0].tokens[x].reading=base;
+									}
+									myWitCollation.splice(1, myWitCollation.length-1);
+								}
+							}
+//						 		console.log(JSON.stringify(myWitCollation));
+							for (let x=0; x<myWitCollation.length; x++) {
+								if (counter>1) {
+								  content+=","+JSON.stringify(myWitCollation[x]);
+								}
+								else content+=JSON.stringify(myWitCollation[x]);
+								counter++;
+							}
+							cb3(null);
+						  } else cb3(null);
+						});
+					  },
+				  ], function(err) {
+						//put back content line below here
+						  cb2(null, content);
+					});
+				}, function(err, result){
+//                    console.log(result);
+					content+=']}';
+					cb(null, content);
+				});
+				
 		  }
 	  ], function(err, result) {
 //	console.log(errorMessage);
@@ -3396,49 +3616,161 @@ function getWitness (witness, community, entity, base, override, recallback) {
   });
 }
 
-router.post('/getCEWitnesses', function(req, res, next) {
+
+function detectUnescapedEscapes(str) {
+  const regex = /(?<!\\)\\(?!(\\|['"nrtvbf0-7ux]))/g;
+  const unescaped = str.match(regex);
+  return unescaped ? unescaped : [];
+}
+
+//gets witnesses one at a time...
+router.post('/fetchCEWitness', function(req, res, next) {
 	var community=req.query.community;
-	var thisCommunity={};
-	var witlist=req.body.witnesses;
+	var thisCommunity={};    //when getting parallels for different communities .. will need to change this
+	var witlist=req.body.witnesses;   //when getting parallels for different communities .. will need to change this
+	var nWit=req.body.nWit;
 	var base=req.body.base;
 	var entity=req.body.entity;
 	var override=req.body.override;
-	var results=[];
+	var parallels=req.body.parallels;
+	var allresults=[];	
 	var errorMessage="";
-//	console.log("base "+base)
-	async.waterfall([
-		function (cb) {
-		  Community.findOne({'abbr':community}).then ( function (myCommunity) {
-				thisCommunity=myCommunity;
-				cb(null, myCommunity.documents);
-		  });
-		}
-	], function (err) {
-		async.mapSeries(witlist, function(witness, callback){
-			getWitness (witness, thisCommunity, entity, base, override, function(err, result, thisDoc, errorRead ){
-				errorMessage+=errorRead;
+//	console.log("in get ce wtinesses "+base)
+	console.log("we have parallels .. "+parallels.length);
+	let index=0;
+	async.mapSeries(parallels, function (parallel, callback1){
+//		console.log("looking for: "+parallel.entity+" "+parallel.suffix);
+//		console.log("looking now")
+	    var results=[];
+	    index++;
+		async.waterfall([
+			function (cb) {
+			  Community.findOne({'abbr':community}).then ( function (myCommunity) {
+					thisCommunity=myCommunity;
+					cb(null, myCommunity.documents);
+			  });
+			}
+		], function (err) {  //we only have one witness now! but retain the async to keep everything in order
+			let aWitList=[];
+			aWitList.push(witlist[nWit]);
+			console.log("looking for "+witlist[nWit])
+			async.mapSeries(aWitList, function(witness, callback){
+				console.log("index "+index+" witness "+witness+" base "+base)
+			    if (index>1 && witness==base) {
+			    	index++;
+			    	console.log("written base once")
+			    	callback(null);
+			    } else {
+//				console.log("witness "+witness);		
+					getWitness (witness, thisCommunity, parallel.entity, parallel.suffix, base, override, function(err, result, thisDoc, errorRead ){
+						errorMessage+=errorRead;
+						if (!err) {
+						   console.log("got witness "+witness+" "+parallel.suffix+" text "+result);
+						   TEI.updateOne({docs: thisDoc._id, entityName: parallel.entity}, {$set: {collateX: result}}).then (function (written){
+							 results.push(result);
+							 callback(null);
+						   });
+						 } else {   //have to do it this way else screw up comparing string and json object
+						   var thisexists=(err.error=="has Collatex");
+						   var thismissing=(err.error=="no witness");
+						   if (thismissing) {
+							 //just don't add it to the array
+							 callback(null);
+						   }  else if (thisexists) {
+							 results.push(result);
+							 callback(null);
+						   } else callback(err)
+						 }
+					});
+				}
+			}, function (err) {
 				if (!err) {
-				   TEI.updateOne({docs: thisDoc._id, entityName: entity}, {$set: {collateX: result}}).then (function (written){
-					 results.push(result);
-					 callback(null);
-				   });
-				 } else {   //have to do it this way else screw up comparing string and json object
-				   var thisexists=(err.error=="has Collatex");
-				   var thismissing=(err.error=="no witness");
-				   if (thismissing) {
-					 //just don't add it to the array
-					 callback(null);
-				   }  else if (thisexists) {
-					 results.push(result);
-					 callback(null);
-				   } else callback(err)
-				 }
-			});
-		}, function (err) {
-			if (!err)
-				res.json({success:true, result:results, errorMessage: errorMessage});
-			else res.json({success:false, error: err});
-		})
+					console.log("we have results")
+					allresults=allresults.concat(results);
+					callback1(null);
+				} else {
+					callback1(err);
+				}
+			})
+		});
+	}, function (err){
+		if (!err)
+			res.json({success:true, result:allresults, errorMessage: errorMessage});
+		else res.json({success:false, error: err});
+	});
+
+});
+
+router.post('/getCEWitnesses', function(req, res, next) {
+	var community=req.query.community;
+	var thisCommunity={};    //when getting parallels for different communities .. will need to change this
+	var witlist=req.body.witnesses;   //when getting parallels for different communities .. will need to change this
+	var base=req.body.base;
+	var entity=req.body.entity;
+	var override=req.body.override;
+	var parallels=req.body.parallels;
+	var allresults=[];
+	
+	var errorMessage="";
+//	console.log("in get ce wtinesses "+base)
+	console.log("we have parallels .. "+parallels.length);
+	let index=0;
+	async.mapSeries(parallels, function (parallel, callback1){
+		console.log("looking for: "+parallel.entity+" "+parallel.suffix);
+		console.log("looking now")
+	    var results=[];
+	    index++;
+		async.waterfall([
+			function (cb) {
+			  Community.findOne({'abbr':community}).then ( function (myCommunity) {
+					thisCommunity=myCommunity;
+					cb(null, myCommunity.documents);
+			  });
+			}
+		], function (err) {
+			async.mapSeries(witlist, function(witness, callback){
+				console.log("index "+index+" witness "+witness+" base "+base)
+			    if (index>1 && witness==base) {
+			    	index++;
+			    	console.log("written base once")
+			    	callback(null);
+			    } else {
+//				console.log("witness "+witness);		
+					getWitness (witness, thisCommunity, parallel.entity, parallel.suffix, base, override, function(err, result, thisDoc, errorRead ){
+						errorMessage+=errorRead;
+						if (!err) {
+						   console.log("got witness "+witness+" "+parallel.suffix+" text "+result);
+						   TEI.updateOne({docs: thisDoc._id, entityName: parallel.entity}, {$set: {collateX: result}}).then (function (written){
+							 results.push(result);
+							 callback(null);
+						   });
+						 } else {   //have to do it this way else screw up comparing string and json object
+						   var thisexists=(err.error=="has Collatex");
+						   var thismissing=(err.error=="no witness");
+						   if (thismissing) {
+							 //just don't add it to the array
+							 callback(null);
+						   }  else if (thisexists) {
+							 results.push(result);
+							 callback(null);
+						   } else callback(err)
+						 }
+					});
+				}
+			}, function (err) {
+				if (!err) {
+					console.log("we have results")
+					allresults=allresults.concat(results);
+					callback1(null);
+				} else {
+					callback1(err);
+				}
+			})
+		});
+	}, function (err){
+		if (!err)
+			res.json({success:true, result:allresults, errorMessage: errorMessage});
+		else res.json({success:false, error: err});
 	});
 });
 
@@ -3457,18 +3789,15 @@ router.get('/cewitness', function(req, res, next) {
 //call to getWintess
 	async.waterfall([
 		function (cb) {
-		  Community.findOne({'abbr':community}, function (err, myCommunity) {
-			if (err) cb(err, []);
-			else {
-				cb(null, myCommunity);
-			}
+		  Community.findOne({'abbr':community}).then (function (myCommunity) {
+			  cb(null, myCommunity);
 		  });
 		},
 		function (myCommunity, cb) {
-		  getWitness (req.query.witness, myCommunity, thisEntity, base, override, function(err, result, thisDoc, errorRead){
+		  getWitness (req.query.witness, myCommunity, thisEntity, "", base, override, function(err, result, thisDoc, errorRead){
 		  	 errorMessage+=errorRead;
 			 if (!err) {
-			   TEI.update({docs: thisDoc._id, entityName: thisEntity}, {$set: {collateX: result}}, function (err, results){
+			   TEI.updateOne({docs: thisDoc._id, entityName: thisEntity}, {$set: {collateX: result}}).then (function (results){
 				 res.json(JSON.parse(result));
 			   });
 			 } else {   //have to do it this way else screw up comparing string and json object
@@ -3504,16 +3833,12 @@ router.post('/adjustRestorePage',function(req, res, next) {
   		res.json({success: false, error: "Error rewriting page information"})
   	}
     else {
-    	Doc.findOne({"ancestors.0":ObjectId(docid), name:page.name}, function(err, myDoc){
-          if (err || !myDoc) {
+    	Doc.findOne({"ancestors.0":ObjectId(docid), name:page.name}).then (function(myDoc){
+          if (!myDoc) {
           	res.json({success: false, error: "Error finding page"})
           } else {
-			  Revision.collection.update({doc:ObjectId(page._id)}, {$set: {doc: ObjectId(myDoc._id)}}, {multi: true}, function(err, result){
-			  	if (err) {
-			  	 	res.json({success: false, error: "Error finding revisions"})
-        	 	 } else {			  	
+			  Revision.collection.update({doc:ObjectId(page._id)}, {$set: {doc: ObjectId(myDoc._id)}}, {multi: true}).then (function(result){
 				res.json({success:true})
-				}
 			 });
 		  }
        })
@@ -3523,8 +3848,8 @@ router.post('/adjustRestorePage',function(req, res, next) {
 
 //swaps old id for new one; pops last element
 router.post('/restoreCommDocs', function(req, res, next) {
-  Community.collection.update({_id: ObjectId(req.query.community), documents: ObjectId(req.query.oldid)}, {$set:{"documents.$": ObjectId(req.query.newid)}}, function(err, result) {
-      Community.collection.update({_id: ObjectId(req.query.community)}, {$pop:{documents:1}}, function(err, result) {
+  Community.collection.update({_id: ObjectId(req.query.community), documents: ObjectId(req.query.oldid)}, {$set:{"documents.$": ObjectId(req.query.newid)}}).then (function(result) {
+      Community.collection.update({_id: ObjectId(req.query.community)}, {$pop:{documents:1}}).then (function(result) {
         res.json({success:true})
       });
   })
@@ -3587,7 +3912,7 @@ router.post('/putCollation', function(req, res, next){
 });
 
 router.post('/getRulesByIds', function(req, res, next){
-  Collation.find({community: req.query.community, id: {$in: req.body.findByIds}}, function(err, rules){
+  Collation.find({community: req.query.community, id: {$in: req.body.findByIds}}).then (function(rules){
     if (rules.length) {
       var rulesByIds=[];
       rules.forEach(function(rule) {
@@ -3659,6 +3984,7 @@ router.get('/getRegularizationRules', function(req, res, next){
 // this removes BOTH global and local regularization rules
 
 router.post('/deleteRules', function (req, res, next) {
+//  console.log("deleting id "+req.body.delete);
   Collation.deleteMany({id: {$in:req.body.delete}, community:req.query.community, model:"regularization"}).then (function(result){
     res.json({success:0});
   })
@@ -3707,7 +4033,7 @@ router.post('/deleteAllRules', function (req, res, next) {
 
 router.post('/addCEGlobalExceptions', function (req, res, next) {
 //  console.log(req.body);
-  Collation.find({id:{$in: req.body.exceptions}, model:"regularization"}, function(err, exceptions){
+  Collation.find({id:{$in: req.body.exceptions}, model:"regularization"}).then (function(exceptions){
 //    console.log(exceptions.length);
 //    res.json({success:0})
     async.each(exceptions,
@@ -3721,8 +4047,8 @@ router.post('/addCEGlobalExceptions', function (req, res, next) {
             } else {
                 ce.exceptions = [req.query.entity];
             }
-        Collation.updateOne({id:exception.id, scope:'always', model:"regularization"}, {$set: {ce: JSON.stringify(ce)}}, function (err, result){
-          callback(err)
+        Collation.updateOne({id:exception.id, scope:'always', model:"regularization"}, {$set: {ce: JSON.stringify(ce)}}).then (function (result){
+          callback(null)
         })
       },
       function(err) {
@@ -3745,8 +4071,8 @@ router.post('/putCERuleSet', function(req, res, next) {
   }
 //  console.log(deleteRules);
   if (deleteRules.length>0) {
-    Collation.remove({id: {$in: deleteRules}, model:"regularization"}, function(result){
-      Collation.insertMany(req.body.ruleSet, function(result){
+    Collation.remove({id: {$in: deleteRules}, model:"regularization"}).then (function(result){
+      Collation.insertMany(req.body.ruleSet).then (function(result){
         res.json({success: 0});
       });
     });
@@ -3766,34 +4092,79 @@ router.post('/putCERuleSet', function(req, res, next) {
 
 router.get('/repairEntities', function(req, res, next) {
   //grab all the entities which have no ancestor but belong to this community
+  //this assumes that toplevel entities can NOT be terminal. Is there a community where this is not the case??
+  var community=req.query.community;
   var foundEntities=[];
-  Entity.find({community:req.query.community, ancestorName:""}, function(err, entities){
-    if (err) {
-      res.json({error:"Problem in database search"})
-    } else {
-      foundEntities=entities;
+//  console.log("looking for entities in "+community);
+  Entity.find({community: community, ancestorName:"", isTerminal:false}).then (function(entities){
+ // 	   console.log("found entities "+ entities.length);
+       foundEntities=entities;
       //write the entities back to the community
-      Community.update({abbr:req.query.community}, {$set: {entities: entities}}, function(err, result){
-          if (err) {
-            res.json({error:"Problem in database search"})
-          } else {
-            res.json({foundEntities});
-          }
+      Community.updateOne({abbr:req.query.community}, {$set: {entities: entities}}).then (function(result){
+      	console.log("updating record "+JSON.stringify(result));
+        res.json({foundEntities});
       })
-    }
+  })
+});
+
+router.get('/getTEIGhosts',  function(req, res, next) {
+  //grab all the entities which have no ancestor but belong to this community
+  //this assumes that toplevel entities can NOT be terminal. Is there a community where this is not the case??
+  var community=req.query.community;
+  var page = req.query.page;
+  var docStr=req.query.docStr;
+  var pageStr=req.query.pageStr;
+  var foundEntities=[];
+//  console.log("checking for ghosts in "+community+" page "+page)
+  let foundGhosts=[];
+  TEI.find({community:community, docs: new ObjectId(page), isTerminal: true}). then (function(teis){
+//  	console.log("found so many teis for this page "+teis.length)
+  	async.mapSeries(teis, function(tei, cb){
+  		//make an array of all docs referenced below this and see if they exist
+  		var mydocs=[];
+  		for (let i=2; i<tei.docs.length; i++) {
+  			mydocs.push(tei.docs[i]);
+  		}
+  		async.mapSeries(mydocs, function(mydoc, cb2){
+  			Doc.findOne({_id: new ObjectId(mydoc)}). then( function (isDoc) {
+  				if (!isDoc) {
+  					//but if there is only one of these, no duplicate
+  					TEI.find({entityName:tei.entityName}).then (function(elements){
+  						if (elements.length>1) {
+  							 foundGhosts.push({tei: tei, page: pageStr, doc: docStr});
+							 cb2(null);
+  						} else {
+  							cb2(null);
+  						}
+  					})
+  				} else {
+  			   	 	cb2(null);
+  			    }
+  			});
+  		}, function(err) {
+  			cb(null);
+  		})
+  	}, function (err){
+  		//return here
+  		res.json({nTEIs: teis.length, nGhosts: foundGhosts.length, ghosts: foundGhosts});
+  	})
   })
 });
 
 // wrinkle: populate witnesses field from documents array...
 //now: use what is in ceconfig witnesses
 //NOTE if we get an error here it is because there is a document in the witness list which no longer exists
+//we are also going to return the collationents, for use in the collation editor etc
 router.get('/ceconfig', function(req, res, next) {
   Community.findOne({abbr: req.query.community}).then ( function(community) {
     //now get the witnesses
 //    console.log("looking for ce "+community)
 //  if ceconfig.witnesses is not empty -- use it!!!
-    if (community.ceconfig.witnesses && community.ceconfig.witnesses.length>0) res.json(community.ceconfig);
-    else {
+    if (community.ceconfig.witnesses && community.ceconfig.witnesses.length>0) {
+    	community.ceconfig.collationents=community.collationents;
+    	community.ceconfig.collationparallels=community.collationparallels;
+    	res.json(community.ceconfig);
+    }  else {
       async.mapSeries(community.documents, function(mydocument, callback) {
 //        console.log(mydocument)
         Doc.findOne({_id: new ObjectId(mydocument)}).then ( function(myDoc){
@@ -3807,6 +4178,7 @@ router.get('/ceconfig', function(req, res, next) {
   /*      var isBaseWit=results.filter(function (obj){return obj== community.ceconfig.base_text;})[0];
         console.log(community.ceconfig.base_text);
         if (!isBaseWit) community.ceconfig.base_text=results[0]; */
+        console.log("community is "+community)
         community.ceconfig.witnesses=results;
         community.ceconfig.project=community.name;
   //      console.log(community.ceconfig);
@@ -3816,20 +4188,245 @@ router.get('/ceconfig', function(req, res, next) {
   });
 });
 
-router.get('/getCollations', function(req, res, next) {
-  var collations=[];
-  Collation.find({community:req.query.community, status:"approved"}, function (err, results){
-    results.forEach(function(result){
-      collations.push(result.ce);
-    });
-    res.json(collations);
-  });
+router.post('/getSavedCollations', function(req, res, next) {
+	let entity=req.query.entity;
+	console.log("looking for entity "+entity);
+	let collations=[];
+   Collation.find({entity:entity, $or:[{status:"set"},{status:"regularised"},{status:"approved"},{status:"ordered"} ]}). then (function (results){
+  		console.log("nfound "+results.length);
+  		results.forEach(function(result){
+		  collations.push(JSON.parse(result.ce));
+		});
+  		res.json(collations);
+	});
 });
+
+router.get('/getCollation',  function(req, res, next) {
+	let entity=req.query.entity;
+	let output=req.query.output;
+	let community=req.query.community;
+//	console.log("about to get collation for "+entity)
+	if (output=="JSON") {
+		Collation.findOne({community: community, model:"collation", status:"approved", entity: entity}).then(function (result) {
+			if (!result) {
+				res.json({success: false})
+			} else {
+				res.json({success: true, collation: {entity:result.entity, collation:JSON.parse(result.ce)}});
+			}
+		})
+	} else { // get me the tei
+		Collation.findOne({community: community, model:"collation", status:"xml/positive", entity: entity}).then(function (result) {
+			if (!result) {
+				res.json({success: false})
+			} else {
+				res.json({success: true, collation: {entity:result.entity, collation:result.ce}})
+			}
+		});
+	}
+});
+
+router.post('/getCollations', function(req, res, next) {
+  	let ranges=req.body.ranges;
+	let collentities=req.body.collentities;
+	let community=req.query.community;
+	let output=req.body.output;
+    let partorall=req.body.partorall;
+	var collations=[];
+//	console.log("range 1 "+ranges[0].start+"ranges "+ranges.length+" partorall "+partorall+" choice "+output+" collentities.length "+collentities.length);
+	if (collentities.length==0) {
+	  if (partorall=='all') {
+	  	 Collation.find({community:community, status:"approved", model:"collation"}). then (function (results){
+	  	 	results.forEach(function(result){
+	  	 		collations.push(result.entity);
+	  	 	})
+	  	 	res.json(collations);
+	  	 })
+	  } else {//now for ranges, with no collentities file
+	  	async.mapSeries(ranges, function(range, cb) {
+//	  		console.log("range is "+JSON.stringify(range))
+	  		if (range.end=="") { //search for all collations in an entity..
+	  			let searchEnt=range.start.slice(range.start.indexOf("/")+1);
+	  			Collation.find({community: community, model:"collation", status:"approved", entity:{$regex: searchEnt}}).then(function (results) {
+					results.forEach(function(result){
+						collations.push(result.entity);
+					})
+				 cb(null);
+				});
+	  		} else { //we have a range
+	  			//if we are looking at just one Entity
+	  			if (range.start==range.end) {
+	  				let searchEntity=range.start.replace("/",":");
+					Collation.findOne({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (result) {
+						collations.push(result.entity);
+						cb(null);
+					});
+	  			} else {
+					let parts=range.start.slice(range.start.indexOf("/")+1).split(":");
+					let ancestor=community+":";
+					for (let i=0; i<parts.length-1;i++) {
+						ancestor+=parts[i];
+						if (i<parts.length-2) ancestor+=":"
+					}
+					let startEnt=range.start;
+					let endEnt=range.end;
+					let searchEntities=[];
+					Entity.find({ancestorName:ancestor}).then(function(entities) {
+						let i=0;
+	//					console.log("docs found "+entities.length+" example "+entities[i].entityName+" start "+startEnt)
+						for (i; i<entities.length; i++){
+							if (entities[i].entityName==range.start.replace("/",":")) {
+			//					console.log("found match "+entities[i].entityName);
+								break;
+							}
+						}
+						for (i; i<entities.length; i++) {
+							//add the entity to array
+							searchEntities.push(entities[i].entityName);
+							if  (entities[i-1].entityName==range.end.replace("/",":")) {
+			//					console.log("found end match "+entities[i].entityName);
+								break;
+							}
+						}
+						//now, get the collation for each entity
+						async.map(searchEntities, function(searchEntity, callback){
+	//						console.log("search for "+searchEntity)
+							Collation.findOne({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (result) {
+								collations.push(result.entity);
+								callback(null);
+							});
+						}, function (err){ //finished this range
+							cb(null);
+						});
+					});
+	  			}
+	  		}	
+	  	}, function(err){ //done all the ranges
+	  		res.json(collations);
+	  	});
+	  }
+	} else {  // we have a collentities file
+		if (partorall=='all') {
+			collentities.forEach(function(entity){
+				let searchEntity=community+":"+entity;
+				collations.push(searchEntity);
+			})
+			res.json(collations);
+		} else { //ranges
+			async.mapSeries(ranges, function (range, cb){
+		     	 if (range.end=="") {
+		    		var searchEnt=range.start.slice(range.start.indexOf("/")+1);
+				 	var matchEntities=collentities.filter(entity=>entity.indexOf(searchEnt)>-1);
+				 } else {
+				   var startEnt=range.start.replace(community+"/entity", "entity");
+				   var endEnt=range.end.replace(community+"/entity", "entity");
+				   var indexStart = collentities.findIndex(element => element==startEnt);
+				   var indexEnd =  collentities.findIndex(element => element==endEnt);
+				   var matchEntities=collentities.slice(indexStart,indexEnd+1);
+				 }
+				 async.mapSeries(matchEntities, function (matchEntity, cb1) {
+					   searchEntity=community+":"+matchEntity;
+					   Collation.findOne({entity: searchEntity, community:community, status:"approved", model:"collation"}).then (function(result){
+							collations.push(searchEntity);
+							cb1(null);
+						});
+				   }, function (err){
+				   	  cb(null);
+				   });
+			 
+		 }, function (err){
+			res.json(collations);
+		 })
+	  }  //end ranges
+	}
+});
+
+router.get('/countCommunityCollations', function(req, res, next) {
+	let community=req.query.community;
+//	console.log("community "+community);
+	Collation.countDocuments({community: community, model:"collation", status:"approved"}).then(function (count) {
+//		console.log(count);
+		res.json({success: true, count: count});
+	});
+});
+
+router.post('/countRangeCollations', function(req, res, next) {
+	let range=req.body.range;
+	let collentities=req.body.collentities;
+	let community=req.query.community;
+	if (range.end=="") { //search for all collations in an entity...
+		//remove CTP2/
+		let searchEnt=range.start.slice(range.start.indexOf("/")+1);
+//		console.log("range and search entity"+range.start+" "+searchEnt);
+        if (collentities.length>0) {
+//        	console.log("searching "+collentities.length+" collentitities ");
+        	let count=collentities.filter(entity=>entity.indexOf(searchEnt)>-1).length;
+        	res.json({success: true, count: count});
+        } else {
+			Collation.countDocuments({community: community, model:"collation", status:"approved", entity:{$regex: searchEnt}}).then(function (count) {
+				res.json({success: true, count: count});
+			});
+		}
+	} else { //much more complex. We have to work from the entities list for this community
+		//so: identify the ancestor entity, and list all entities which have that as an ancestor
+		//then: starting from for the start position in that list, check if there is an approved collation for that Entity
+		//finish when we get to the end entity
+		//we only support ranges within the one ancestor (except for collentities file!)
+		let parts=range.start.slice(range.start.indexOf("/")+1).split(":");
+		let ancestor=community+":";
+		for (let i=0; i<parts.length-1;i++) {
+			ancestor+=parts[i];
+			if (i<parts.length-2) ancestor+=":"
+		}
+		let startEnt=range.start.replace(community+"/entity", "entity");
+		let endEnt=range.end.replace(community+"/entity", "entity");
+//		console.log("start "+startEnt)
+		if (collentities.length>0) { //way faster if we have collentities...
+			const indexStart = collentities.findIndex(element => element==startEnt);
+			const indexEnd =  collentities.findIndex(element => element==endEnt);
+			let result=indexEnd-indexStart+1;
+//			console.log("found "+result);
+			res.json({success: true, count: result});
+		} else {
+			let searchEntities=[];
+			Entity.find({ancestorName:ancestor}).then(function(entities) {
+				let i=0;
+//				console.log("docs found "+entities.length+" example "+entities[i].entityName+" start "+range.start)
+				for (i; i<entities.length; i++){
+					if (entities[i].entityName==range.start.replace("/",":")) {
+//						console.log("found match "+entities[i].entityName);
+						break;
+					}
+				}
+				for (i; i<entities.length; i++) {
+					//add the entity to array
+					searchEntities.push(entities[i].entityName);
+					if  (entities[i-1].entityName==range.end.replace("/",":")) {
+//						console.log("found end match "+entities[i].entityName);
+						break;
+					}
+				}
+				//now, check that there is a collation for each entity
+				let countCollations=0;
+				async.map(searchEntities, function(searchEntity, callback){
+					Collation.countDocuments({community: community, model:"collation", status:"approved", entity: searchEntity}).then(function (count) {
+						countCollations+=count;
+	//					console.log("did we find one for "+searchEntity+" count "+count)
+						callback(null);
+					});
+				}, function (err){
+	//				console.log(" found "+countCollations);
+					res.json({success: true, count: countCollations});
+				});
+			})
+		}
+	}
+//	console.log("base "+base+" community "+community+" range "+range.start);
+})
 
 router.get('/adjustModOrig', function(req, res, next) {
   var fetch=parseInt(req.query.fetch);
   var collations=[];
-  Collation.find({community:req.query.community, status:"approved", $or: [{adjusted: {$exists: false}}, {adjusted: false}]}, function (err, results){
+  Collation.find({community:req.query.community, status:"approved", $or: [{adjusted: {$exists: false}}, {adjusted: false}]}).then (function (results){
     for (let i=0; i<fetch && i<results.length; i++) {
       collations.push({entity: results[i].entity, ce: results[i].ce});
     };
@@ -3840,7 +4437,7 @@ router.get('/adjustModOrig', function(req, res, next) {
 router.get('/adjustXmlCollations', function(req, res, next) {
   var collations=[];
   var fetch=parseInt(req.query.fetch);
-  Collation.find({community:req.query.community, status:"xml/positive", $or: [{adjusted: {$exists: false}}, {adjusted: false}]}, function (err, results){
+  Collation.find({community:req.query.community, status:"xml/positive", $or: [{adjusted: {$exists: false}}, {adjusted: false}]}).then (function (results){
     for (let i=0; i<fetch && i<results.length; i++) {
       collations.push({entity: results[i].entity, ce: results[i].ce});
     };
@@ -3850,7 +4447,7 @@ router.get('/adjustXmlCollations', function(req, res, next) {
 
 router.get('/xmlCollations', function(req, res, next) {
   var collations=[];
-  Collation.find({community:req.query.community, status:"xml/positive"}, function (err, results){
+  Collation.find({community:req.query.community, status:"xml/positive"}).then (function (results){
     results.forEach(function(result){
       collations.push({entity: result.entity, ce: result.ce});
     });

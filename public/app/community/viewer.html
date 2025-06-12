@@ -2,9 +2,9 @@
   <tc-pane class="image-viewer" style="position:relative">
     <div [ngClass]="{'nodisplay':(!image || (page.attrs.facs && page.attrs.facs.startsWith('EXTERNAL:')))}" id="imageMap" class="image_map">
     </div>
-     <div *ngIf="page.attrs.facs && page.attrs.facs.startsWith('EXTERNAL:')" style="position: absolute; top: 40%; left: 5%">
+     <!-- div *ngIf="page.attrs.facs && page.attrs.facs.startsWith('EXTERNAL:')" style="position: absolute; top: 40%; left: 5%">
      	<p style="text-align: center;"><a target="msShow" href="{{imageExternal}}">Page image ({{imageExternal}}) opens in an external window</a></p>
-    </div>  
+    </div -->  
     <div *ngIf="!imageUnrestricted" style="position: absolute; top: 40%;  margin: 40px">
       <p style="text-align: center"><img class="menuimg" height="36" width="36" src="../../images/lock.png"> {{state.imsg}}</p>
       <p *ngIf="state.imsg.includes('Only registered viewers') && community.attrs.canrequestview"  style="text-align: center">
@@ -98,10 +98,10 @@
         </div>
         <div class="col-sm-2">
           <div style="text-align: center; margin:auto" *ngIf="!isVerticalSplit">
-            <span data-toggle="tooltip" title="Split screen vertically" (click)="splitVertical()" style="text-align: center; margin-top: 4px" class="split-horizontal"></span>
+            <span data-toggle="tooltip" title="Split screen vertically" (click)="splitVertical()" style="text-align: center; margin-top: 4px" class="split-horizontal"><img style="position:relative; top:-2px" height="20px" width="30px" src="images/splithorizontal.png"></span>
           </div>
           <div style="text-align: center; margin:auto" *ngIf="isVerticalSplit">
-            <span data-toggle="tooltip" title="Split screen horizontallky" (click)="splitHorizontal()" style="text-align: center; margin-top: 4px" class="split-vertical"></span>
+            <span data-toggle="tooltip" title="Split screen horizontally" (click)="splitHorizontal()" style="text-align: center; margin-top: 4px" class="split-vertical"><img style="position:relative; top:-2px" height="20px" width="30px" src="images/splitvertical.png"></span>
           </div>
         </div>
         <div class="col-sm-5">

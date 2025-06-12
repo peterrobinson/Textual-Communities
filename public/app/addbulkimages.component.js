@@ -9,7 +9,9 @@
   , config = require('./config')
 ;
 
-var AddBulkImagesComponent = ng.core.Component({
+//testing push and pull
+
+var AddBulkImagesComponent = ng.core.Component({  
   selector: 'tc-managemodal-addbulkimages',
   templateUrl: '/app/addbulkimages.html',
   directives: [

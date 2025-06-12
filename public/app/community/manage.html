@@ -25,8 +25,9 @@
               <ul class="dropdown-menu" style="width:215px">
                 <li><a class="dropdown-item" (click)="loadModal('collationeditor-choosebase')">Choose Base</a></li>
                 <li><a class="dropdown-item" (click)="loadModal('collationeditor-choosewitnesses')">Choose Witnesses</a></li>
-                <li><a class="dropdown-item" (click)="loadModal('collationeditor-retrievecollation')">Retrieve Collation</a></li>
-                <li><a class="dropdown-item" (click)="loadModal('collationeditor-makenexuscollation')">Convert Collation to NEXUS</a></li>
+                <li><a class="dropdown-item" (click)="loadModal('collationeditor-retrievecollation')">Retrieve Collations</a></li>
+                <li><a class="dropdown-item" (click)="loadModal('collationeditor-makenexuscollation')">Convert XML Collation to NEXUS</a></li>
+                <li><a class="dropdown-item" (click)="loadModal('collationeditor-retrievespellingscollation')">Retrieve Spellings from JSON Collation</a></li>
                 <li>
                 	<a class="dropdown-item" style="display:inline" (click)="setCollEnts()">Rebuild Collation Entities on Commit</a> 
                 	<span *ngIf="state.community.attrs.rebuildents"> <img class="menuimg" height="11" width="11" src="../../images/checked.png"></span>  
@@ -41,7 +42,8 @@
               <ul class="dropdown-menu">
                 <li ng-show="isCreator()===true||isLeader()===true"><a class="dropdown-item" (click)="deleteAllDocs()">Delete All Documents</a></li>
                 <li ng-show="isCreator()===true||isLeader()===true"><a class="dropdown-item" (click)="deleteCommunity()">Delete Community</a></li>
-              </ul>
+                <li ng-show="isCreator()===true||isLeader()===true"><a class="dropdown-item" (click)="loadModal('community-repair')">Repair Community</a></li>
+             </ul>
             </li>
             <li class="dropdown" *ngIf="state.authUser.attrs.local.email=='peter.robinson@usask.ca' || state.authUser.attrs.local.email=='peter@sd-editions.com'"><a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Super User<span class="caret"></span></a>
               <ul class="dropdown-menu">

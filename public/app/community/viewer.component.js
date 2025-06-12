@@ -103,18 +103,6 @@ var ViewerComponent = ng.core.Component({
       , width = $el.width()
       , height = $el.height()
     ;  //at this point .. if there is no image we can add an image
-    var viewer = OpenSeadragon({
-      id: 'imageMap',
-      prefixUrl: '/images/',
-      preserveViewport: true,
-      visibilityRatio:    1,
-      defaultZoomLevel:   1,
-      sequenceMode:       true,
-      // TODO:
-      // while uploading, we need make:
-      // image name as page name, order by name, reorder, rename
-    });
-    this.viewer = viewer;
     this.onResize();
     this.commitFailed=false;  //reset elsewhere in a very messy piece of programming
     //cqll the image!
@@ -138,21 +126,48 @@ var ViewerComponent = ng.core.Component({
     };
     return date.toLocaleTimeString("en-us", options);
   },
-  onImageChange: function() {
-    var viewer = this.viewer;
-    if (this.page.attrs.facs && this.page.attrs.facs.startsWith("EXTERNAL:")) {
+  onImageChange: function() {  //http://www.textualcommunities.org:5004/
+  	if (!this.viewer) {
+		  var myviewer = OpenSeadragon({
+		  id: 'imageMap',
+		  prefixUrl: '/images/',
+		  preserveViewport: true,
+		  visibilityRatio:    1,
+		  defaultZoomLevel:   1,
+		  sequenceMode:       true,
+		  // TODO:
+		  // while uploading, we need make:
+		  // image name as page name, order by name, reorder, rename
+		});
+    	this.viewer = myviewer;
+    }
+  	let viewer=this.viewer;
+/*    if (this.page.attrs.facs && this.page.attrs.facs.startsWith("EXTERNAL:")) {
+//    	$("#imageMap").html(""); this stops existing image display. But somehow stops all further images displaying
+		viewer.open([]);
     	this.image=this.page.attrs.facs;
     	this.imageExternal=this.page.attrs.facs.slice(9);
-    } else if (this.image) {
+    } else */ if (this.image) {
+    let origIIIF="https://textualcommunities.org/loris/"; //remove once all images are done
       //could be a iiif reference, or a reference to our own iiif server. If the first, begins http...
       //another possibility: could be direct link to library ms page, which needs to go into an IFRAME. In this, case we start with IFRAME/ followed by image address
-      if (this.image.startsWith("http")) var url=this.image;
-      else var url=config.IIIF_URL + this.image;
-      url=url+'/info.json';    //let's hope all iiif follow the standard
-      $.get(url, function(source) {
-        if (viewer) viewer.open([source]);
-      });
+      let url="";
+      if (this.image=="") {
+       	url="";
+      } else if (this.image.startsWith("http")) {
+      	url=this.image;
+      } else {
+      	 url=origIIIF + this.image;
+      }
+//      else var url=config.IIIF_URL + this.image;
+      if (url!="") {
+      	url=url+'/info.json';    //let's hope all iiif follow the standard
+		  $.get(url, function(source) {
+			if (viewer) viewer.open([source]);
+		  });
+		}
     } else {
+//    	$("#imageMap").html("");
       if (viewer) viewer.open([]);
     }
   },

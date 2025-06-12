@@ -15,7 +15,7 @@ function isCEPunctuation(myChar) {
 //this is for functions accessible on both client and server sides
 var DualFunctionService = {
  makeJsonList: function (content, witness) {
-//    console.log("in "+witness+" for "+content);
+//    console.log("Dual function in "+witness+" for "+content);
     var thistext="";
     //remove line breaks,tabs, etc
   //  thistext+=content.replace(/(\r\n|\n|\r)/gm,"");
@@ -93,11 +93,11 @@ var DualFunctionService = {
         if (myWords[i].expanword=="") var expanded="";
         else var expanded=',"expanded":"'+myWords[i].expanword+'"';
         if (myWords[i].xmlword=="") var xmlWordStr="";
-        else var xmlWordStr=',"fullxml":"'+myWords[i].xmlword.replace(" ","&nbsp;")+'"';
+        else var xmlWordStr=',"fullxml":"'+myWords[i].xmlword.replaceAll(" ","&nbsp;")+'"';
         if (myWords[i].punctbefore=="") var punctbeforeStr="";
-        else var punctbeforeStr=',"pc_before":"'+myWords[i].punctbefore.replace(" ","&nbsp;")+'"';
+        else var punctbeforeStr=',"pc_before":"'+myWords[i].punctbefore.replaceAll(" ","&nbsp;")+'"';
         if (myWords[i].punctafter=="") var punctafterStr="";
-        else var punctafterStr=',"pc_after":"'+myWords[i].punctafter.replace(" ","&nbsp;")+'"';
+        else var punctafterStr=',"pc_after":"'+myWords[i].punctafter.replaceAll(" ","&nbsp;")+'"';
         //test: are there expansions for this word? does this word contain <am>/<ex>? look for xml forms too
 
         if (myWords[i].expanword!="" && myWords[i].xmlword!="") {
@@ -493,8 +493,9 @@ var DualFunctionService = {
     }
     return(rdgsContent);
   },
-  makeNEXUS: function(source) {
-    var converted="#NEXUS<br/>BEGIN DATA;<br/>";
+  makeNEXUS: function(source, fileN, user, email) {
+  	let myDate=(new Date()).toString();
+    var converted="[NEXUS file created by Textual Communities from file "+fileN+" by "+user+" ("+email+") at "+myDate+"]<br/>#NEXUS<br/>BEGIN DATA;<br/>";
     source=source.replace(/&lt;/gi, "<").replace(/&nbsp;/gi," ");
     var myXMLDOM = new DOMParser().parseFromString(source, "text/xml");
     var apps=myXMLDOM.getElementsByTagName("app");
@@ -503,8 +504,21 @@ var DualFunctionService = {
     var matrix="MATRIX<br/>";
     var witsMap= new Map();
     var varnums=[0,1,2,3,4,5,6,7,8,9,"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+//create taxsets for mod and orig and others
+	var modtaxa=[];
+	var origtaxa=[];
+	var othertaxa=[];
     for (var i=0; i<wits.length; i++) {
       taxlabels+="&nbsp;&nbsp;&nbsp;&nbsp;["+i+"] "+wits[i].childNodes[0].nodeValue+"<br/>";
+      if (wits[i].childNodes[0].nodeValue.indexOf("-")>-1) {
+      	if (wits[i].childNodes[0].nodeValue.indexOf("-mod")>-1) {
+      		modtaxa.push(i);
+      	} else if (wits[i].childNodes[0].nodeValue.indexOf("-orig")>-1) {
+      		origtaxa.push(i);
+      	} else {
+      		othertaxa.push(i);
+      	}
+      }
       witsMap.set(wits[i].childNodes[0].nodeValue, i);
     }
     converted+="<br/>DIMENSIONS<br/>&nbsp;&nbsp;&nbsp;&nbsp;NTAX="+wits.length+"<br/>&nbsp;&nbsp;&nbsp;&nbsp;NCHAR="+apps.length+"<br/>;<br/>"
@@ -576,7 +590,17 @@ var DualFunctionService = {
     converted+=";<br/><br/>"
     converted+=taxlabels+";<br/><br/>";
     converted+=matrix+";<br/>";
-    converted+="endblock;<br/><br/>BEGIN ASSUMPTIONS;<br/>&nbsp;&nbsp;&nbsp;&nbsp;ancstates archetype=0: all;<br/>;<br/>endblock;"
+    converted+="endblock;<br/><br/>BEGIN ASSUMPTIONS;<br/>&nbsp;&nbsp;&nbsp;&nbsp;ancstates archetype=0: all;<br/>;<br/>"
+    if (modtaxa.length>0) {
+    	converted+="TAXSET modtaxa="+modtaxa.join(" ")+";<br/>";
+    }
+    if (origtaxa.length>0 ) {
+        converted+="TAXSET origtaxa="+origtaxa.join(" ")+";<br/>";
+    }
+    if (othertaxa.length>0) {
+        converted+="TAXSET othertaxa="+othertaxa.join(" ")+";<br/>";
+    }
+    converted+="endblock;";
     return(converted);
   },
   setCookie: function(cname, cvalue, exdays) {

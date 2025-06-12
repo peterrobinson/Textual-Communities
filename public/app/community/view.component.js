@@ -10,6 +10,7 @@ var CommunityService = require('../services/community')
   , BrowserFunctionService = require('../services/functions')
 ;
 
+
 var prevHeight;
 
 var ViewComponent = ng.core.Component({
@@ -46,6 +47,8 @@ var ViewComponent = ng.core.Component({
     });
     this.collationEditor=false;
     this.callCollationEditor='';
+//    this.documents=this._communityService._docService.state.community.attrs.documents;
+//    this.rebuild=true; //temporary, to upgrade images
 	$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
    	.done ( function(res) {
 //   	  console.log("succeed");
@@ -75,36 +78,10 @@ var ViewComponent = ng.core.Component({
     });
   }],
   ngOnInit: function() {
-    if (this.state.community.attrs.entities.length>0 && this.state.community.attrs.entities[0].attrs.name=="") {
-      var self=this;
-      if (confirm('The entity list in the "'+this.state.community.attrs.name+'" commmunity has been corrupted. Click OK to repair it.')) {
-        //do the repair here...
-        $.get(config.BACKEND_URL+'repairEntities/?community='+this.state.community.attrs.abbr, function(res) {
-            var i=0;
-            for (i=0; i<res.foundEntities.length; i++) {
-              if (i<self.state.community.attrs.entities.length) {
-                self.state.community.attrs.entities[i].attrs.name=res.foundEntities[i].name;
-                self.state.community.attrs.entities[i].attrs.entityName=res.foundEntities[i].entityName;
-              } else self.state.community.attrs.entities.push({name:res.foundEntities[i].name, entityName:res.foundEntities[i].entityName});
-            }
-            if (i<self.state.community.attrs.entities.length) {
-              while (i<self.state.community.attrs.entities.length) {
-                self.state.community.attrs.entities.pop();
-              }
-            }
-            alert("Entity list repaired.")
-        });
-      }
-    }
-    if (this.state.community.attrs.rebuildents==undefined) {
-    	this.state.community.attrs.rebuildents=false;
-    	this._communityService.createCommunity(this.state.community.attrs).subscribe(function(community) {
-    	  //all ok
-    	},function(err) {
-            if (err) alert(err.json().message);
-        });
-     }
-    if (this.state.authUser && this.state.authUser._id) {
+    if (this.state.authUser && this.state.community.attrs.abbr!="" && (this.state.community.attrs.entities.length==0 || this.state.community.attrs.entities[0].attrs.name=="") ) {
+       alert('The entity list in the "'+this.state.community.attrs.name+'" commmunity may have been corrupted. Reload the community, or Use Manage->Community Management->Repair Community to fix it');
+  	}    
+     if (this.state.authUser && this.state.authUser.attrs.memberships.length) {
       for (var i=0; i<this.state.authUser.attrs.memberships.length; i++) {
         if (this.state.authUser.attrs.memberships[i].community.attrs._id==this.state.community.attrs._id)
           this.role=this.state.authUser.attrs.memberships[i].role;
@@ -246,6 +223,124 @@ var ViewComponent = ng.core.Component({
      this.selectDoc(doc);
   //refresh the document...
     }
+  },
+  showPageInf: function(pageInf) {
+  	alert("IIIF page reference is: "+pageInf+"/info.json");
+  },
+  createIIIF: function(doc) {
+  	let index=1;
+  	let self=this;
+  	this._docService.refreshDocument(doc).subscribe(function(mydoc) { 
+		async.mapSeries(mydoc.attrs.children, function(page, callback2) {
+	//		console.log("Making deep zoom IIIF image for "+mydoc.attrs.name+", "+page.attrs.name+", "+index+" of "+mydoc.attrs.children.length);
+			index++;
+			if (! page.attrs.image || typeof page.attrs.image=="undefined" || page.attrs.image=="") {
+				callback2(null,[]);
+			} else if (page.attrs.image.startsWith("http")) {
+				console.log("Image for "+page.attrs.name+" has iiif url")
+				callback2(null,[]);
+			} else {
+				$.get(config.BACKEND_URL+'makeIIIFImage/?community='+this.state.community.attrs.abbr+'&doc='+mydoc.attrs.name+'&page='+page.attrs.name+'&image='+page.attrs.image) 
+				 .done (function(res){
+					//url as value of image attribute
+					var options = {};
+					let image=config.IIIF_URL+self.state.community.attrs.abbr+"/"+mydoc.attrs.name+"/"+page.attrs.name;
+					if (res.success) { //for some reason docService update is not working here
+						$.ajax({
+							  url: config.BACKEND_URL+'rewriteImageRef?page='+page.getId(),
+							  type: 'POST',
+							  data:  JSON.stringify({image:image}),
+							  accepts: 'application/json',
+							  contentType: 'application/json; charset=utf-8',
+							  dataType: 'json'
+							})
+					      .done(function( data ) {
+							    console.log("written new IIIF");
+							    callback2(null, []);
+							  })
+							 .fail(function( jqXHR, textStatus, errorThrown) {
+							  	console.log("We have a problem writing page "+page.attrs.name+". Image reference is "+page.attrs.image)
+								callback2(null, []);
+							});	
+					/*	self._docService.update(page.getId(), {
+						  image: image,
+						}, options).subscribe(function(mypage) {
+		//					  self.page = page;
+						  callback2(null, []);
+						}); */
+					} else {
+						//if we are here we have a problem
+						console.log("We have a problem on page "+page.attrs.name+". Image reference is "+page.attrs.image)
+						image=null;
+						$.ajax({
+							  url: config.BACKEND_URL+'rewriteImageRef?page='+page.getId(),
+							  type: 'POST',
+							  data:  JSON.stringify({image:image}),
+							  accepts: 'application/json',
+							  contentType: 'application/json; charset=utf-8',
+							  dataType: 'json'
+						})
+						.done (function(data){
+							callback2(null, []);
+						})
+						.fail(function( jqXHR, textStatus, errorThrown) {
+							callback2(null, []);
+						})
+					} 
+				})
+				.fail (function( jqXHR, textStatus, errorThrown ) {
+					console.log(jqXHR);
+					console.log(textStatus);
+					console.log(errorThrown );
+					callback2(null);
+				});
+		    };
+		}, function (err, results) {
+			index--;
+			console.log("Created "+index+" IIIF images.");
+		});
+	});
+  },
+  rebuildIIIF: function(doc) { //used only to create new default jpegs
+  	let index=1;
+  	let self=this;
+  	this._docService.refreshDocument(doc).subscribe(function(mydoc) { //make sure we have our document
+  		//first, we are going to make the default jpg
+		async.mapSeries(mydoc.attrs.children, function(page, callback) {
+			console.log("Making default image for "+mydoc.attrs.name+", "+page.attrs.name+", "+index+" of "+mydoc.attrs.children.length);
+			index++;
+			//if this is a call to an external 
+			if (! page.attrs.image || typeof page.attrs.image=="undefined" || page.attrs.image=="") {
+				callback(null,[]);
+			} else if (page.attrs.image.startsWith("http")) {
+				console.log("Image for "+page.attrs.name+" has iiif url")
+				callback(null,[]);
+			} else {// got to get the image from the TC iiiif server
+				//first, download and save the source file from the TC server
+	 			$.get(config.BACKEND_URL+'makeDefaultIIIF/?community='+this.state.community.attrs.abbr+'&doc='+mydoc.attrs.name+'&page='+page.attrs.name+'&image='+page.attrs.image) 
+	 			.done (function(res){
+	 				//url as value of image attribute
+	 				if (res.success) {
+						callback(null, []);
+				} else {
+						//if we are here we have a problem
+						console.log("We have a problem on page "+page.attrs.name+". Aborting")
+						callback({success:false});
+					}
+	 			})
+	 			.fail (function( jqXHR, textStatus, errorThrown ) {
+					console.log(jqXHR);
+					console.log(textStatus);
+					console.log(errorThrown );
+					callback(null);
+				});
+			}
+		}, function(err, results) {
+			index--;
+			console.log("Created "+index+" default images.");
+			index=1;
+		});
+	})
   },
   showAddFirstPage: function(doc) {
     return doc &&  _.isEmpty(_.get(doc, 'attrs.children'));
@@ -426,7 +521,7 @@ var ViewComponent = ng.core.Component({
          	if (!this.state.community.attrs.hasOwnProperty('expandabbreviations')) this.state.attrs.community.expandabbreviations=true;   	
          	if (!this.state.community.attrs.hasOwnProperty('showpunctuation')) this.state.attrs.community.showpunctuation=false;   	
          	if (!this.state.community.attrs.hasOwnProperty('showxml')) this.state.attrs.community.showxml=false;   	
-         	var src=config.COLLATE_URL+"/collation/?dbUrl="+config.BACKEND_URL+"&entity="+entity.entityName+"&community="+this.state.community.attrs.abbr+"&user="+self.state.authUser.attrs._id+"&viewsuppliedtext="+this.state.community.attrs.viewsuppliedtext+"&viewuncleartext="+this.state.community.attrs.viewuncleartext+"&viewcapitalization="+this.state.community.attrs.viewcapitalization+"&expandabbreviations="+this.state.community.attrs.expandabbreviations+"&showpunctuation="+this.state.community.attrs.showpunctuation+"&showxml="+this.state.community.attrs.showxml;
+         	var src=config.COLLATE_URL+"/collation/?dbUrl="+config.BACKEND_URL+"&entity="+entity.entityName+"&community="+this.state.community.attrs.abbr+"&user="+self.state.authUser.attrs._id+"&mode=reg";
          	$('#ce_iframe').attr('src', src);
           } else {
           	alert("Only project leaders or creators can use the collation tool.");

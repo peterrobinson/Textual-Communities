@@ -1,3 +1,4 @@
+
 <tc-splitter class="vertical" (resize)="onResize($event)" id="viewerSplitter">
 	 <tc-pane class="panel-left">
 	 	<div style="width: 500px">
@@ -15,10 +16,10 @@
 			 		<td>
 			 			<span *ngIf="!vBase.selected" class="vb"><input type="radio" name="chooseVbase" (click)="choose(vBase)"></span>
 						<span *ngIf="vBase.selected" class="vb"><input type="radio" checked="checked" name="chooseVbase" (click)="choose(vBase)"></span>
-						<span class="vb"> <input (keypress)="changeVBName($event)" [(ngModel)]="vBase.name" placeholder="(edit name)" size="12"></span><span  class="vb" style="width: 75px; display: inline-block">{{vBase.nVars}} sites</span>
+						<span class="vb"> <input (keypress)="changeVBName($event)" [(ngModel)]="vBase.name" placeholder="(edit name)" size="12"></span><span  class="vb" style="width: 95px; display: inline-block">{{vBase.nVars}} sites</span>
 						<span  class="vb" style="width: 110px; display: inline-block">{{vBase.nRdgs}} readings</span>
 						<span *ngIf="!vBase.saved" class="vb"><button type="button" class="btn btn-primary btn-xs" (click)="save(vBase)">Save</button></span>
-						<span *ngIf="vBase.saved"  class="vb"><button type="button" class="btn btn-primary btn-xs" disabled="true">Save</button></span>
+						<span *ngIf="vBase.saved"  class="vb"><button type="button" class="btn btn-primary btn-xs" (click)="makeWebsite(vBase)">Make Website</button></span>
 						<span class="vb"><button *ngIf="!vBase.delete" type="button" class="btn btn-primary btn-xs" (click)="vBase.delete=true">Delete</button></span><span *ngIf="vBase.delete">Are you sure? <button type="button" class="btn-xs btn-primary" (click)="delete(vBase)">Delete</button> <button type="button" class="btn-xs btn-primary " (click)="vBase.delete=false">Cancel</button> </span>
 			 			<table style="text-align: left; width: 100%; margin-left: 40px" *ngIf="vBase.selected && vBase.conditionsets.length>0">
 			 				<tr *ngFor="#conditionset of vBase.conditionsets; #j = index">
@@ -33,7 +34,7 @@
 			 		</td>
 			 	</tr>
 			</table>
-			<table *ngIf="role!='CREATOR' && role!='LEADER'" >
+			<!-- table *ngIf="role!='CREATOR' && role!='LEADER'" >
 			 	<tr *ngFor="#vBase of vBases">
 			 		<td *ngIf="!vBase.selected" class="vb"><input type="radio" name="chooseVbase" (click)="choose(vBase)">
 			 		<span *ngIf="vBase.selected" class="vb"><input type="radio" checked="checked" name="chooseVbase" (click)="choose(vBase)"></span>
@@ -46,7 +47,7 @@
 			 			</table>
 			 		</td>
 			 	</tr>
-			</table>
+			</table-->
 		</div>
 	</tc-pane>
   	<tc-pane class="panel-right">
@@ -76,11 +77,13 @@
 				</tr>
 			</table>
 		</div>
-		<div *ngIf="isVBase()" style="margin: 15px; width: 100%">
+		<div *ngIf="isVBase()" style="margin: 15px; width: 100%; display: flex; justify-content:space-between">
 			<span *ngIf="!showWitList"><a (click)="showWitList=true">Show witness list</a></span>
 			<span *ngIf="showWitList"><a (click)="showWitList=false">Hide witness list</a> {{vBase.witlist.join(" ")}}</span>
+			<span *ngIf="!conditionsCopied"><button type="button" class="btn-md btn-primary" (click)="copyConditions()">Copy conditions</button></span>
+			<span *ngIf="conditionsCopied"><button type="button" class="btn-md btn-primary" style="margin-right: 10px"  (click)="clearConditions()">Clear copied conditions</button><button type="button" class="btn-md btn-primary " (click)="pasteConditions()">Paste conditions</button></span>
 			<span *ngIf="searchDone && !doSaveCondition" style="float: right; margin-right: 15px"><button type="button" class="btn-md btn-primary" (click)="doSaveCondition=true">Save Search</button></span>
-			<span *ngIf="doSaveCondition" style="float: right">
+			<span *ngIf="doSaveCondition">
 				<input [(ngModel)]="conditionName" placeholder="(search name))" size="16" class="saveCondVB"> <button type="button" class="btn-md btn-primary " (click)="doSaveCondition=false">Cancel</button> <button type="button" class="btn-md btn-primary " (click)="saveCondition()">Save</button>
 			</span>
 		</div>
@@ -109,4 +112,3 @@
  	</tc-pane>
 </tc-splitter>
   
-

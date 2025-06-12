@@ -32,6 +32,13 @@ var EditCommunityComponent = ng.core.Component({
   ngOnInit: function() {
     var self=this;
     this.message = '';
+    try {
+    	eval(self.community.attrs.collationparallels);
+    	self.nParallels=collparallels.length;
+    }  catch (e) {
+    	self.nParallels=0;
+//		self.message=e.message;
+	}
     this.initEdit(this.community);
   },
   ngOnChanges: function() {
@@ -81,6 +88,8 @@ var EditCommunityComponent = ng.core.Component({
         entities:[],
         rebuildents: false,
         viewsuppliedtext: true,
+        collationents:[],
+        collationparallels:"",
         created:Date.now(),
         image: "",
         control: {transcripts:"ALL", tmsg:"", images:"ALL", imsg:"", collations:"ALL", cmsg:""},
@@ -160,6 +169,56 @@ var EditCommunityComponent = ng.core.Component({
   });
   reader.readAsDataURL(file);
   },
+  loadCollPars: function() {
+  	  let self=this;
+  	  const input = document.getElementById('coll-pars');
+	  const file = input.files[0];
+	  let collationparallelsfilename=file.name;
+	  const reader = new FileReader();
+	  reader.onload = function() {
+		let contents = reader.result;
+		// Process the contents of the file
+		if (contents.indexOf("var collparallels=[")!=0) {
+			self.message="Error reading "+collationparallelsfilename+". The file must begin 'var collentities=[";
+			return;
+		} else {
+			try {
+				eval(contents);
+				self.edit.collationparallels=contents;
+				self.edit.collationparallelsfilename=collationparallelsfilename;
+				self.community.attrs.collationparallels=contents;
+				self.community.attrs.collationparallelsfilename=collationparallelsfilename;
+			} catch (e) {
+				self.message=e.message;
+			}
+		}
+	  };
+	  reader.readAsText(file);
+  },
+  loadCollEnts: function() {
+  	  let self=this;
+  	  const input = document.getElementById('coll-ents');
+	  const file = input.files[0];
+	  let collentFileN=file.name;
+	  const reader = new FileReader();
+	  reader.onload = function() {
+		let contents = reader.result;
+		// Process the contents of the file
+		if (contents.indexOf("var collentities=[")!=0) {
+			self.message="Error reading "+collentFileN+". The file must begin 'var collentities=[";
+			return;
+		} else {
+			try {
+				eval(contents);
+				self.edit.collationents=collentities;
+				self.edit.collentsfilename=collentFileN;
+			} catch (e) {
+				self.message=e.message;
+			}
+		}
+	  };
+	  reader.readAsText(file);
+  },
   submit: function() {
     //is there a community with this name? check before we do any more validation!
     var communityService = this._communityService
@@ -199,7 +258,7 @@ var EditCommunityComponent = ng.core.Component({
     //is it a new community? or update to existing community?
     //if editing existing: state community will be identical to this one. else it will be new
     if (this.community && (this.community._id==this._uiService.state.community._id)) {
-      communityService.createCommunity(this.edit).subscribe(function(community) {
+      communityService.createCommunity(self.edit).subscribe(function(community) {
         self.success='Community "'+self.edit.name+'" saved';
 //        if ($('#PreviewImg')) $('#PreviewImg').remove();
 //        self.initEdit(community);
@@ -228,6 +287,18 @@ var EditCommunityComponent = ng.core.Component({
         document.getElementById("ECMessage").scrollIntoView(true);
       }
     });
+  },
+  showCollEnts: function(){
+  	alert(this.community.attrs.collationents);
+  },
+  showCollPars: function(){
+  	alert(this.community.attrs.collationparallels);
+  },
+  infoCEF: function () {
+  	alert("A Collation Entities file must begin 'var collentities=[' and  hold a series of entity names (e.g. 'entity=GP:line=1'), each followed by a ',' and finishing with ']'. \rFor example:\r  var collentities=[\r    'entity=GP:line=1',\r    'entity=GP:line=2',\r   'entity=GP:line=3'\r  ] " )
+  },
+  infoCPF: function () {
+  	alert("A Collation Parallels file must begin 'var collparallels=[' and  hold an array containing a series of arrays, with each array declaring that distinct entities contain the same text and should be collated against each other. Each array element can be EITHER a series of entity names (e.g. 'entity=KT:line=1918-1','entity=MI:line=18'), each followed by a ',' and finishing with ']'. \rFor example:\r  var collparallels=[\r     ['entity=KT:line=1918-1','entity=MI:line=18'],\r     ['entity=SU:line=194','entity=ME:line=225']\r  ]\r OR a series of objects as follows: \r  collparallels=[\r    [ {'entity': 'entity=KT:line=1918-1', 'suffix':'KT'}\r      {'entity':'entity=MI:line=18', suffix:'-MI'}],\r    [ {'entity': 'entity=SU:line=194', 'suffix':'-SU'}, \r      {'entity': 'entity=ME:line=225', 'suffix':'-ME}]\r  ]\r ] " )
   },
   upload: function (file) {
      var self=this;

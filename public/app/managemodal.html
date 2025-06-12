@@ -45,6 +45,8 @@
     </tc-managemodal-retrievecollation>
     <tc-managemodal-makenexuscollation *ngSwitchWhen="'makenexuscollation'" [community]="community">
     </tc-managemodal-makenexuscollation>
+    <tc-managemodal-retrievespellingscollation *ngSwitchWhen="'retrievespellingscollation'" [community]="community">
+    </tc-managemodal-retrievespellingscollation>
     <tc-managemodal-createVarMaps *ngSwitchWhen="'createVarMaps'" [community]="community">
     </tc-managemodal-createVarMaps>
     <tc-managemodal-reorder-document *ngSwitchWhen="'reorder-document'" [document]="document">
@@ -86,12 +88,16 @@
     </tc-managemodal-editvmap>
     <tc-managemodal-editvmaps *ngSwitchWhen="'editvMaps'" [community]="community" >
     </tc-managemodal-editvmaps>
-   <tc-managemodal-registerviewer *ngSwitchWhen="'registerviewer'" [community]="community">
+    <tc-managemodal-repaircommunity *ngSwitchWhen="'repairCommunity'" [community]="community" >
+    </tc-managemodal-repaircommunity>
+	<tc-managemodal-registerviewer *ngSwitchWhen="'registerviewer'" [community]="community">
     </tc-managemodal-registerviewer>
    <tc-managemodal-test-collation-conversion *ngSwitchWhen="'test-collate-conversion'" [community]="community">
     </tc-managemodal-test-collation-conversion>
  <tc-managemodal-write-commentary *ngSwitchWhen="'write-commentary'" [community]="community">
     </tc-managemodal-write-commentary>
+ <tc-managemodal-makewebsite-vbase *ngSwitchWhen="'makewebsite-vbase'" [community]="community" [vBase]="vBase">
+    </tc-managemodal-makewebsite-vbase>
 
 </div>
 </div>

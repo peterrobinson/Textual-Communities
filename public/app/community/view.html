@@ -66,6 +66,16 @@
             <a target="_blank" data-toggle="tooltip" title="About this document" (click)="getDocInf(doc)">
                 <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" class="glyphicon glyphicon-info-sign"></span>
             </a>
+            
+            <a target="_blank" *ngIf="rebuild" data-toggle="tooltip" title="Create default IIIF images" (click)="rebuildIIIF(doc)">
+                <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" >R</span>
+            </a>
+
+            <a target="_blank" *ngIf="rebuild" data-toggle="tooltip" title="Create Deep Zoom IIIF images" (click)="createIIIF(doc)">
+                <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" >Z</span>
+            </a>
+           
+            
             <span *ngIf="(role=='LEADER'||role=='CREATOR') && showAddFirstPage(doc)" (click)="addFirstPage(doc)"
               class="add-page-after"></span>
           </div>
@@ -88,6 +98,7 @@
                   (click)="editPageImage(page)">
                   <img onmouseover="this.width='22';this.height='19'" onmouseout="this.width='15'; this.height='12'" class="menuimg" height="12" width="15" src="../../images/camera-red.png">
                 </a>
+                <span *ngIf="(role=='LEADER'||role=='CREATOR') && page"><a style="position: relative; top:3px" title="Get IIIF reference" (click)="showPageInf(page.attrs.image)"><span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" class="glyphicon glyphicon-info-sign"></span></a></span>
                 <span *ngIf="(role=='LEADER'||role=='CREATOR') && showAddPage(page, doc)" (click)="addPageAfter(page, doc)"
                   class="add-page-after"></span>
             </li>
