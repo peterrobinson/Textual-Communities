@@ -49,23 +49,25 @@ var ViewComponent = ng.core.Component({
     this.callCollationEditor='';
 //    this.documents=this._communityService._docService.state.community.attrs.documents;
 //    this.rebuild=true; //temporary, to upgrade images
-	$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
-   	.done ( function(res) {
-//   	  console.log("succeed");
-      self.docnames=res;
-      for (var i=0; i<self.state.community.attrs.documents.length; i++) {
-        self.state.community.attrs.documents[i].attrs.name=res[i].name;
-        if (Object.keys(res[i].control).length>0) self.state.community.attrs.documents[i].attrs.control=res[i].control;
-        self.state.community.attrs.documents[i].isDocImageTranscriptLocked=self.checkDocImageTranscriptLocked(self.state.community.attrs.documents[i]);
-        if (self.state.community.attrs.documents[i].attrs.children.length==0 && res[i].npages!=0)
-          self.state.community.attrs.documents[i].attrs.children[0]={attrs:"dummy"}  //idea is to force not to show add page if we have pages */
-      }
-    })
-    .fail(function( jqXHR, textStatus, errorThrown ) {
-        console.log(jqXHR);
-        console.log(textStatus);
-        console.log(errorThrown );
-    });
+ 	if (!this.state.community.attrs.documents[0].attrs.hasOwnProperty('name')) {
+		$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
+		.done ( function(res) {
+	//   	  console.log("succeed");
+		  self.docnames=res;
+		  for (var i=0; i<self.state.community.attrs.documents.length; i++) {
+			self.state.community.attrs.documents[i].attrs.name=res[i].name;
+			if (Object.keys(res[i].control).length>0) self.state.community.attrs.documents[i].attrs.control=res[i].control;
+			self.state.community.attrs.documents[i].isDocImageTranscriptLocked=self.checkDocImageTranscriptLocked(self.state.community.attrs.documents[i]);
+			if (self.state.community.attrs.documents[i].attrs.children.length==0 && res[i].npages!=0)
+			  self.state.community.attrs.documents[i].attrs.children[0]={attrs:"dummy"}  //idea is to force not to show add page if we have pages */
+		  }
+		})
+		.fail(function( jqXHR, textStatus, errorThrown ) {
+			console.log(jqXHR);
+			console.log(textStatus);
+			console.log(errorThrown );
+		});
+	}
     $( window ).resize(function() {
       var tcWidth=$('#tcPaneViewer').width();
       var tcHeight=$('#tcPaneViewer').height();

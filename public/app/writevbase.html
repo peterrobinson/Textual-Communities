@@ -1,0 +1,29 @@
+<div style="font-size: 110%">
+  <div modal-draggable class="modalHeader">Save a Variant Database (VBase) Website in "{{uiService.state.community.attrs.name}}"
+    <button type="button" (click)="closeModalIM()" class="close" data-dismiss="modal" style="font-size:200%; font-weight:800; position: relative; left:-10px; top:-3px;">&times;</button>
+  </div>
+<div style="margin-right:auto; margin-left:auto; width:90%" class="description">
+
+<br>
+<div *ngIf="error" class="alert alert-danger">{{error}}</div>
+<p>Variant Database {{vBase.name}} has {{vBase.nVars}} variant sites with {{vBase.nRdgs}} readings.</p>
+<br>
+<label style="margin-top: 10px">VBase name</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="text" style="display: inline-block; border-style" size="30"  [(ngModel)]="vBase.name">
+<br>
+<label style="margin-top: 10px">Condition Sets</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<ul *ngFor="#conditionset of vBase.conditionsets" style="list-style-type:none;">
+ <li *ngIf="conditionset.name!=''">	<input type="text" style="display: inline-block; border-style" size="30" [(ngModel)]="conditionset.name">
+</li>
+</ul>
+
+ <hr style="border: 1px solid #8c8b8b;">
+  <div  style="text-align: center">
+     <button type="button" class="btn btn-primary btn-md" (click)="submit()">Make VBase Website</button>
+</div>
+<div>
+	<p id="MEProgress" style="height:30px"></p>
+</div>
+</div>
+<iframe id="MEIframe" title="WorkingHTML" width="800" height="600px"></iframe>
+</div>

@@ -1,0 +1,87 @@
+
+<html lang="en">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+         <!-- Global site tag (gtag.js) - Google Analytics -->
+         <meta name="viewport" content="width=device-width, initial-scale=1"/>
+         <meta charset="UTF-8"/>	
+         <title id="title"></title>
+	<script src="/app/data/makeEdition/common/core/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/async.js"></script> 
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/split.js"></script> 
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/clay.js"></script> 
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_event.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_viewport.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_tooltip.js" type="text/javascript"></script>
+	<script src="/app/data/makeEdition/common/core/js/dw_tooltips/js/dw_tooltip_aux.js" type="text/javascript"></script>
+	<script  type="text/javascript" src="/app/data/makeEdition/common/core/js/common.js"></script>
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/common.css" type="text/css">
+    <script type="text/javascript" src="/app/data/makeEdition/common/core/js/palette.js"></script>
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/transcript.css" type="text/css">
+        	 	   <!-- used by many editions. You can customize  -->
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_regular_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+  	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_bold_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_italic_macroman/stylesheet.css" type="text/css" charset="utf-8" />
+ 	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_bolditalic_macroman/stylesheet.css" type="text/css" charset="utf-8" />  
+      <script id="placeholder"></script> 			
+      </head>
+     <body onload="createVBase()">
+         <div id="whole">
+           <div id="page-head">
+				<div id="grp1" style="width: 100%;">
+					<div id="logos"><a href="http://www.inklesseditions.com">
+						<img src="../../../common/core/images/inklesslogo.png" height="33px" /></a>
+					</div>
+					<div id="searchName">Dummy</div>
+					<div id="titlePageHead">Dummy</div>
+			  </div>
+           </div>
+            <div id="rTable" style="display:none"> <!-- needed to display search results-->
+				<div id="panel-left"> <!-- image goes here -->
+				</div>
+				<div id="panel-right">
+				</div>  <!-- end panelRight -->
+			</div>  <!-- end rTable -->
+			 <div id="searchVBase" style="display:none">
+				<div id="searchVBContainer">
+					<div id="searchVBheader">
+						<div id="aboutVB"><span class="showTip infoVB msInf">About VBase</span></div>
+						<div id="VBerror"></div>
+						<div id="VBFrameContainer">
+							<div id="searchVBFrame">
+								<div id="conditions"></div>
+							</div>
+						</div>
+						<div id="presetVBs"></div>
+						<div id="VBChoices"><span id="witList"><a href="javascript:showWitList()">Show witnesses</a></span><span id="VBchooseSpan"><input id="VBchoose" onclick="searchVariantSite(null)" type="checkbox" />Find variant sites</span><span style="margin-left: 10px" class="showTip infoVBS msInf">About variant sites search</span>&nbsp;&nbsp;&nbsp;</div>
+						<div id="doSearchVB"><button id="doSearchVButton" onclick="doSearch()">Search</button><span id="VBResultsHead"></span></div>
+						<hr style="border: 1px solid lightgrey"></hr>
+					</div>
+					<div id="searchVBResults"></div>
+				</div>
+			  </div>
+	       </div> <!-- end whole -->
+	       <div id="Ancillaries" style="display:none">
+	       		<div id="popUps">
+					<div id="infoVB">
+						<p>You can use VBase for complex searches on variants, according to their distribution among the manuscripts. For example, you can find  variants likely to have been introduced into the common ancestor of Mart and Triv with this search:</p>
+						<img src="common/core/images/VBaseMartTriv.png" height="100px"/>
+						<ul>
+							<li>The first line specifies that the variant must be in Triv.</li>
+							<li>The second line specifies that the variant must be in "&gt;0" of Mart and Mart-c2: that is either present in the Aldine edition and not altered by Luca Martini ('Mart'), or introduced by Luca into the text ('Mart-c2'), or in both Mart and Mart-c2.</li>
+							<li>The third line specifies that the variant must not be in either Ash or Ham: that is, not likely to have been introduced by a putative common ancestor of Mart/Triv and Ash/Ham.</li>
+							<li>The fourth line specifies that the variant can not be in more than four manuscripts (including Mart and Triv). If it is in so many, it is likely to have been present in the ancestor to the whole tradition.</li>
+						</ul>
+					</div>
+					<div id="infoVBS">
+						<p>Variant site search is a new VBase tool, introduced in this second edition.</p>
+						<p>Sometimes you want to find places where one set of manuscripts has one reading and a second set a different reading. Consider this search:</p>
+						<img src="common/core/images/VBaseAshHamMartTriv.png" height="50px"/>
+						<p>The first line specifies that we are looking for places where there are variants ("variant sites") where Ash and Ham agree on a reading.</p>
+						<p>The second line specifies that we are looking for variant sites where, as well as Ash and Ham agreeing in one reading, Mart/Mart-c2 and Triv agree in a separate reading.</p>
+						<p>(Notice how the search result changes when you select and unselect "Find variant sites.")</p>
+					</div>
+	       		</div>
+	       </div>
+      </body>
+   </html>

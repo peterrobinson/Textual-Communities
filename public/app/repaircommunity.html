@@ -1,0 +1,21 @@
+<div style="font-size: 110%; height:100%; width: 100%; overflow: auto" id="repairCommunity">
+  <div modal-draggable class="modalHeader">Repair Community {{community.attrs.abbr}}
+    <button type="button" (click)="closeModalRC()" class="close" data-dismiss="modal" style="font-size:200%; font-weight:800; position: relative; left:-10px; top:-3px;">&times;</button>
+  </div>
+  <div id="RCSuccess"><div *ngIf="success" class="alert alert-success">
+      {{success}}</div>
+  </div>
+  <div id="RCMessage"><div *ngIf="message" class="alert alert-danger">
+      {{message}}</div>
+  </div>
+  <div style="margin: 15px" >
+    <p>Over a period, with many pages revised and resaved, inconsistencies can appear in the MongoDB database underlying Textual Communities. </p>
+  <p>	<button type="button" (click)="checkEntities()">Check Toplevel Entities</button> Ghost entities at the top level of the collation view?</p>
+  	<p *ngIf="isChecked" style="margin: 15px; text-align: center"><button type="button" (click)="deleteEntities()">Delete Toplevel Terminal Entities</button></p>
+  	<p><button type="button" (click)="checkTEIGhosts()">Check Ghost TEI elements</button> Ghost TEI elements present in the database?</p>
+  	<p *ngIf="inSearch">Checking in {{currPage}}, page {{currNPage}} of {{currNPages}} pages in {{currDoc}}, document {{currNDoc}} of {{nDocs}} documents. <br>{{ghosts.length}} ghost TEIs found in {{nTEIs}} checked. 
+  	<button *ngIf="stopSearchButton" type="button"  (click)="stop()">Stop search</button></p>
+  	<p *ngIf="deleteGhosts"><button type="button" (click)="seeFoundGhosts()">See Ghost Elements</button> 
+  	</p>
+  </div>
+</div>

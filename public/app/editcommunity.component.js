@@ -44,6 +44,9 @@ var EditCommunityComponent = ng.core.Component({
   ngOnChanges: function() {
     this.initEdit(this.community);
   },
+  reorderDocs: function() {
+  
+  },
   initEdit: function(community) {
     this._uiService.sendCommand$.emit("createChosen");
     if (community && community.attrs.abbr) {
@@ -102,6 +105,9 @@ var EditCommunityComponent = ng.core.Component({
          self.edit.ceconfig=JSON.parse(dummy);  //also kind of hacky
        }); */
     }
+  },
+  loadModal: function(which) {
+  	if (which=='reorder-documents') this._uiService.manageModal$.emit({type: "reorderDocs", community: this.community});
   },
   fileTooBig: function(){
     if (this.picFile.chosen) {

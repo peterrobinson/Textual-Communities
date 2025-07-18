@@ -59,7 +59,8 @@ var ManageModalComponent = ng.core.Component({
     require('./repaircommunity.component'),
     require('./testcollationconversion.component'),
     require('./writecommentary.component'),
-    require('./writevbase.component')
+    require('./writevbase.component'),
+    require('./reorderdocs.component')
  ]
 }).Class({
   constructor: [CommunityService, UIService, RESTService, function(communityService, uiService, restService) {
@@ -287,6 +288,9 @@ var ManageModalComponent = ng.core.Component({
         self.community=event.community;
         self.docid=event.docid;
         self.docname=event.docname;
+      } else if (event.type ==='reorderDocs'){
+      	self.choice=event.type;
+       	self.community=event.community;
       } else if (event.type ==='getdocinf'){
         self.choice=event.type;
         self.document=event.document;
