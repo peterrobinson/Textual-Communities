@@ -3638,7 +3638,7 @@ router.post('/reorderDocs', function (req, res, next){
     	console.log("we have a result "+JSON.stringify(result));
     	res.json({success:true});
     })
-})
+});
 
 //gets witnesses one at a time...
 router.post('/fetchCEWitness', function(req, res, next) {
