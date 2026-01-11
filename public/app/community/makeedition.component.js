@@ -5,7 +5,6 @@ var UIService = require('../services/ui')
 , DocService = require('../services/doc')
 , RESTService = require('../services/rest')
 , Router = ng.router.Router
-, BrowserFunctionService = require('../services/functions')
 , JSZip = require('jszip')
 , JSZipUtils = require('jszip-utils')
 , FileSaver = require ('file-saver')
@@ -224,6 +223,11 @@ var CommunityMakeEditionComponent = ng.core.Component({
 			makeCompare(self, zip, entityPages, function callback(result) {
 				cb1(result,[]);
 			});
+		},
+		function (arguments, cb1) { //use for one-off conversion jobs
+			makeConversion(self, zip, function callback(result){
+				cb1(result, []);
+			})
 		}
 	], function (err) {
 		if (err) {
@@ -247,8 +251,391 @@ var CommunityMakeEditionComponent = ng.core.Component({
   }
 });
 
+function makeConversion(self, zip, callback) {
+	if (self.config.shortTitle!="Commedia") { return(callback(null));}
+	//ok lets convert!!! start by getting the linesInf file
+	if(self.config.gatherApparatus) {
+	    let fullApp="<div>\r";
+		$.get(self.config.srcCantos, function (myfile) {
+			eval(myfile._body);   //gets us cantoLines
+			async.mapSeries(cantoLines, function (canto, cbcanto){ 
+			    let mycanticle=canto.canto.slice(0,2);
+				let mycanto=canto.canto.slice(2);
+				$.get(self.config.srcApparatus+"/"+mycanticle+"/"+mycanto+"/"+"DC3regcollapp.xml", function(srcxml) {
+					let serializer = new XMLSerializer();
+					let xmlString = serializer.serializeToString(srcxml);				
+					fullApp+=xmlString+"\r";
+					console.log("processing "+mycanticle+mycanto);
+					return(cbcanto(null));
+				});
+			
+			}, function (err) {
+			   zip.file('fullCommedia.xml', fullApp);								
+				return(callback(null));
+			})
+		})
+	} else if (self.config.convertApparatus) {
+		$.get(self.config.srcCantos, function (myfile) {
+			eval(myfile._body);   //gets us cantoLines
+			let index=0;
+			if (self.config.compareWordCount) {
+				let mismatches="";
+				async.mapSeries(cantoLines, function (canto, cbcanto){ 
+					let mycanticle=canto.canto.slice(0,2);
+					let mycanto=canto.canto.slice(2);
+					console.log("processing	 "+mycanticle+" "+mycanto);
+					async.waterfall([
+						function(cb) {
+							$.get(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/PET.xml", function (myfile) {
+						 		cb(null,[myfile]);
+						 	});
+						},
+						function(args, cb) {
+							$.get(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/ING-coll.xml", function (myfile) {
+								args[1]=myfile;
+						 		cb(null, args);
+						 	});
+						}
+					], function (err, result){
+						for (let i=1; i<=parseInt(canto.lines); i++) {
+							let lastPET=$(result[0]).find("#"+mycanticle+"-C"+mycanto+"-"+i+"-PET").find("w").last().attr("n");
+							let lastING=$(result[1]).find("#"+mycanticle+"-C"+mycanto+"-"+i+"-ING-coll").find("w").last().attr("n");
+							if (lastPET!=lastING) {
+								console.log("word mismatch "+mycanticle+" "+mycanto+", "+i+" (PET "+lastPET+", ING "+lastING);
+								mismatches+=mycanticle+" "+mycanto+", "+i+" (PET "+lastPET+", ING "+lastING+")\r";
+							}
+						}
+						return(cbcanto(null));
+					})
+				}, function (err) {
+					zip.file("edition/mismatches.txt", mismatches);
+					return(callback(null));
+				});
+			} else {
+				async.mapSeries(cantoLines, function (canto, cbcanto){ 
+				//one canticle at a time!
+				//we use 
+				let mycanticle=canto.canto.slice(0,2);
+				let mycanto=canto.canto.slice(2);
+				console.log("	 "+mycanticle+" "+mycanto);
+				if (mycanticle!="PA") return(cbcanto(null));
+				//we are going to copy all the existing transcript files too
+				//once we have generated apparatus and ING files: we may be editing those. 
+				//if addIngIN-coll and/or addIngIN-display is true: we create new display and/or collateable files for ING for IN (then PU PA)
+				// hasIngIN-coll and/or hasIngIN-display is true: we import existing ING files from dest (then PU PA)
+				// useExisting: once we have done initial conversion of transcript and collation files, get them from DEST
+				//and import all other files from existing DEST folder 
+				//
+					async.waterfall([
+						function (cb) { //convert the ING transcription display and collateables for ING
+							 if (mycanto==1) {
+								if (mycanticle=="IN" && self.config.addIngIN_coll) {
+									convertEdition(zip, self, self.config.collateableSourceIngIN, mycanticle, "ING", 34, "coll", cb );
+								} else if (mycanticle=="IN" && self.config.addIngIN_display) {
+									convertEdition(zip, self, self.config.displaySourceIngIN, mycanticle, "ING", 34, "display", cb );							
+								} else if (mycanticle=="PU" && self.config.addIngPU_coll) {
+									convertEdition(zip, self, self.config.collateableSourceIngPU, mycanticle, "ING", 33, "coll", cb );							
+								} else if (mycanticle=="PU" && self.config.addIngPU_display) {
+									convertEdition(zip, self, self.config.displaySourceIngPU, mycanticle, "ING", 33, "display", cb );							
+								} else if (mycanticle=="PA" && self.config.addIngPA_coll) {
+									convertEdition(zip, self, self.config.collateableSourceIngPA, mycanticle, "ING", 33, "coll", cb );							
+								} else if (mycanticle=="PA" && self.config.addIngPA_display) {
+									convertEdition(zip, self, self.config.displaySourceIngPA, mycanticle, "ING", 33, "display", cb );							
+								} else {
+								  cb(null, []);
+								}
+							} else {
+								cb(null, []);
+							}
+						},
+						function (arguments, cb) {  //rewrite the collation
+							if (!self.config.useExistingConversion) {
+								$.get(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"DCregcollapp.xml", function(srcxml) {
+									let lines=$(srcxml).find("div[type='L']")
+									for (let i=0; i<lines.length; i++) {
+										let apps = $(lines[i]).find("app");
+										for (let j=0; j<apps.length; j++) {
+											let witPET=$(apps[j]).find("ref[n='PET']")[0];
+											if (witPET) {
+												let from=$(witPET).attr("from");
+												let to=$(witPET).attr("to");
+												let witWIT=$(witPET).parent("wit");
+												let witnum=Number($(witWIT).attr("n"))
+												let witN=(witnum+1).toString();
+												$(witWIT).attr("n", witN);
+												$(witWIT).append(" "+"<ref from='"+from+"' to='"+to+"' n='ING'>ING</ref>");				
+											} else {
+												console.log("this cannot happen lol "+mycanticle+" "+mycanto+$(lines[j]).attr("n"));
+											}
+										}
+									}
+									//write out this canto
+									let serializer = new XMLSerializer();
+									let htmlString = serializer.serializeToString(srcxml);
+									zip.file('commedia/xml/'+mycanticle+'/'+mycanto+'/DC3regcollapp.xml', htmlString);
+	//								console.log("Done apparatus "+mycanticle+" "+mycanto);
+									cb(null, []);
+								})
+							} else {
+								$.get(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"DC3regcollapp.xml", function(srccoll) {
+									zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/DC3regcollapp.xml", $(srccoll).find("div")[0].outerHTML);
+									cb(null,[]);
+								});
+							} 
+						},
+						function (arguments, cb) {//get the transcript file, Ash first
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Ash.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"Ash.xml", cb), {binary:true});
+							} else {
+							/*	$.get(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"Ash.xml", function(srctxt) {
+									zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Ash.xml", $(srctxt).find("div")[0].outerHTML);
+									cb(null,[]);
+								}); */
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Ash.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"Ash.xml", cb), {binary:true});
+							}
+						},
+						function (arguments, cb) {//get the transcript file, FS 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/FS.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"FS.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/FS.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"FS.xml", cb), {binary:true});
+							}
+						},
+						function (arguments, cb) {//get the transcript file, Ham 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Ham.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"Ham.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Ham.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"Ham.xml", cb), {binary:true});						
+							}
+						},
+						function (arguments, cb) {//get the transcript file, LauSC 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/LauSC.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"LauSC.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/LauSC.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"LauSC.xml", cb), {binary:true});
+							}
+						},
+						function (arguments, cb) {//get the transcript file, Mart 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Mart.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"Mart.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Mart.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"Mart.xml", cb), {binary:true});
+							}
+						},
+						function (arguments, cb) {//get the transcript file, PET 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/PET.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"PET.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/PET.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"PET.xml", cb), {binary:true});
+							}
+						},
+						function (arguments, cb) {//get the transcript file, Rb 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Rb.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"Rb.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Rb.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"Rb.xml", cb), {binary:true});
+							}
+						},
+						function (arguments, cb) {//get the transcript file, Triv 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Triv.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"Triv.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Triv.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"Triv.xml", cb), {binary:true});
+							}
+						},
+						function (arguments, cb) {//get the transcript file, Urb 
+							if (!self.config.useExistingConversion) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Urb.xml", BrowserFunctionService.urlToPromise(self.config.srcTranscripts+"/"+mycanticle+"/"+mycanto+"/"+"Urb.xml", cb), {binary:true});
+							} else {
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/Urb.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"Urb.xml", cb), {binary:true});
+							}  
+						},
+						function (arguments, cb) {//get the ING collation file, 
+							if (mycanticle=="IN" && self.config.useExistingConversion && self.config.hasIngIN_coll) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/ING-coll.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"ING-coll.xml", cb), {binary:true});
+							} else {
+								cb(null,[]);
+							}
+						},
+						function (arguments, cb) {//get the ING display file, 
+							if (mycanticle=="IN" && self.config.useExistingConversion && self.config.hasIngIN_display) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/ING-display.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"ING-display.xml", cb), {binary:true});
+							} else {
+								cb(null,[]);
+							}
+						},
+						function (arguments, cb) {//get the PU collation file, 
+							if (mycanticle=="PU" && self.config.useExistingConversion && self.config.hasIngPU_coll) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/ING-coll.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"ING-coll.xml", cb), {binary:true});
+							} else {
+								cb(null,[]);
+							}
+						},
+						function (arguments, cb) {//get the PU display file, 
+							if (mycanticle=="PU" && self.config.useExistingConversion && self.config.hasIngPU_display) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/ING-display.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"ING-display.xml", cb), {binary:true});
+							} else {
+								cb(null,[]);
+							}
+						},
+						function (arguments, cb) {//get the PU display file, 
+							if (mycanticle=="PA" && self.config.useExistingConversion && self.config.hasIngPA_display) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/ING-display.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"ING-display.xml", cb), {binary:true});
+							} else {
+								cb(null,[]);
+							}
+						},
+						function (arguments, cb) {//get the PU display file, 
+							if (mycanticle=="PA" && self.config.useExistingConversion && self.config.hasIngPA_coll) { 
+								zip.file("commedia/xml/"+mycanticle+"/"+mycanto+"/ING-coll.xml", BrowserFunctionService.urlToPromise(self.config.destDir+"/"+mycanticle+"/"+mycanto+"/"+"ING-coll.xml", cb), {binary:true});
+							} else {
+								cb(null,[]);
+							}
+						}
+					], function (err) {
+						return(cbcanto(null));
+					})
+				}, function (err) {
+					return(callback(null));	
+				});
+			}
+		});
+	} else if (self.config.convertWitness) { //make html files for the witnesss
+		//get the js file
+		if (self.config.witness!="") {
+			let myArray=[];
+//if we are making an edition
+			self.restService.http.get("/app/data/makeEdition/common/Commedia3/js/cantoLines.js").subscribe(function(myfile) {	
+//if we are making a ms transcript
+//			self.restService.http.get("/app/data/makeEdition/common/Commedia3/js/"+self.config.witness+".js").subscribe(function(myfile) {
+			if (myfile._body.indexOf("var cantoLines=[")!=0) {
+//			if (myfile._body.indexOf("var "+self.config.witness+"=[")!=0) {
+					return(callback("Error found reading "+self.config.witness+".js. This file must begin with 'var "+self.config.witness+" =['"));
+				} else {
+					eval(myfile._body);
+					if (self.config.witness=="PET"||self.config.witness=="FS"||self.config.witness=="ING") {
+						myArray=eval("cantoLines");
+					} else {
+						myArray=eval(self.config.witness);		
+					}			
+					$.get("/app/data/makeEdition/common/Commedia3/indexTranscript.html", function(data){
+						let index=0, endRb=0, startRbBraid=0;
+						if (self.config.witness=="Rb") {
+						    endRb=eval("Rb").findIndex(page=>page.end[1]==self.config.endRb[0]&&page.end[2]==self.config.endRb[1]&&page.end[3]==self.config.endRb[2]);
+							startRbBraid=endRb+1;
+						}
+						async.mapSeries(myArray, function (page, cbpages) {
+							let myData=data;
+							let mycanticle="", mycanto="";
+							if (self.config.witness=="PET"||self.config.witness=="FS"||self.config.witness=="ING") {
+								mycanticle=page.canto.slice(0,2);
+								mycanto=page.canto.slice(2);
+								$("#MEProgress").html("Creating html for document "+self.config.witness+", "+mycanticle+" "+mycanto);
+							} else {
+								if (page.init[1]==1) {mycanticle="IN"} else if (page.init[1]==2) {mycanticle="PU"}  else if (page.init[1]==3) {mycanticle="PA"};
+								mycanto=page.init[2];
+								$("#MEProgress").html("Creating html for document page "+page.page);
+							}
+// 	  						if (index<startRbBraid) {
+//							if (index>endRb) {
+							if (index>10000) { //just keep processing
+//							if (page.page!="80v") {
+//							if (index>6) {
+								cbpages(null, []);
+								index++;
+							} else {	
+								let prevPage="", nextPage="", currCanticle=1;		
+								if (mycanticle=="IN") {currCanticle=1} else if (mycanticle=="PU") {currCanticle=2} else (currCanticle=3);
+								if (self.config.witness=="Rb") {
+									if (index!=0) {
+										prevPage=myArray[index-1].page;
+									}
+									if (index!=myArray.length-1) {
+										nextPage=myArray[index+1].page;
+									}
+									if (index>endRb) { 
+										myData=BrowserFunctionService.customTemplates(myData, [ {key:"currCanto", value: mycanto, isobject:false}, {key:"currCanticle", value: currCanticle, isobject:false}, {key:"inBraidense", value: true, isobject:true}, {key:"currMS", value: self.config.witness, isobject:false},{key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false},  {key:"thisPage", value:page.page, isobject: false}, {key:"currIndex", value:index, isobject: false}],[]);
+									} else {
+										myData=BrowserFunctionService.customTemplates(myData, [ {key:"currCanto", value: mycanto, isobject:false},  {key:"currCanticle", value: currCanticle, isobject:false}, {key:"inBraidense", value: false, isobject:true}, {key:"currMS", value: self.config.witness, isobject:false},{key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false},  {key:"thisPage", value:page.page, isobject: false}, {key:"currIndex", value:index, isobject: false}],[]);				
+									}
+								} else if (self.config.witness=="PET"||self.config.witness=="FS"||self.config.witness=="ING") { 
+									if (index!=0) {
+										prevPage=myArray[index-1].canto;
+									}
+									if (index!=myArray.length-1) {
+										nextPage=myArray[index+1].canto;
+									}
+									myData=BrowserFunctionService.customTemplates(myData, [ {key:"currMS", value: self.config.witness, isobject:false}, {key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false},  {key:"thisPage", value:page.page, isobject: false}, {key:"currIndex", value:index, isobject: false}, {key:"currCanticle", value:currCanticle, isobject: false},  {key:"currCanto", value:mycanto, isobject: false},  {key:"currLine", value:"1", isobject: false}],[]);
+								} else {
+									if (index!=0) {
+										prevPage=myArray[index-1].page;
+									}
+									if (index!=myArray.length-1) {
+										nextPage=myArray[index+1].page;
+									}
+									myData=BrowserFunctionService.customTemplates(myData, [ {key:"currCanto", value: mycanto, isobject:false}, {key:"currCanticle", value: currCanticle, isobject:false}, {key:"currMS", value: self.config.witness, isobject:false},{key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false},  {key:"thisPage", value:page.page, isobject: false}, {key:"currIndex", value:index, isobject: false}],[]);
+								}
+								index++;
+								$("#MEIframe").attr("srcdoc", myData); 
+								window.addEventListener("message", function (event){ 
+									if (typeof event.data === "string") {	
+										let str="";
+										if (self.config.witness=="PET"||self.config.witness=="FS"||self.config.witness=="ING") {
+											str=adjustCommedia(self, event.data, false, [{key:"currMS", value: self.config.witness, isobject: false},{key:"currPage", value: mycanto, isobject: false}, {key:"currCanticle", value: mycanticle, isobject: false},{key:"currCanto", value:mycanto, isobject: false}, {key:"currIndex", value:index-1, isobject: false},  {key:"currLine", value:"1", isobject: false}],["../../../js/commedia3transcript.js"]);
+											zip.file("edition/html/transcripts/"+self.config.witness+"/"+page.canto+".html", str);	
+										
+										} else {
+											str=adjustCommedia(self, event.data, false, [{key:"currMS", value: self.config.witness, isobject: false},{key:"currPage", value: page.page, isobject: false}, {key:"currCanticle", value: page.init[1], isobject: false},{key:"currCanto", value: page.init[2], isobject: false},{key:"currLine", value: page.init[3], isobject: false}, {key:"currIndex", value:index-1, isobject: false}],["../../../js/commedia3transcript.js"]);
+											zip.file("edition/html/transcripts/"+self.config.witness+"/"+page.page+".html", str);	
+										}
+										cbpages(null, []);
+									}
+								}, {once: true});
+							}
+						}, function (err) {
+							console.log("processed "+self.config.witness)
+							return(callback(null));	
+						})
+					})
+				}
+			})
+		} else {
+			return(callback(null));	
+		}
+	}
+}
+
+function convertEdition(zip, self, srcfile, canticle, edition, nCantos, mode, cb) {
+	$.get(srcfile, function(srcIng) {
+		let newCanto='';
+		for (let canto=1; canto<=nCantos; canto++) {
+			let colltype="collation";
+			if (mode=="display") colltype="display";
+			newCanto='<div type="witcanto" n="'+edition+'-coll">\r<note type="edcom">'+edition+' for '+colltype+'</note>\r'
+			newCanto+='<div type="canto" id="'+canticle+'-'+canto+'-'+edition+'-'+mode+'" n="'+edition+'-'+mode+'">\r';
+			let clines=$(srcIng).find('l[id^="'+canticle+'-C'+canto+'-"]');
+			for (let i=0; i<clines.length; i++) {
+				newCanto+='<l id="'+canticle+'-C'+canto+'-'+$(clines[i]).attr("n")+'-'+edition+'-'+mode+'" n="'+$(clines[i]).attr("n")+'">';
+				let srcHTML=$(clines[i]).html();
+				let words=srcHTML.trim().split(" ");
+				let newSrc="";
+				for (let j=0; j<words.length; j++) {
+					newSrc+='<w n="'+(j+1)+'">'+words[j]+'</w>';
+					if (j<words.length-1) newSrc+=" ";
+				}
+				newCanto+=newSrc+'</l>\r'; 
+			} 
+			newCanto+="</div>\r</div>";
+			//add this to the zip file
+//									console.log("makeing ING coll"+mycanticle+" "+canto)
+			zip.file("commedia/xml/"+canticle+"/"+canto+"/"+edition+"-"+mode+".xml", newCanto);
+		}
+		cb(null, []);
+	}) 
+}
 
 function loadBaseFiles(zip, self, callback) {
+  if (self.config.shortTitle=="Commedia") { return(callback(null));}
   async.waterfall([
 	function(cb) {
 		self.restService.http.get('/app/data/makeEdition/common/core/js/async.js').subscribe(function(myfile) {
@@ -460,6 +847,7 @@ window.uploadPageDone=function(){
 };
 
 function makeDocInfo(self, zip, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (self.config.standalone && !self.config.hasOwnProperty("documents")) {
 	    return(callback("You have declared standalone processing but you do not have a documents property in your configuration file"))
 	} else if (self.config.standalone && !self.config.makeSourceWitnesses && self.config.hasOwnProperty("documents") && self.config.documents.length>0 && self.config.documents[0].hasOwnProperty("name")) {
@@ -590,6 +978,7 @@ function makeDocInfo(self, zip, callback) {
 } 
 
 function loadStemmatics(self, zip, callback) {
+  if (self.config.shortTitle=="Commedia") { return(callback(null));}
   if (self.config.standalone && (typeof self.config.stemmaticsFile=="undefined")) {
 	return(callback(null));
   } else {
@@ -602,6 +991,7 @@ function loadStemmatics(self, zip, callback) {
 }
 
 function makeVBase(self, zip, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (self.config.standalone && !self.config.makeVBase) {
    		return(callback(null));
    } else {
@@ -626,6 +1016,7 @@ function makeVBase(self, zip, callback) {
 }
 
 function makeCollation(self, zip, callback) {
+   if (self.config.shortTitle=="Commedia") { return(callback(null));}
    if (self.config.standalone && !self.config.makeCollation) {
    		return(callback(null));
    } else {
@@ -750,6 +1141,7 @@ function makeMatch(entity, self) {
 }
 
 function loadAliases (self, zip, callback) { 
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	$("#MEProgress").html("Loading alias file");
 	if (self.config.standalone && self.config.hasOwnProperty("aliasesFile")) {
 		if (self.config.aliasFile=="") {
@@ -778,7 +1170,8 @@ function loadAliases (self, zip, callback) {
 };
 
 function makeHeaderInfo(self, zip, callback) { 
-	$("#MEProgress").html("Creating header information for each document");
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
+ 	$("#MEProgress").html("Creating header information for each document");
 	if (self.config.standalone && !self.config.makeWitnessInf)  {
 		if (!self.config.hasOwnProperty("witnessInfFile") || self.config.witnessInfFile=="")  {
 			self.edition.messages+="Non-fatal error: you have set makeWitnessInf to false but not specified a witnessInfFile. Check the documentation on witnessInfFile.\r"
@@ -843,6 +1236,7 @@ function makeHeaderInfo(self, zip, callback) {
 
 
 function makePageEntities(self, pageEntities, documents, zip, callback) { //we don't need a source witnesses file! because this will all be in the documents element in the 
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	$("#MEProgress").html("Processing information about documents");
 	if (self.config.standalone && !self.config.makePageEntities)  {
 		if (!self.config.pageEntitiesFile || self.config.pageEntitiesFile=="")  {
@@ -972,6 +1366,7 @@ function makePageEntities(self, pageEntities, documents, zip, callback) { //we d
 }
 
 function makeIndexFile(self, zip,  callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (!self.config.standalone || (self.config.standalone && self.config.makeIndexFile)) {
 		$("#MEProgress").html("Creating index file");
 		self.restService.http.get(self.config.indexTemplate).subscribe(function(myfile) {
@@ -1000,6 +1395,7 @@ function makeIndexFile(self, zip,  callback) {
 }
 
 function makeEditorial(self, zip, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	$("#MEProgress").html("Assembling commentary and collation materials");
 	if (self.config.standalone && !self.config.makeEditorial)  {
 		if (!self.config.editorialFile || self.config.editorialFile=="")  {
@@ -1143,6 +1539,7 @@ function applyAliases(aliases, entity) {
 
 
 function makeUniversalBanner(self, zip, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	$("#MEProgress").html("Creating the universal banner html");
 	if ((self.config.standalone && self.config.makeUniversalBanner) || !self.config.standalone)  {
 		$.get(self.config.universalBannerTemplate, function(data){
@@ -1186,6 +1583,7 @@ function makeUniversalBanner(self, zip, callback) {
 }
 
 function makeEditorialPages (self, zip, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	$("#MEProgress").html("Making Editorial HTML page");
 	if (self.config.standalone && self.config.makeEditorialPages) {
 		if	(!self.config.hasOwnProperty("editorialFile") || self.config.editorialFile=="" )  {
@@ -1280,6 +1678,7 @@ function clean(myString) { //flatten html etc into a single line
 }
 
 function makeMenu(self, zip, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	$("#MEProgress").html("Creating Editorial Material menu");
 	if (self.config.standalone && !self.config.makeMenu)  {
 		if (!self.config.menuFile || self.config.menuFile=="")  {
@@ -1421,6 +1820,7 @@ function processMenu(self, menu, fullkey, thiskey, keys, aliases, index) {
 }
 
 function updateImages(self, zip, documents, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (typeof self.config.updatePages=="undefined" || !self.config.updatePages) {
 		return(callback(null));
 	} else {
@@ -1447,6 +1847,7 @@ function updateImages(self, zip, documents, callback) {
 }
 
 function makeHTMLPages(self, zip, documents, pageEntities, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (!self.config.makePagesHtml) {
 		return(callback(null));
 	} else {
@@ -1506,6 +1907,7 @@ function makeHTMLPages(self, zip, documents, pageEntities, callback) {
 
 
 function makeEntityPages(self, zip, entities, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	$("#MEProgress").html("Processing information about entities");
 	if (self.config.standalone && !self.config.makeEntityPages)  {
 		if (!self.config.entityPagesFile || self.config.entityPagesFile=="")  {
@@ -1597,6 +1999,7 @@ function processEntity(entities, witEnt, subEnt, witness, self) {
 
 
 function makeCompare (self, zip, entities, callback) {
+    if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (self.config.standalone && !self.config.makeCompare) {
 		return(callback(null));
 	} else {
@@ -1757,5 +2160,37 @@ function getNextEntities (entities, val, nextval) { //cycle through recursive en
 	}
 	return(entities)
 }
+
+function adjustCommedia(self, source, isIndex, persistVals, persistScripts) {
+	let replaceStr="";
+	if (persistVals.length>0) {
+		replaceStr+="<script>const ";
+		for (let i=0; i<persistVals.length; i++) {
+			if (!persistVals[i].isobject) {
+					replaceStr+=persistVals[i].key+" = "+'"'+persistVals[i].value+'"';
+				} else {
+					replaceStr+=persistVals[i].key+" = "+persistVals[i].value;
+				}
+			if (i<persistVals.length-1) replaceStr+=", "; 
+		} 
+		replaceStr+="</script>\n"; 
+	}
+	if (persistScripts.length>0) {
+		for (let i=0; i<persistScripts.length; i++) {
+			if (typeof persistScripts[i]=="undefined") continue;  //catches case where aliases file does not exist
+			replaceStr+='<script type="text/javascript" src="'+persistScripts[i]+'"></script>\n';
+		}
+		source=source.replace('<script id="placeholder"></script>', replaceStr);
+//		if (self.config.hasOwnProperty("ssSearch") && source.indexOf('<div id="staticSearch"></div>')>-1) {
+//			source=source.replace('<div id="staticSearch"></div>',self.config.ssSearch);
+//		} 
+	} 
+	//remove all file references with ../common
+//	source=source.replace(/src="[^"]+\/common\//g,'src="../../../common/');
+	source=source.replace(/\/app\/data\/makeEdition\/common\/Commedia3\//g,'../../../');
+//	source=source.replace(/url\(&quot;.*?\/common\//g, "url(&quot;../../../common/");
+	if (isIndex) source=source.replaceAll("../../../", "");
+	return(source);
+ }
 
 module.exports = CommunityMakeEditionComponent;

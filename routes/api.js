@@ -483,7 +483,8 @@ router.post('/getVBaseConditions',  function(req, res, next) {
 
 router.post('/deleteVBase',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VBase.collection.remove({community: community, name: name }, function(err, result) {
+	console.log("deleting vbase "+community+" "+name)
+	VBase.collection.deleteOne({community: community, name: name }, function(err, result) {
 		if (err) res.json({success: 0});
 		else res.json({success:true});
 	});	

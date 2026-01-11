@@ -452,6 +452,7 @@ var VBaseComponent = ng.core.Component({
 		var start=0, end=0, lemstart=parseInt(this.vBase.varsites[found[i].varsite].from), lemend=parseInt(this.vBase.varsites[found[i].varsite].to), lemma="";
 		//might be whole block..
 		if (!this.vBase.varsites[found[i].varsite].from) {
+			//in Commedia: lets get the text of PET here
 			lemma="Whole block";
 		} else {
 			for (var k=found[i].varsite; k>=0; k--) {
@@ -533,8 +534,11 @@ var VBaseComponent = ng.core.Component({
   			if (vBase.indb) {
 				var k=j;
 				$.post(config.BACKEND_URL+'deleteVBase?'+'name='+vBase.origname+'&community='+this.community.attrs.abbr, function(res) {
-					if (res.success)  self.vBases.splice(k, 1);
-					else self.error="Database error";
+					if (res.success) { self.vBases.splice(k, 1);
+						self.success="Database "+vBase.name+" deleted";
+					} else {
+						self.error="Database error";
+					}
 				});
 			} else self.vBases.splice(j, 1);
   		}
@@ -556,6 +560,7 @@ var VBaseComponent = ng.core.Component({
 	  if (wits.length==0) {
 	  	 //  will make liar from the witnesses actually present
 	  	 var witnesses=myXMLDOM.getElementsByTagName("idno");  //ref for dante, idno for chaucer
+	  	 if (witnesses.length==0) witnesses=myXMLDOM.getElementsByTagName("ref");
 	  	 this.success= witnesses.length+" references to witnesses found";
 		 var witsfound=[];
 		 for (let i=0; i<witnesses.length; i++) {
@@ -584,6 +589,7 @@ var VBaseComponent = ng.core.Component({
    	var rdgAbsentWarningGiven=false;
  	for (var i=0; i<apps.length; i++) {
 		label=apps[i].getAttribute("n");
+//		console.log("processing "+apps[i].getAttribute("id"))
 		if (!label) {
 			if (!noLabelWarningGiven) this.error+="\rNo n value declared for an app element. Using the number of the app instead";
 			noLabelWarningGiven=true;
@@ -593,7 +599,7 @@ var VBaseComponent = ng.core.Component({
 		var varfrom=apps[i].getAttribute("from");
 		var varto=apps[i].getAttribute("to");
 		if (!vartype) {
-			if (noVartypeWarningGiven) this.error+="\rNo variant type value declared for an app element. Using type=main instead";
+			if (!noVartypeWarningGiven) this.error+="\rNo variant type value declared for an app element. Using type=main instead";
 			noVartypeWarningGiven=true;
 			vartype="main";
 		}
@@ -601,7 +607,7 @@ var VBaseComponent = ng.core.Component({
 		  var matrixrow = new Array(witsfound.length)
 		  matrixrow.fill("?");
 		  if (!varfrom || !varto) {
-			if (noVarFromToWarningGiven) this.error+="\rNo from and/or to value declared for an app element. Using from and to=0 instead. This will cause problems";
+			if (!noVarFromToWarningGiven) this.error+="\rNo from and/or to value declared for an app element. Using from and to=0 instead. This will cause problems";
 			noVarFromToWarningGiven=true;
 			varfrom=varto=0;
 		  }
@@ -651,6 +657,7 @@ var VBaseComponent = ng.core.Component({
 				//no variants -- ie only one reading -- but still need to record it
 				if (rdgs.length==1) {
 				  var rdgwits=rdgs[0].getElementsByTagName("idno");
+				  if (rdgwits.length==0) rdgwits=$($(rdgs[0]).next("wit")[0]).find("ref");
 				  variants.push(rdgs[0].childNodes[0].nodeValue);
 				  for (j=0; j<rdgwits.length; j++) {
 					var thisWit=rdgwits[j].childNodes[0].nodeValue;
@@ -665,7 +672,14 @@ var VBaseComponent = ng.core.Component({
 				    }	
 					var rdgindex=this.varnums[j];
 				//	console.log(rdgs[j].childNodes[0].nodeValue);
-					var thisrdg=rdgs[j].childNodes[0].nodeValue;
+					if (apps[i].getAttribute("id")=="Reg-IN1-5-4") {
+						let boo=1;
+					}
+					if (rdgs[j].childNodes.length==0) {
+						var thisrdg="om.";
+					} else  { //this one has a problem when variant has embedded xml
+						var thisrdg=$(rdgs[j]).html()
+					}
 					variants.push(thisrdg);
 					for (var k=0; k<rdgwits.length; k++) {
 					  var thisWit=rdgwits[k].childNodes[0].nodeValue;
