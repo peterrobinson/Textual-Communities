@@ -483,7 +483,7 @@ router.post('/getVBaseConditions',  function(req, res, next) {
 
 router.post('/deleteVBase',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	console.log("deleting vbase "+community+" "+name)
+//	console.log("deleting vbase "+community+" "+name)
 	VBase.collection.deleteOne({community: community, name: name }, function(err, result) {
 		if (err) res.json({success: 0});
 		else res.json({success:true});
@@ -803,9 +803,9 @@ router.post('/upload', function(req, res, next) {
 	var page=req.query.page;
 	var doc=req.query.doc;
 	var community=req.query.community;
-	console.log("doc "+doc+" page "+page+" community"+community);
+//	console.log("doc "+doc+" page "+page+" community"+community);
 	var TCIdestination=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0";
-	console.log("copy to "+TCIdestination);
+//	console.log("copy to "+TCIdestination);
 //	var TCIdestination="/Volumes/Macintosh HD/Users/pmr906_1/venv/TCangular/tc/public/app/data/tcimages/CTP2/Ad1/41v/full/full/0";
     var storage = multer.diskStorage({
     	destination: TCIdestination,
@@ -818,7 +818,7 @@ router.post('/upload', function(req, res, next) {
 
     upload(req,res,function(err) {
         if (err) {
-            console.log(err);
+//            console.log(err);
             return res.end("Error uploading file.");
         } else {
   //         console.log(req.body);
@@ -826,12 +826,12 @@ router.post('/upload', function(req, res, next) {
   //           console.log(f);
              // and move file to final destination...
            });
-           console.log("ready to write the IIIF!")
+  //         console.log("ready to write the IIIF!")
            exec("ls '"+TCIdestination+"'", (error, stdout, stderr) => {
 			if (error) { console.log(`error: ${error.message}`); res.json(req.files);return}
 			if (stderr) {console.log(`stderr: ${stderr}`);res.json(req.files);return}
 			if (stdout.trim()=="default.jpg") {
-				console.log("done write default image");
+//				console.log("done write default image");
 				//now make the magic 
 				let srcFile=TCIdestination+"/default.jpg";
 				let dstDir=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page;
@@ -865,7 +865,7 @@ router.get('/makeIIIFImage', function(req, res, next) {
 	exec("vips dzsave "+vipsParam, (error, stdout, stderr) => {
 		if (error) { console.log(`error: ${error.message}`); res.json({success:false});return}
 		if (stderr) {console.log(`stderr: ${stderr}`);res.json({success:false});return}
-		console.log("successfully made IIIF image ");
+//		console.log("successfully made IIIF image ");
 		res.json({success:true});
    })
 });
@@ -902,7 +902,7 @@ router.get('/makeDefaultIIIF', function(req, res, next) {
 
 
 router.get('/gridfs/:id',  function(req, res, next) {
-  console.log(req.params.id );
+//  console.log(req.params.id );
   gridfs.gfs.findOne({ _id: req.params.id }, function(err, file) {
     if (err || !file) {
       return next(err, file);
@@ -981,7 +981,7 @@ router.post('/getSubEntities', function(req, res, next) {
 
 router.post('/getEntities', function(req, res, next) {
   var foundEntities=[];
-  console.log("looking for more shit")
+//  console.log("looking for more shit")
   Community.findOne({abbr: req.query.community}).then (function(community) {
     if (community) {
       for (var i=0; i<community.entities.length; i++) {
@@ -994,7 +994,7 @@ router.post('/getEntities', function(req, res, next) {
 
 router.post('/getDocEntities', function(req, res, next) {
   var foundDocEntities=[];
-  console.log("looking for shit")
+//  console.log("looking for shit")
   Doc.findOne({_id: req.query.document}).then (function(document) {
     if (document) {
       for (var i=0; i<document.entities.length; i++) {
@@ -1012,7 +1012,7 @@ router.post('/fixTaskWitnames', function(req, res, next) {
 		async.map(docs, function(doc, callback){
 			index++;
 			if (index%1000 == 0) {
-				console.log("page "+index+" doc "+doc.tasks);
+//				console.log("page "+index+" doc "+doc.tasks);
 			}
 			callback();
 		})
@@ -3315,6 +3315,7 @@ function getWitness (witness, community, entity, suffix, base, override, recallb
 			 //have to deal with case where this entity is absent from the document
 //			 	console.log("teis "+teis.length)
 				if (teis.length==0) {
+//				  console.log(entity+" not in "+witness);
 				  cb({error:"no witness"}, []);
 				} else if (override=="false" && teis[0].collateX && teis[0].collateX!="") {
 					cb({error:"has Collatex"}, teis[0].collateX);
@@ -3436,7 +3437,7 @@ function getWitness (witness, community, entity, suffix, base, override, recallb
 				}
 			},
 			function (teis, cb) {
-			  console.log("witness "+witness+" suffix "+suffix);
+//			  console.log("processing witness "+witness+" suffix "+suffix);
 			  var content='{"_id": "'+witness+suffix+'_'+entity+'", "context": "'+entity+'","tei":"", "transcription": "'+witness+'","transcription_siglum": "'+witness+'","siglum": "'+witness+'"';
 			  var teiContent={"content":""}; //make this a loop if more than one wit here
 			  //put third line back
@@ -3540,11 +3541,11 @@ function getWitness (witness, community, entity, suffix, base, override, recallb
 					},
 					function (results, cb3) {
 						teiContent.content="";
-						console.log("XXX in ")
+//						console.log("XXX in ")
 						FunctionService.loadTEIContent(thisTei, teiContent).then(function (){
 						//if our content has an empty t element: we have a problem. So let's send a warning and remove the offending word
 						  if (teiContent.content!="") {
-							  	console.log("TEI content for witness "+thisWitness+" origwitness "+witness+": "+teiContent.content)
+//							  	console.log("TEI content for witness "+thisWitness+" origwitness "+witness+": "+teiContent.content)
 //								what comes back is a series of raw elements for a JSON array. Make it an array now to handle it
 							var thisCollation="["+DualFunctionService.makeJsonList(teiContent.content, thisWitness)+"]";
 							if (detectUnescapedEscapes(thisCollation).length) {
@@ -3552,7 +3553,7 @@ function getWitness (witness, community, entity, suffix, base, override, recallb
 								errorMessage+="Found unescaped characters \\ in  '"+witness+"'. This will cause the JSON conversion to fail. TC will fix this here by replacing the \\ by \\\\. Check your transcription: if you must use the escape, write it as \\\\";
 								const regex = /(?<!\\)\\(?!(\\|['"nrtvbf0-7ux]))/g;
 								thisCollation=thisCollation.replace(regex, "\\\\");	
-								console.log("after replacement "+thisCollation)
+//								console.log("after replacement "+thisCollation)
 							}
 							var myWitCollation=JSON.parse(thisCollation);
 //							console.log(myWitCollation.tokens);
@@ -3602,6 +3603,7 @@ function getWitness (witness, community, entity, suffix, base, override, recallb
 					  },
 				  ], function(err) {
 						//put back content line below here
+//						console.log("error is "+err)
 						  cb2(null, content);
 					});
 				}, function(err, result){
@@ -3629,14 +3631,14 @@ router.post('/reorderDocs', function (req, res, next){
 	var newlist=req.body.newDocIds;
 	var newConfigCE=req.body.newConfigCE;
 	var newdocs=[];
-	console.log("reordering "+newlist.length+" documents ceconfigwits "+newConfigCE.length+ " in community "+community);
-	console.log("about to update 1")
+//	console.log("reordering "+newlist.length+" documents ceconfigwits "+newConfigCE.length+ " in community "+community);
+//	console.log("about to update 1")
 	for (let i=0; i<newlist.length; i++) {
 		newdocs.push(new ObjectId(newlist[i]));
 	}
-	console.log("about to update 2")
+//	console.log("about to update 2")
 	Community.updateOne({'abbr': community}, {$set: {documents: newdocs, "ceconfig.witnesses": newConfigCE}}).then (function(result){
-    	console.log("we have a result "+JSON.stringify(result));
+//    	console.log("we have a result "+JSON.stringify(result));
     	res.json({success:true});
     })
 });
@@ -3653,8 +3655,9 @@ router.post('/fetchCEWitness', function(req, res, next) {
 	var parallels=req.body.parallels;
 	var allresults=[];	
 	var errorMessage="";
+	var thisWitness=req.body.witness;
 //	console.log("in get ce wtinesses "+base)
-	console.log("we have parallels .. "+parallels.length);
+//	console.log("we have parallels .. "+parallels.length+" in ms peter "+thisWitness);
 	let index=0;
 	async.mapSeries(parallels, function (parallel, callback1){
 //		console.log("looking for: "+parallel.entity+" "+parallel.suffix);
@@ -3671,19 +3674,19 @@ router.post('/fetchCEWitness', function(req, res, next) {
 		], function (err) {  //we only have one witness now! but retain the async to keep everything in order
 			let aWitList=[];
 			aWitList.push(witlist[nWit]);
-			console.log("looking for "+witlist[nWit])
+	//		console.log("looking for "+witlist[nWit])
 			async.mapSeries(aWitList, function(witness, callback){
-				console.log("index "+index+" witness "+witness+" base "+base)
+//				console.log("index "+index+" witness "+witness+" base "+base)
 			    if (index>1 && witness==base) {
 			    	index++;
-			    	console.log("written base once")
+//			    	console.log("written base once")
 			    	callback(null);
 			    } else {
-//				console.log("witness "+witness);		
+//				console.log("Peter is with witness "+witness);		
 					getWitness (witness, thisCommunity, parallel.entity, parallel.suffix, base, override, function(err, result, thisDoc, errorRead ){
 						errorMessage+=errorRead;
 						if (!err) {
-						   console.log("got witness "+witness+" "+parallel.suffix+" text "+result);
+//						   console.log("got witness Peter "+witness+" "+parallel.suffix+" text "+result);
 						   TEI.updateOne({docs: thisDoc._id, entityName: parallel.entity}, {$set: {collateX: result}}).then (function (written){
 							 results.push(result);
 							 callback(null);
@@ -3703,7 +3706,7 @@ router.post('/fetchCEWitness', function(req, res, next) {
 				}
 			}, function (err) {
 				if (!err) {
-					console.log("we have results")
+//					console.log("we have results")
 					allresults=allresults.concat(results);
 					callback1(null);
 				} else {
@@ -3728,14 +3731,14 @@ router.post('/getCEWitnesses', function(req, res, next) {
 	var override=req.body.override;
 	var parallels=req.body.parallels;
 	var allresults=[];
-	
+	var thiswitness=req.body.witness;
 	var errorMessage="";
 //	console.log("in get ce wtinesses "+base)
-	console.log("we have parallels .. "+parallels.length);
+//	console.log("we have Peter parallels .. "+parallels.length);
 	let index=0;
 	async.mapSeries(parallels, function (parallel, callback1){
-		console.log("looking for: "+parallel.entity+" "+parallel.suffix);
-		console.log("looking now")
+//		console.log("looking for: "+parallel.entity+" "+parallel.suffix);
+//		console.log("looking now")
 	    var results=[];
 	    index++;
 		async.waterfall([
@@ -3747,17 +3750,17 @@ router.post('/getCEWitnesses', function(req, res, next) {
 			}
 		], function (err) {
 			async.mapSeries(witlist, function(witness, callback){
-				console.log("index "+index+" witness "+witness+" base "+base)
+//				console.log("index "+index+" witness "+witness+" base "+base)
 			    if (index>1 && witness==base) {
 			    	index++;
-			    	console.log("written base once")
+//			    	console.log("written base once")
 			    	callback(null);
 			    } else {
 //				console.log("witness "+witness);		
 					getWitness (witness, thisCommunity, parallel.entity, parallel.suffix, base, override, function(err, result, thisDoc, errorRead ){
 						errorMessage+=errorRead;
 						if (!err) {
-						   console.log("got witness "+witness+" "+parallel.suffix+" text "+result);
+//						   console.log("got witness "+witness+" "+parallel.suffix+" text "+result);
 						   TEI.updateOne({docs: thisDoc._id, entityName: parallel.entity}, {$set: {collateX: result}}).then (function (written){
 							 results.push(result);
 							 callback(null);
@@ -3777,7 +3780,7 @@ router.post('/getCEWitnesses', function(req, res, next) {
 				}
 			}, function (err) {
 				if (!err) {
-					console.log("we have results")
+//					console.log("we have results")
 					allresults=allresults.concat(results);
 					callback1(null);
 				} else {
@@ -4196,7 +4199,7 @@ router.get('/ceconfig', function(req, res, next) {
   /*      var isBaseWit=results.filter(function (obj){return obj== community.ceconfig.base_text;})[0];
         console.log(community.ceconfig.base_text);
         if (!isBaseWit) community.ceconfig.base_text=results[0]; */
-        console.log("community is "+community)
+//        console.log("community is "+community)
         community.ceconfig.witnesses=results;
         community.ceconfig.project=community.name;
   //      console.log(community.ceconfig);
@@ -4208,10 +4211,10 @@ router.get('/ceconfig', function(req, res, next) {
 
 router.post('/getSavedCollations', function(req, res, next) {
 	let entity=req.query.entity;
-	console.log("looking for entity "+entity);
+//	console.log("looking for entity "+entity);
 	let collations=[];
    Collation.find({entity:entity, $or:[{status:"set"},{status:"regularised"},{status:"approved"},{status:"ordered"} ]}). then (function (results){
-  		console.log("nfound "+results.length);
+ // 		console.log("nfound "+results.length);
   		results.forEach(function(result){
 		  collations.push(JSON.parse(result.ce));
 		});
