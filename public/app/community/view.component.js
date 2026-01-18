@@ -49,7 +49,7 @@ var ViewComponent = ng.core.Component({
     this.callCollationEditor='';
 //    this.documents=this._communityService._docService.state.community.attrs.documents;
 //    this.rebuild=true; //temporary, to upgrade images
- 	if (!this.state.community.attrs.documents[0].attrs.hasOwnProperty('name')) {
+ 	if (this.state.community.attrs.documents.length>0 && !this.state.community.attrs.documents[0].attrs.hasOwnProperty('name')) {
 		$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
 		.done ( function(res) {
 	//   	  console.log("succeed");
