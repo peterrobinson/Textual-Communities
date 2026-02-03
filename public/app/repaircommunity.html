@@ -17,5 +17,12 @@
   	<button *ngIf="stopSearchButton" type="button"  (click)="stop()">Stop search</button></p>
   	<p *ngIf="deleteGhosts"><button type="button" (click)="seeFoundGhosts()">See Ghost Elements</button> 
   	</p>
+  	<p><button type="button" (click)="checkRebuildEntities()">Rebuild Top Level Entities</button> Use if the top level entity list has been corrupted.
+  	</p>
+  	<p *ngIf="doRebuild">
+  	      <input type="checkbox" style="margin-left: 50px" [(ngModel)]="keepTerminals">&nbsp;&nbsp;Retain only terminal toplevel entities.
+    <button type="button" (click)="rebuildEntities()">Do Rebuild</button>
+  	</p>
+
   </div>
 </div>

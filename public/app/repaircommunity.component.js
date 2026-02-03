@@ -35,6 +35,8 @@ var RepairCommunityComponent = ng.core.Component({
     this.inSearch=false;
     this.deleteGhosts=false;
     this.stopSearchButton=false;
+    this.doRebuild=false;
+    this.keepTerminals=false;
      $('#manageModal').width("600px");
      $('#manageModal').height("500px");
 
@@ -43,7 +45,38 @@ var RepairCommunityComponent = ng.core.Component({
   }],
   ngOnInit: function() {
 	var foo=1;
-
+  },
+  rebuildEntities: function() {
+  	 let self=this;
+  	 let isConfirmed = confirm("This action will overwrite your current top-level entity list. Are you sure?");
+  	 if (isConfirmed) {
+  	 	$.get(config.BACKEND_URL+'rebuildEntityList/'+this.state.community.attrs.abbr+"/terminals/"+this.keepTerminals)
+  	 		.done ( function(res) { 
+  		 			self.message=res.entities.length+" top-level entities found";
+  	 			//now write them to current community entities...
+  	 		  self.state.community.attrs.entities=[]; //reset to nil
+  	 		  let newEntities=[];
+  	 		  for (let i=0; i<res.entities.length; i++) {
+  	 		  	self.state.community.attrs.entities.push({attrs:{entityName:res.entities[i].entityName, isTerminal:res.entities[i].isTerminal, name:res.entities[i].name}});
+  	 		  	newEntities.push({entityName:res.entities[i].entityName, isTerminal:res.entities[i].isTerminal, name:res.entities[i].name, _id:res.entities[i]._id});
+  	 		  }
+  	 		  //now push new entities into this community
+  	 		  $.ajax({
+				url: config.BACKEND_URL+'saveRebuiltEntities?community='+self.community.attrs.abbr,
+				type: 'POST',
+				data:  JSON.stringify(newEntities),
+				accepts: 'application/json',
+				contentType: 'application/json; charset=utf-8',
+				dataType: 'json'
+			}).done(function(data) {
+				let foo="boo";
+			})
+  	 	})
+  	 	this.doRebuild=false;
+  	 }
+  },
+  checkRebuildEntities: function() {
+  	this.doRebuild=true;
   },
   checkEntities: function() {
     this.message="";
@@ -51,7 +84,11 @@ var RepairCommunityComponent = ng.core.Component({
  	if (typeof this.community.attrs.entities == "undefined" || this.community.attrs.entities.length==0) {
  		this.message="No entities found in this community. You need to commit a page containing an XML content element with a \"n\" attribute, for example:\r<p n=\"1\">My page</p>";
  	 } else if (typeof this.community.attrs.entities[0].attrs.name == "undefined" || this.community.attrs.entities[0].attrs.name=="") {
- 		this.message="One or more entities have been found in this community, but the entity has not been properly declared"; 	 
+ 	 	if (this.community.attrs.entities.length==1) {
+ 			this.message="A top-level entity has been found in this community, but it may have been corrupted. You should choose 'Rebuild Top Level Entities'."; 
+ 		} else {
+  			this.message=this.community.attrs.entities.length + " top-level entities have been found in this community, but the entity list may have been corrupted. You should choose 'Rebuild Top Level Entities'."; 		
+ 		} 
  	 } else {
  	 	let nNotTerminal=0;
  	 	let strNotTerminal="";

@@ -3795,6 +3795,27 @@ router.post('/getCEWitnesses', function(req, res, next) {
 	});
 });
 
+//if the top level entity list has been corrupted:
+router.get('/rebuildEntityList/:community/terminals/:keepTerminals',  function(req, res, next) {
+	let community=req.params.community;
+	let keepTerminals=req.params.keepTerminals;
+	console.log("About to rebuild entity list for community "+community+" with terminals "+keepTerminals);
+	Entity.find({ancestorName:"", community: community, isTerminal: keepTerminals }).then (function(entities) {
+//		console.log("About to rebuild entity list for community "+community+" with terminals "+keepTerminals+" "+entities.length+" entities found");
+		res.json({success: 1, entities: entities});
+	}); 
+});
+
+router.post('/saveRebuiltEntities', function (req, res, next){
+	var entities=req.body;
+	var community=req.query.community;
+	console.log("ready to save "+entities.length+" entities in community "+community+" first entity name "+entities[0].name+" entity Nme"+entities[0].entityName);
+	Community.updateOne({abbr:community}, {$set:{entities: entities}}).then (function (results){
+	   
+	   res.json({success:1})
+	})
+});
+
 //hereon: collation editor calls
 router.get('/cewitness', function(req, res, next) {
 //  console.log(req.query.witness);
