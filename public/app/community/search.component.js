@@ -21,6 +21,7 @@ var CommunitySearchComponent = ng.core.Component({
     this.docService=docService;
     this.searchAll=false;
     this.document="";
+    this.entity="";
     this.docnames=[];
     this.nPages=0;
  	this.findString=true;
@@ -45,29 +46,42 @@ var CommunitySearchComponent = ng.core.Component({
     return date.getDate()+" "+months[date.getMonth()]+" "+date.getFullYear();
 //    return date.toDateString()
   },
-  doSearch: function() {
+  doSearch: function() {   //are we using this? at all???
   	var self=this;
-  	var docId="";
+  	var docId="";  
   	var searchDocs=[];
   	if (!this.searchString) {this.error="You must specify a search string"; return;}
-  	if (!this.searchAll && !this.document) {this.error="If you have not selected search all documents, you must specify a document to search"; return;}
+ // 	if (!this.searchAll && !this.document) {this.error="If you have not selected search all documents, you must specify a document or entity to search"; return;}
   	if (!this.searchAll) {
-  		for (let i=0; i<this.docnames.length; i++) {
-  			if (this.docnames[i].name==this.document) {
-  				docId=this.community.attrs.documents[i]._id;
-  				searchDocs.push(this.community.attrs.documents[i]);
-  				i=this.docnames.length;
-  			}
-  		}
-  		if (docId=="") {
-  			this.error='"' + this.document+'" is not the name of a document in the '+this.state.community.attrs.abbr+' community'; 
+  		//first, search a doc
+  		if (this.document=="" && this.entity=="") {
+  			alert("If you are not searching every document: you must specify either a document of an entity to search");
   			return;
-  		}
+  		} else if (this.document!="" && this.entity!="") {
+  			alert("If you are not searching every document: you can specify either a document of an entity to search but not both");
+  			return;
+  		} else if (this.document!="") {
+			for (let i=0; i<this.docnames.length; i++) {
+				if (this.docnames[i].name==this.document) {
+					docId=this.community.attrs.documents[i]._id;
+					searchDocs.push(this.community.attrs.documents[i]);
+					i=this.docnames.length;
+				}
+			}
+			if (docId=="") {
+				this.error='"' + this.document+'" is not the name of a document in the '+this.state.community.attrs.abbr+' community'; 
+				return;
+			}
+		} else if (this.entity!="") { //right! let's  get all the documents that have this entity...
+			$.get(config.BACKEND_URL+'uri/urn:det:tc:usask:CTP2/entity=GP:document=*?type=list', function (doclist) {
+				let dog="boo";
+			});
+		}
   	} else {
   		searchDocs=this.community.attrs.documents;
   	}
 	this.error="";
-	this.stopSearch=false;
+	this.stopSearch=false
 	$("#TCsearchResults").html("");
 	async.mapSeries(searchDocs, function(thisDoc, callback1) {
 		self.docService.refreshDocument(thisDoc).subscribe(function(mydoc) {

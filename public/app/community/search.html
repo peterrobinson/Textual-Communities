@@ -7,14 +7,16 @@
 <div style="display:flex; justify-content:space-evenly">
 <span *ngIf="findString">Search for <input type="text" style="display: inline-block; border-width: 1px; border-style: solid; height: 30px; width: 100px" [(ngModel)]="searchString">  
 </span>
-<span *ngIf="findUncommitted">Search for pages transcribed but not committed 
+<span *ngIf="findUncommitted">Search for pages transcribed <br>but not committed 
 </span>
 <span>
  <input type="checkbox" [(ngModel)]="searchAll"> In all documents 
 </span>
 <span *ngIf="!searchAll"> 
-   		In document
-        <input type="text" style="width: 100px" [(ngModel)]="document">
+   		In document	
+        <input type="text" style="width: 100px" [(ngModel)]="document">&nbsp;&nbsp;
+        In entity 
+        <input type="text" style="width: 100px" [(ngModel)]="entity">
 </span>
 <span>
   <button type="button" class="btn btn-primary btn-md" 		(click)="doSearch()">Search</button>

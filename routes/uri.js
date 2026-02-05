@@ -579,7 +579,7 @@ function makeCollatedWitList(community, entityparts, callback) {
     entitySought+=":"+entityparts[i].property+"="+entityparts[i].value;
   }
 //  console.log("looking for "+entitySought);
-  Community.findOne({abbr:community}, function(err, myCommunity) {
+  Community.findOne({abbr:community}).then (function(err, myCommunity) {
     if (typeof myCommunity.ceconfig.witnesses != "undefined") {
       var listWit="<listWit>";
       for (var i=0; i<myCommunity.ceconfig.witnesses.length; i++) {
@@ -589,9 +589,9 @@ function makeCollatedWitList(community, entityparts, callback) {
       callback(listWit);
     } else {
       async.map(myCommunity.documents, function(myDoc, cb){
-        Doc.findOne({_id: myDoc}, function (err, thisDoc){
+        Doc.findOne({_id: myDoc}).then (function (err, thisDoc){
           //test here if this wit has this entity in it...
-          TEI.findOne({entityAncestor:entitySought, "docs.0":ObjectId(myDoc)}, function (err, isTEI) {
+          TEI.findOne({entityAncestor:entitySought, "docs.0":ObjectId(myDoc)}).then (function (err, isTEI) {
             if (isTEI)  cb(err, thisDoc.name);
             else (cb(err, ""));
           })
@@ -649,36 +649,32 @@ function getEntityDocs(community, seekEntity, req, res, docparts, entityparts, c
     //first find the entity, the document, and check every page within it..
     var listPages=[];
 //    console.log(seekEntity);
-    Doc.findOne({name:docparts[0].value, community:community, ancestors: []}, function (err, myDoc){
+    Doc.findOne({name:docparts[0].value, community:community, ancestors: []}).then (function (myDoc){
      if (!myDoc) {
      	 res.status(400).send("No document "+docparts[0].value+" in this community");
      } else {
 		  //find the tei for this entity in this doc. does it exist?
 		 if (!myDoc) res.status(400).send("No document "+err+docparts[0].value+"");
 //		  console.log(myDoc);
-		  TEI.find({entityName: community+":"+seekEntity, community: community, docs: {$in:[myDoc._id]}}, function(err, myTEIs){
-			if (err) res.status(400).send('error in database search for '+seekEntity+' in document '+myDoc.name);
-			else {
+		  TEI.find({entityName: community+":"+seekEntity, community: community, docs: {$in:[myDoc._id]}}).then (function(myTEIs){
 			  async.forEachOf(myTEIs, function(myTEI) {  //there could be more than one...
 				const cb1 = _.last(arguments);
 				async.mapSeries(myDoc.children, function(thisDoc, cb2){ //check each page. Does it have myTEI as an ancestor:
 	  //            console.log("doc "+thisDoc+" myTEI" +myTEI._id);
-				  TEI.findOne({name:"pb", docs: {$in:[thisDoc]}, ancestors:{$in:[myTEI._id]}}, function (err, inTEI) {
-					if (!err) {
-					  if (inTEI) { //this page is a child of the tei
-						Doc.findOne({_id:thisDoc}, function(err, pbDoc){
+				  TEI.findOne({name:"pb", docs: {$in:[thisDoc]}, ancestors:{$in:[myTEI._id]}}).then (function (inTEI) {
+		     		  if (inTEI) { //this page is a child of the tei
+						Doc.findOne({_id:thisDoc}).then (function(pbDoc){
 						  if (listPages.indexOf(pbDoc.name)==-1) listPages.push(pbDoc.name);
 						  cb2(null, []);
 						})
 					  } else { //might be the other way around! tei is a child of the page
 						if ((myTEI.docs).indexOf(thisDoc)!=-1) {
-						  Doc.findOne({_id:thisDoc}, function(err, pbDoc){
+						  Doc.findOne({_id:thisDoc}).then (function(pbDoc){
 							if (listPages.indexOf(pbDoc.name)==-1) listPages.push(pbDoc.name);
 							cb2(null, []);
 						  });
 						} else cb2(null, []);
 					  }
-					} else cb2(err, []);
 				  })
 				}, function (err, results){
 				  cb1(err, []);
@@ -691,7 +687,6 @@ function getEntityDocs(community, seekEntity, req, res, docparts, entityparts, c
 				  else res.status(400).send("Error in query string '"+JSON.stringify(req.query)+"'. Only types count and list accepted in this context");
 				}
 			  });
-			}
 		})
       }
     })
@@ -819,7 +814,7 @@ function processVmap (bits, req, res, community) {
 		  }
 		}); 
 	} else {
-		VMap.findOne({community: community, name: bits[1] }, function(err, vmap) {
+		VMap.findOne({community: community, name: bits[1] }).then (function(err, vmap) {
 			if (err || !vmap) res.json({error: ""});
 			else res.json(vmap);
 		});
