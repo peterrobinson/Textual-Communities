@@ -357,8 +357,9 @@ hi[rend="orncp8-up"] {
 .vMapMs {font-size:85%}
 
 .popAppFrame {display: flex;flex-direction: columm; align-items: center; margin: 2px}
-.popAppWordRow {display: flex; justify-content: space-between; align-items: center; gap: 5px}
-.popAppWordRdg {flex-grow: 0; flex-shrink: 0;  text-align: center}
+.popAppWordRow {display: flex}
+.popAppWordRow:last-child {display: none}
+.popAppWordRdg {flex: 0 0 150px;}
 .popAppWordNwits  {width: 25px; flex-grow: 0; flex-shrink: 0; margin-left: 3px; margin-right: 3px; text-align: center}
 .popAppWordWitsCont  {flex-grow: 1}
 .popAppWordWitsAny {font-family: 'junicode';}

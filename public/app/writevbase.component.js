@@ -289,6 +289,30 @@ function loadBaseFiles(zip, self, callback) {
 	},
 	function(arguments, cb) {
 		zip.file("edition/common/core/js/indexJs.js", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/js/indexJs.js", cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_regular_macroman/stylesheet.css", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_regular_macroman/stylesheet.css", cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_regular_macroman/Junicode-webfont.woff", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_regular_macroman/Junicode-webfont.woff", cb), {binary:true});
+	},
+		function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_italic_macroman/stylesheet.css", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_italic_macroman/stylesheet.css", cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_italic_macroman/Junicode-Italic.woff", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_italic_macroman/Junicode-Italic.woff", cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_bolditalic_macroman/stylesheet.css", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_italic_macroman/stylesheet.css", cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_bolditalic_macroman/Junicode-BoldItalic.woff", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_bolditalic_macroman/Junicode-BoldItalic.woff", cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_bold_macroman/stylesheet.css", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_bold_macroman/stylesheet.css", cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file("edition/common/core/css/junicode_bold_macroman/junicode_bold_macroman/Junicode-Bold.woff", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/css/junicode_bold_macroman/junicode_bold_macroman/Junicode-Bold.woff", cb), {binary:true});
 	}
   ], function (err) {
 		callback(null);

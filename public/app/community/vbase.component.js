@@ -658,7 +658,11 @@ var VBaseComponent = ng.core.Component({
 				if (rdgs.length==1) {
 				  var rdgwits=rdgs[0].getElementsByTagName("idno");
 				  if (rdgwits.length==0) rdgwits=$($(rdgs[0]).next("wit")[0]).find("ref");
-				  variants.push(rdgs[0].childNodes[0].nodeValue);
+				  let clone=$(rdgs[0]).clone();
+				  $(clone).find("wit").remove(); 
+				  let thisrdg=$(clone).html();
+				  variants.push(thisrdg);
+				 // variants.push(rdgs[0]hildNodes[0].nodeValue);
 				  for (j=0; j<rdgwits.length; j++) {
 					var thisWit=rdgwits[j].childNodes[0].nodeValue;
 					var indexWit=witsMap.get(thisWit);
@@ -678,15 +682,17 @@ var VBaseComponent = ng.core.Component({
 					if (rdgs[j].childNodes.length==0) {
 						var thisrdg="om.";
 					} else  { //this one has a problem when variant has embedded xml
-						var thisrdg=$(rdgs[j]).html()
-					}
-					variants.push(thisrdg);
-					for (var k=0; k<rdgwits.length; k++) {
-					  var thisWit=rdgwits[k].childNodes[0].nodeValue;
-					  var indexWit=witsMap.get(thisWit);
-					  matrixrow[indexWit]=rdgindex;
+						let clone=$(rdgs[j]).clone()
+						$(clone).find("wit").remove(); 
+						var thisrdg=$(clone).html()  
+						variants.push(thisrdg);
+						for (var k=0; k<rdgwits.length; k++) {
+						  var thisWit=rdgwits[k].childNodes[0].nodeValue;
+						  var indexWit=witsMap.get(thisWit);
+						  matrixrow[indexWit]=rdgindex;
 					}
 				  }
+				}
 			}
 		}
 		varsite.variants=variants;

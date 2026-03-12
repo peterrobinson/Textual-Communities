@@ -2677,44 +2677,44 @@ function removeAllDocs(req, res, deleteCommunity) {
       ndocs=community.documents.length;
       async.parallel([
         function(cb1) {
-          Doc.collection.remove({community: cAbbrev}).then (function (result){
-            ndocels+=result.result.n;
+          Doc.collection.deleteMany({community: cAbbrev}).then (function (result){
+            ndocels+=result.deletedCount;
             cb1(null);
           });
         },
         function(cb1) {
-            TEI.collection.remove( {community: cAbbrev}).then (function (result){
-              nTEIels=result.result.n;
+            TEI.collection.deleteMany( {community: cAbbrev}).then (function (result){
+              nTEIels=result.deletedCount;
               cb1(null);
             });
         },
         function(cb1) {
-          Entity.collection.remove({community: cAbbrev}).then (function (result){
-            nentels=result.result.n;
+          Entity.collection.deleteMany({community: cAbbrev}).then (function (result){
+            nentels=result.deletedCount;
             cb1(null);
           });
         },
         function(cb1) {
-          Collation.remove({community: cAbbrev}).then (function (result){
-            ncollels=result.result.n;
+          Collation.deleteMany({community: cAbbrev}).then (function (result){
+            ncollels=result.deletedCount;
             cb1(null);
           });
         },
         function(cb1) {
-          Revision.remove({community: cAbbrev}).then (function (result){
-            npagetrans=result.result.n;
+          Revision.deleteMany({community: cAbbrev}).then (function (result){
+            npagetrans=result.deletedCount;
             cb1(null);
           });
         },
         function(cb1) {
-          User.collection.update({"memberships.community":ObjectId(req.query.id)}, {$set: {"memberships.$.pages.assigned":0, "memberships.$.pages.committed":0, "memberships.$.pages.approved":0, "memberships.$.pages.submitted":0, "memberships.$.pages.inprogress":0}}, {multi: true}).then (cb1);
+          User.collection.updateMany({"memberships.community": new ObjectId(req.query.id)}, {$set: {"memberships.$.pages.assigned":0, "memberships.$.pages.committed":0, "memberships.$.pages.approved":0, "memberships.$.pages.submitted":0, "memberships.$.pages.inprogress":0}}, {multi: true}).then (cb1);
         },
         function(cb1) {
-          if (!deleteCommunity) Community.update({_id:req.query.id}, {$set: {documents:[], entities:[]}}).then (cb1);
+          if (!deleteCommunity) Community.updateOne({_id: new ObjectId(req.query.id)}, {$set: {documents:[], entities:[]}}).then (cb1);
           else {  //delete the community, and all membership references to it
-            Community.remove({_id: ObjectId(req.query.id)}).then (function ( result){
+            Community.deleteOne({_id: new ObjectId(req.query.id)}).then (function ( result){
   //            console.log("result "+result.result.n)
-              User.collection.update({"memberships.community":ObjectId(req.query.id)}, {$pull:{'memberships':{'community':ObjectId(req.query.id)}}}, {multi: true}, cb1);
+              User.collection.updateMany({"memberships.community":new ObjectId(req.query.id)}, {$pull:{'memberships':{'community':new ObjectId(req.query.id)}}}, {multi: true}).then (cb1);
              })
           }
         },
@@ -2760,11 +2760,15 @@ function getPagesInDocs (pageID, callback) {
 //part of document restore...
 router.post('/deleteDocDocsTEIs', function(req, res, next) {
   var nDocs=0, nTEIs=0;
-  Doc.collection.remove({"ancestors.0": ObjectId(req.query.docid)}, function (err, remove) {
-    nDocs=remove.result.n;
-    TEI.collection.remove({"docs.0": ObjectId(req.query.docid)}, function (err, remove) {
-      nTEIs=remove.result.n;
-      Doc.collection.remove({_id:ObjectId(req.query.docid)}, function (err, remove){
+  console.log("deleting lots of s")
+  Doc.deleteMany({"ancestors.0": new ObjectId(req.query.docid)}).then (function (remove) {
+  	console.log("making progress? ")
+    nDocs=remove.deletedCount;
+    console.log("deleting docs "+nDocs);
+    TEI.deleteMany({"docs.0": new ObjectId(req.query.docid)}).then (function (remove) {
+      nTEIs=remove.deletedCount;
+     console.log("deleting TEIs "+nTEIs);
+      Doc.deleteMany({_id: new ObjectId(req.query.docid)}).then (function (remove){
         res.json({message:nDocs+" document elements and "+nTEIs+" text elements removed."});
       })
     });
@@ -2968,7 +2972,7 @@ router.get('/getBasicRestore', function(req, res, next){
         docinf.push({name:document.name, _id:document._id, teiHeader: document.teiHeader, meta: document.meta})
         async.mapSeries(document.children, function(page, callback) {
           Doc.findOne({ _id: page}).then (function( pageinf){
-			Revision.collection.update({doc: page}, {$set: {parent: document.name, name: pageinf.name}}, {multi: true}).then (function(result){
+			Revision.collection.updateOne({doc: page}, {$set: {parent: document.name, name: pageinf.name}}, {multi: true}).then (function(result){
  				if (pageinf.tasks && pageinf.tasks.length>0)
 				  callback(null, {name:pageinf.name, facs: pageinf.facs, image: pageinf.image, tasks: pageinf.tasks, _id: pageinf._id});
 				else callback(null, {name:pageinf.name, facs: pageinf.facs, image: pageinf.image, _id: pageinf._id});
@@ -3870,28 +3874,26 @@ router.post('/adjustRestorePage',function(req, res, next) {
   }
   var docid=req.query.docid;
   var parent=req.query.parent;
-  Doc.collection.update({"ancestors.0":ObjectId(docid), name:page.name}, {$set: {facs: page.facs, image: page.image, tasks: page.tasks}}, function(err, result){
-  	if (err) {
-  		res.json({success: false, error: "Error rewriting page information"})
-  	}
-    else {
-    	Doc.findOne({"ancestors.0":ObjectId(docid), name:page.name}).then (function(myDoc){
-          if (!myDoc) {
+  Doc.collection.updateOne({"ancestors.0":new ObjectId(docid), name:page.name}, {$set: {facs: page.facs, image: page.image, tasks: page.tasks}}).then (function(result){
+  	console.log("updating now ")
+   	Doc.findOne({"ancestors.0": new ObjectId(docid), name:page.name}).then (function(myDoc){
+        if (!myDoc) {
           	res.json({success: false, error: "Error finding page"})
           } else {
-			  Revision.collection.update({doc:ObjectId(page._id)}, {$set: {doc: ObjectId(myDoc._id)}}, {multi: true}).then (function(result){
+          	  console.log("looking good");
+			  Revision.collection.updateMany({doc: new ObjectId(page._id)}, {$set: {doc: new ObjectId(myDoc._id)}}).then (function(result){
+			  	console.log("we did it")
 				res.json({success:true})
 			 });
 		  }
        })
-    }
-  })
+    })
 });
 
 //swaps old id for new one; pops last element
 router.post('/restoreCommDocs', function(req, res, next) {
-  Community.collection.update({_id: ObjectId(req.query.community), documents: ObjectId(req.query.oldid)}, {$set:{"documents.$": ObjectId(req.query.newid)}}).then (function(result) {
-      Community.collection.update({_id: ObjectId(req.query.community)}, {$pop:{documents:1}}).then (function(result) {
+  Community.collection.updateOne({_id: new ObjectId(req.query.community), documents: new ObjectId(req.query.oldid)}, {$set:{"documents.$": new ObjectId(req.query.newid)}}).then (function(result) {
+      Community.collection.updateOne({_id: new ObjectId(req.query.community)}, {$pop:{documents:1}}).then (function(result) {
         res.json({success:true})
       });
   })

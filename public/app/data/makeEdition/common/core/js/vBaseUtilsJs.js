@@ -15,7 +15,7 @@ function startVBfromURL() {
 		vBase.conditionsets[0].conditions.push({in:(decodeURIComponent($.urlParam("in"+i))=="true")?true:false, spec:(decodeURIComponent($.urlParam("spec"+i))!="0")?decodeURIComponent($.urlParam("spec"+i)):"", wits:decodeURIComponent($.urlParam("wits"+i))})
 	}
 	setupSearchVBase();
-	doSearch();
+	doSearch(false);
 }
 
 function searchVariantSite(vBase) {
@@ -24,7 +24,7 @@ function searchVariantSite(vBase) {
 	} else {
 		$("#VBchooseSpan").css({"border":"none", "border-color":"red"})
 	}
-   	doSearch();
+   	doSearch(false);
 }
 
 function addCond () {
@@ -109,7 +109,7 @@ function writePresets (which) {
 	$("#conditions").html("");
 	$("#searchVBResults").html("");
 	writeConditions(vBase, which);
-	doSearch();
+	doSearch(true);
 }
 
 function writeConditions(vBase, cSet) {
@@ -155,9 +155,13 @@ function setupSearchVBase () {
   	$("#conditions").html("");
   	 writeConditions(vBase, 0);
   }
-function doSearch() {
+function doSearch(presets) {
 	 	//parse the conditions first
 //	writeConditions(vBase, 0);
+	//presets is true if search is coming from preset; else remove all radio selections
+	if (!presets) {
+		$($('input[name="presetVB"]:checked')[0]).prop("checked", false)
+	}
 	if (!vBase.witlist.includes('\\all')) vBase.witlist.push("\\all");
 	$("#VBerror").html("");
 	let conditions=[];
@@ -411,6 +415,25 @@ function doSearch() {
 	
   	searchDone=true;
   	found=found.length;
+  	changeAddress();
+}
+
+function changeAddress() {
+	//is there a preset selected?
+	let searchSite="&vsite=false";
+	if ($("#VBchoose").is(':checked')) {
+  	    searchSite="&vsite=true";
+  	} 
+	let searchName="null";
+	if ($('input[name="presetVB"]:checked').length>0) {
+		searchName=$($($('input[name="presetVB"]:checked')[0]).parent()[0]).text();
+	}
+	let queryString="&name="+searchName+searchSite+"&nconds="+$(".conditionVB").length; VBCond0
+	for (let k=0; k<$(".conditionVB").length; k++) {
+		//if disabled .. remove
+		queryString+="&in"+k+"="+$($("#InCond"+k)[0]).prop("checked")+"&spec"+k+"="+$($("#VBspec"+k)[0]).val()+"&wits"+k+"="+$($("#VBCond"+k)[0]).val();
+	}
+	window.history.replaceState(null, null, "index.html?view=VBase"+queryString);
 }
 
 async function showVBaseSite() {
@@ -463,7 +486,7 @@ async function showVBaseSite() {
 	//now lets do a search on it.. lol....
 	$( "#VBchoose" ).prop( "checked", true );
 	searchVBase(vBase);
-	doSearch();
+	doSearch(false);
 }
 
 function openinfoVM(){

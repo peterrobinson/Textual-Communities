@@ -128,6 +128,7 @@ router.get('**', function(req, res, next) {
                     Doc.getTexts(foundDoc._id, function(err, texts) {
                       if (err) { next(err)} else {
                         if (req.query.format=="xml") {
+                          console.log("checking xml format");
                           res.send(formatXML(texts, true));
                         } else if (req.query.format=="html") {
                           var xml=formatXML(texts, false);
@@ -188,7 +189,14 @@ router.get('**', function(req, res, next) {
                   				//now get the user information
                   				async.map(users, function(user, cb){
                   					User.findOne({_id:new ObjectId(user)}).then (function(myUser){
-                						cb(null, {user: user, name: myUser.local.name});
+                  						if (!myUser) {
+            //      							console.log("no user?");
+                  							console.log("returning Spoons");
+                  							cb(null, {user: user, name: "F.T. Spoons"});
+                  						} else {
+           //       							console.log(myUser);
+                							cb(null, {user: user, name: myUser.local.name});
+                						}
                    					}, function (err){
                   						cb(err);
                   					});

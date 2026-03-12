@@ -1,12 +1,9 @@
 var isPopUpOrigSpelling=false;
-const punctuation=".,:-/&@¶§;·⸫▽?!'"+'"';
-
 
 function initTranscript () {
-	$("#page-head").load(universalBannerLocation, function (){
-		if (ssSearch) {
-			$("#staticSearch").html("<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssSearch.js'></script>\n<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssInitialize.js'>\n</script><script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssHighlight.js'></script>\n<form xmlns='http://www.w3.org/1999/xhtml' accept-charset='UTF-8' id='ssForm'  data-allowphrasal='yes' data-allowwildcards='yes' data-minwordlength='2'  data-scrolltotextfragment='no' data-maxkwicstoshow='5' data-resultsperpage='5'  onsubmit='return false;' data-versionstring='' data-ssfolder='../../../staticSearch' data-kwictruncatestring='...' data-resultslimit='2000'><span class='ssQueryAndButton'><input type='text' id='ssQuery' style='height: 21px' aria-label='Search'/><button id='ssDoSearch' style='background-image: url(\"../../../common/core/images/searchicon.png\")');>Search</button></span></form>\n<div xmlns='http://www.w3.org/1999/xhtml' id='ssSearching'></div>")
-		}
+	$.get(universalBannerLocation, function (data, status){
+		$("#editorialMenu").html($(data).find("#editorialMenu").html());
+		$("#entityMenu").html($(data).find("#entityMenu").html());
 		$("w.showTip").hover(showCollation, hideCollation);
 		$("#MS").val(currMS);
 		let newPage=getCookie("newPage");
@@ -72,6 +69,10 @@ function showCollation (event) {
 		 $("."+idColl).addClass("collLemmaText");
 		 adjustPopUpPosition(idColl, event);
 		 setTimeout(() => {selectPUsp($("#tipDiv").find(".puCB")[0])});
+}
+
+function searchVBase(x) {
+	window.location.href="../../../vBase.html";
 }
 
 function transcriptToCollation (){
@@ -210,4 +211,10 @@ function getTranscriptInf (){
 function choosePUsp(element) {
 	isPopUpOrigSpelling=element.checked;
 	selectPUsp(element);
+}
+
+function transcriptToCompare () {
+	let nowEntity=$("#menu0").val()+":"+$("#line").attr("data-key");
+	let indexEntity=compareIndex.filter(myentity=>myentity.entity==nowEntity)[0].index;
+	getCompareFromCollation (indexEntity, nowEntity, currMS);
 }

@@ -64,6 +64,7 @@ function createTranscript() { //currEntities read from starting script, allEntit
 	$("#entityMenu").html(initializeEntityChoice(currEntity));
 	$("#MS").val(currMS);
 	$("#title").html(currMS+" "+currPage);
+	$("#shortTitle").html(shortTitle);
 	initializeSplitView();
 	getImageInf();
 	setupPageLinks();
@@ -556,7 +557,7 @@ function doLineNumbers(column, cbmain) {
 			$("#t-c"+column+"-linenumbers").append("<div class='lineN' n='"+DivN+"-"+LineN+"'></div>");
 			let numtop=$("div[n='"+DivN+"-"+LineN+"']")[0].offsetTop;
 			$($("div[n='"+DivN+"-"+LineN+"']")[0]).css({position:"relative", top:""+(top-numtop+3)+"px"});
-			let searchUrl="https://textualcommunities.org/api/getCommentaries?entity="+TCcommunity+"/entity="+DivN+":line="+LineN+"&entityTo=";
+			let searchUrl="https://textualcommunities.com/api/getCommentaries?entity="+TCcommunity+"/entity="+DivN+":line="+LineN+"&entityTo=";
 			 $.post(searchUrl, function(res) {
 				if (res.success) {
 					let commentary=selectCommentary(res.commentaries);
@@ -709,9 +710,9 @@ function getImageInf() {
 function makeTranscriptInf (callback){
 	$('#OAstatement').css("height", "auto");
 //does Base exist? if not, use currMS
-	let baseMS="Base";
+	let baseMS="Edition";
 	let baseFolio=1;
-	if (pageEntitiesMin.filter(witness=>witness.witness=="Base").length==0) {
+	if (pageEntitiesMin.filter(witness=>witness.witness=="Edition").length==0) {
 		baseMS=currMS;
 		baseFolio=currPage;
 	}
@@ -768,6 +769,9 @@ function makeTranscriptInf (callback){
 //				$('#transcriptInf').show();
 			resizeRTable();
 			callback(null, [])
+		})
+		.fail (function(jqXHR, textStatus, errorThrown) {
+			var boo="failure";
 		});
 	});
 }

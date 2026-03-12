@@ -29,6 +29,7 @@ function createIndex (){
 	let directory=firstEntity.slice(0, firstEntity.lastIndexOf(":"));
 	let cFile=firstEntity.slice(firstEntity.lastIndexOf(":")+1);
 	$("#collationLink").attr("href", "html/collationreg/"+directory+"/"+cFile+".html");
+	$("#editorialCredit").html(editorialCredit);
 	sendHTML();
 }
 

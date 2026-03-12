@@ -870,7 +870,7 @@ function getPopUpCollationME(line, structure, entity, wordNumber, appNumber, ms)
 	popApp+="<span onmouseover='showPUCollLink(this)' onmouseout='hidePUCollLink(this)'>&nbsp;<a class='showCollLink' href='blank' style='color:blue'>Collation</a><span class='chooseColl' style='display:none'><a href='../../collationreg/"+filePath(entity)+".html'>Regularized</a>/<a href='../../collationorig/"+filePath(entity)+".html'>Unregularized</a></span>&nbsp;</span>";
 	if (links.nextEntity=="") { popApp+="<span>&nbsp;</span>"} else {
 		let nextLink=adjustID('PUColl-'+links.nextEntity+'-'+ms+'_1');
-		popApp+='<a href="javascript:movePopUpCollation(\''+nextLink+'\',\'nextLine\',\''+entity+'\'))">';
+		popApp+='<a href="javascript:movePopUpCollation(\''+nextLink+'\',\'nextLine\',\''+entity+'\')">';
 		popApp+='<img src="/app/data/makeEdition/common/core/images/iconNext.png" height="16px"/></a>'
 	}
 	popApp+="<span>&nbsp;</span></span>";
@@ -1684,14 +1684,14 @@ function adjustPopUpWidthsME(thisID) {
 		let thisWidth=getTextSize($(readings[i]).html(), 12);
 		if (thisWidth>width) width=thisWidth;
 	}
-	$(readings).css("flex-basis", (width)+"px");
+//	$(readings).css("flex-basis", (width)+"px"); //don't need now
 	readings=$("#"+thisID).find(".popAppWordCont-orig .popAppWordRdg");
 	width=0;
 	for (let i=0; i<readings.length; i++) {
 		let thisWidth=getTextSize($(readings[i]).html(), 12);
 		if (thisWidth>width) width=thisWidth;
 	}
-	$(readings).css("flex-basis", (width)+"px");
+//	$(readings).css("flex-basis", (width)+"px"); //not needed now
 }
 
 function currMSinWitsME(witnesses, myMS) {
