@@ -1866,8 +1866,13 @@ function makeHTMLPages(self, zip, documents, pageEntities, callback) {
 					index++;
 					$("#MEProgress").html("Creating "+doc.name+"/"+tpage+".html<br>");
 					let myData=data;
-					let myEntity=self.edition.pageEntities.filter(witness=>witness.witness==doc.name[0])[0].entities.filter(page=>page.page[0]==tpage).filter(thisEnt=>thisEnt.collateable)[0].entity;
-					myEntity=myEntity.slice(myEntity.indexOf("=")+1);
+					let myEntity="";
+					if (self.edition.pageEntities.filter(witness=>witness.witness==doc.name[0])[0].entities.filter(page=>page.page[0]==tpage).length>0) {
+						myEntity=self.edition.pageEntities.filter(witness=>witness.witness==doc.name[0])[0].entities.filter(page=>page.page[0]==tpage).filter(thisEnt=>thisEnt.collateable)[0].entity;
+						myEntity=myEntity.slice(myEntity.indexOf("=")+1);
+					} else { //blank page with no entities...
+						myEntity="";
+					}
 					let ssSearch=true;
 					if (typeof self.config.ssSearch=="undefined") ssSearch=false;
 					if (self.config.standalone) {

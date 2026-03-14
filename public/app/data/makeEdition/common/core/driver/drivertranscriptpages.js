@@ -73,31 +73,37 @@ function createTranscript() { //currEntities read from starting script, allEntit
 			getImageCall(callback);
 		 }, 
 		 function(arguments, callback) {
-			makeTranscriptInf(callback);
+			if (currEntity=="") {callback(null, [])} else {makeTranscriptInf(callback)};
 		 },
 		function(arguments, callback) { 
-			openTranscript(callback);
+			if (currEntity=="") {callback(null, [])} else {openTranscript(callback)};
 		 },   
 		 function(arguments, callback) { 
-			doLineNumbers(1, callback);
+			if (currEntity=="") {callback(null, [])} else {doLineNumbers(1, callback)};
 		 }, 
 		  function(arguments, callback) { 
-			doLineNumbers(2, callback);
+			if (currEntity=="") {callback(null, [])} else {doLineNumbers(2, callback)};
 		 },
 		 function(arguments, callback) { 
-			if ($("#t-b").is(":visible")) {
-				doExtraLineNumbers(1);
-				doExtraLineNumbers(2);
+		 	if (currEntity=="") {callback(null, [])} else {
+				if ($("#t-b").is(":visible")) {
+					doExtraLineNumbers(1);
+					doExtraLineNumbers(2);
+				}
+				$(".commRef").hover(initComm);
+				$(".msInf").hover(initComm);
+				callback(null, []);
 			}
-			$(".commRef").hover(initComm);
-			$(".msInf").hover(initComm);
-			callback(null, []);
 		},   
 		 function(arguments, callback) { 
-			createPopUpCollationME(callback);
+			if (currEntity=="") {callback(null, [])} else {createPopUpCollationME(callback)};
 		 }
 
 	], function (err) {
+		if (currEntity=="") {
+			$("#transcript-text").html("[No text on this page]");
+			$("#transcript-text").css("margin", "auto");
+		}
 		//get here when we are ready to write to the database
 		callbackTranscript();
 	})
@@ -373,7 +379,7 @@ function makeRubric(thisPage) {
 	$("#popUps").append("<div id=\""+currMS+"\">"+docInf+"</div>");
 	let rubric=myInf+" "+currPage+". ";
 	let lastEnt="", thisEntity="";
-	rubric+=makeEntitySpan(thisPage);
+	if (currEntity!="") rubric+=makeEntitySpan(thisPage);  //in case pqage is empty, as is PY 11v
 	return(rubric);
 }
 

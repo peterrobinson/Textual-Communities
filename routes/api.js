@@ -803,7 +803,7 @@ router.post('/upload', function(req, res, next) {
 	var page=req.query.page;
 	var doc=req.query.doc;
 	var community=req.query.community;
-//	console.log("doc "+doc+" page "+page+" community"+community);
+	console.log("doc "+doc+" page "+page+" community"+community);
 	var TCIdestination=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page+"/full/full/0";
 //	console.log("copy to "+TCIdestination);
 //	var TCIdestination="/Volumes/Macintosh HD/Users/pmr906_1/venv/TCangular/tc/public/app/data/tcimages/CTP2/Ad1/41v/full/full/0";

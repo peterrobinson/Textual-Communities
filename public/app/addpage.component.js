@@ -247,6 +247,7 @@ var AddPageComponent = ng.core.Component({
       , router = this._router
       , dropzone = this.dropzone
     ;
+    dropzone.options.url+="&community=CTPS&doc=GP&page=Stemma";
     if (dropzone.getQueuedFiles().length > 0) {
       dropzone.processQueue();
     } else {

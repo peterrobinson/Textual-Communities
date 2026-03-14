@@ -164,7 +164,7 @@ var DocResource = _.inherit(Resource, function(opts) {
     };
   },
   execSave: function(req, res, next) {
-  	console.log("about to commit 1? ");
+  	console.log("about to commit 1? " + JSON.stringify(req.body));
     if (!req.body.commit) {
        return function(obj, callback) {
         console.log("do it");
@@ -172,13 +172,13 @@ var DocResource = _.inherit(Resource, function(opts) {
           callback(null, obj);
         });
       };
-    }
-//    console.log("about to commit 1xxyy? ");
+    } 
+    console.log("about to commit 1xxyy? ");
     return function(obj, callback) {
-//    	console.log("about to commit 1xxyy?sss "+obj.name)
+//    	console.log("about to commit 1xxyy?sss ");
         return async.waterfall([
         function(cb) {
-//        	console.log("about to commit 1xxyy?sss zzz "+obj.name)
+        	console.log("about to commit 1xxyy?sss zzz ")
             obj.commit({
             revision: req.body.revision,
             tei: req.body.tei,
@@ -211,7 +211,7 @@ var DocResource = _.inherit(Resource, function(opts) {
           cb(null, obj);
         }
       ], function (err, obj){
-//      	console.log("finished commit xxxx yyyy for "+obj+" error "+err)
+ 	      	console.log("finished commit xxxx yyyy for "+obj+" error "+err)
       	callback(err)
       });
     };
