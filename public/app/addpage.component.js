@@ -192,13 +192,17 @@ var AddPageComponent = ng.core.Component({
       , router = this._router
       , state = this.state
     ;
-    docService.commit({
-      doc: myDoc,
-    }, options).subscribe(function(page) {
-      //if this is first page -- then call new text Page
-      //if not: call choose continue or add new text depending on what prevs tells us
-    //        self.page = page;
-        router.navigate(['Community', {
+    //docService for some reason is not behaving. So add the new page differently ...
+    $.ajax({
+		  url: config.BACKEND_URL+'addNewPage?docId='+self.parent.attrs._id+"&document="+this.document.attrs.name[0],
+		  type: 'POST',
+		  data:  JSON.stringify(myDoc),
+		  accepts: 'application/json',
+		  contentType: 'application/json; charset=utf-8',
+		  dataType: 'json'
+	})
+	 .done(function( data ) {
+	 	 router.navigate(['Community', {
           id: state.community.getId(), route: 'view'
         }]);
         state.newTranscript=true;  //this triggers continue or new transcript for this page -- moved to confirm page now
@@ -232,8 +236,20 @@ var AddPageComponent = ng.core.Component({
           document: self.document,
         })
         self.pageName="";
-  //      cb(null, page);  don't think we need this .. we do if we are adding multiple pages and we have more...
-    });
+         cb(null, []);  // don't think we need this .. we do if we are adding multiple pages and we have more...
+	  })
+	 .fail(function( jqXHR, textStatus, errorThrown) {
+	  self.success="Error " + errorThrown;
+	});	
+/*
+    docService.commit({
+      doc: myDoc,
+    }, options).subscribe(function(page) {
+      //if this is first page -- then call new text Page
+      //if not: call choose continue or add new text depending on what prevs tells us
+    //        self.page = page;
+  */
+  
   },
   submit: function() {
     if (this.oneormany=="ManyPages" && this.dropzone.getQueuedFiles().length==0) {
@@ -247,7 +263,8 @@ var AddPageComponent = ng.core.Component({
       , router = this._router
       , dropzone = this.dropzone
     ;
-    dropzone.options.url+="&community=CTPS&doc=GP&page=Stemma";
+    this.state.document=this.document; //some routines want document in state, some in this
+    dropzone.options.url+="&community="+this.state.community.attrs.abbr+"&doc="+this.document.attrs.name[0]+"&page="+this.pageName;
     if (dropzone.getQueuedFiles().length > 0) {
       dropzone.processQueue();
     } else {

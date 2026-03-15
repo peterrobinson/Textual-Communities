@@ -179,6 +179,24 @@ commentaryResource.serve(router, 'commentaries');
 var makeeditionResource = new Resource(MakeEdition, {id: 'makeedition'});
 makeeditionResource.serve(router, 'makeeditions');
 
+router.post('/addNewPage', function (req, res, next) {
+	let document= req.query.document; 
+	let docId=req.query.docId; 
+	let community= req.body.community;
+	let image=req.body.image;
+	let pagename=req.body.name;
+	let label=req.body.label;
+	console.log("got: document "+document+" community "+community+" image "+image+" pagename "+pagename+ " docID "+docId);
+	Doc.insertOne({community: community, image: image, label:"pb", name: pagename}).then(function(newpage) {
+		console.log("New doc id "+newpage._id);
+		Doc.updateOne({_id: new ObjectId(newpage._id)}, {$push: {ancestors: docId}}).then (function(result) {
+			Doc.updateOne({_id: new ObjectId(docId)}, {$push: {children: newpage._id}}).then (function(result) {
+			console.log("Updated new doc");
+			res.json({success: 1});
+		});
+	  });
+  });
+});
 
 router.post('/approveCommentary', function(req, res, next) {
 	var revisionID= req.query.revision;

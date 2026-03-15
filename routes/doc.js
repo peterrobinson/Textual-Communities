@@ -175,7 +175,7 @@ var DocResource = _.inherit(Resource, function(opts) {
     } 
     console.log("about to commit 1xxyy? ");
     return function(obj, callback) {
-//    	console.log("about to commit 1xxyy?sss ");
+    	console.log("about to commit 1xxyy?sss ");
         return async.waterfall([
         function(cb) {
         	console.log("about to commit 1xxyy?sss zzz ")
