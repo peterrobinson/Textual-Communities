@@ -297,6 +297,7 @@ var ViewerComponent = ng.core.Component({
     if (meta) {
       //update base database version
       docService.getTextTree(page).subscribe(function(teiRoot) {
+      	if (typeof teiRoot=="undefined") return;
         var isDefault=false;
         var dbRevision = self.json2xml(BrowserFunctionService.prettyTei(teiRoot));
         //now, we only add this to the revision database if we are a leader or CREATOR or member. Else, just throw it in the window and carry on

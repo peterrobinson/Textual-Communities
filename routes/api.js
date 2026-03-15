@@ -187,7 +187,8 @@ router.post('/addNewPage', function (req, res, next) {
 	let pagename=req.body.name;
 	let label=req.body.label;
 	console.log("got: document "+document+" community "+community+" image "+image+" pagename "+pagename+ " docID "+docId);
-	Doc.insertOne({community: community, image: image, label:"pb", name: pagename}).then(function(newpage) {
+	//for some reason insertOne does NOT work on the server, but does here. Go figure.
+	Doc.findOneAndUpdate({},{community: community, image: image, label:"pb", name: pagename},{new: true, upsert:true}).then  (function(newpage) {
 		console.log("New doc id "+newpage._id);
 		Doc.updateOne({_id: new ObjectId(newpage._id)}, {$push: {ancestors: docId}}).then (function(result) {
 			Doc.updateOne({_id: new ObjectId(docId)}, {$push: {children: newpage._id}}).then (function(result) {
@@ -1872,8 +1873,12 @@ router.post('/statusTranscript', function(req, res, next) {
 //      console.log("looking for text el for "+req.query.docid);
       TEI.findOne({name:"pb", docs: new ObjectId(req.query.docid)})
       	.then(function (pbEl) {
+      		//could be null...
+      		if (!pbEl) {
+      			    res.json({success:false})
+      		} else {
 			//top level ancestor of pbEl by definition will be the text elements
-//			  console.log("get the TEI for pbel")
+// we might have a page with no text on it, for example a stemma page
 			  TEI.findOne({_id: new ObjectId(pbEl.ancestors[0]), name:"text"})
 			  	.then (function (textEl) {
 				  globalTextEl=textEl;
@@ -1881,6 +1886,7 @@ router.post('/statusTranscript', function(req, res, next) {
 //	              console.log("got global text el ")
 				  cb(null, document);
 			  });
+		  }
       })
     },
     function hasPrevPageText (document, cb) {
