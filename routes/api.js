@@ -356,10 +356,10 @@ router.post('/saveVMap', function(req, res, next) {
 	var vmap=req.body;
 	var community=req.query.community, name=req.query.name;
 //	console.log(vbase.varsites[0].entity);
-//	console.log("Name "+name+" community "+community+" name from array "+vmap.name);
-	VMap.collection.update({community: community, name: name}, 
-	     {$set: {name: name, community: community, pheight: vmap.pheight, pwidth: vmap.pwidth, pdflabelled: vmap.pdflabelled, pdfunlabelled: vmap.pdfunlabelled, wits: vmap.wits }}, {upsert: true}, function(err){
-		if (!err) res.json({success: 1});
+	console.log("Name "+name+" community "+community+" name from array "+vmap.name);
+	VMap.updateOne({community: community, name: name}, 
+	     {$set: {name: name, community: community, pheight: vmap.pheight, pwidth: vmap.pwidth, pdflabelled: vmap.pdflabelled, pdfunlabelled: vmap.pdfunlabelled, wits: vmap.wits }}, {upsert: true}).then (function(vdoc){
+		if (vdoc.modifiedCount==1) res.json({success: 1});
 		else {
 //			console.log(err)
 			res.json({success: 0});

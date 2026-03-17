@@ -508,18 +508,42 @@ var DualFunctionService = {
 	var modtaxa=[];
 	var origtaxa=[];
 	var othertaxa=[];
+	var lacunaechar=[];
+	var plus75taxa=[];
+	var plus50taxa=[];
+	var plus25taxa=[];
+	var plus10taxa=[];
+	var editionchars=$($(myXMLDOM).find("app[type='main']").find("idno:contains('Edition')")).length;
     for (var i=0; i<wits.length; i++) {
-      taxlabels+="&nbsp;&nbsp;&nbsp;&nbsp;["+i+"] "+wits[i].childNodes[0].nodeValue+"<br/>";
+      let taxlabel=wits[i].childNodes[0].nodeValue;
+      let witnchars=$($(myXMLDOM).find("app[type='main']").find("idno:contains('"+taxlabel+"')")).length;
+      if (witnchars*100/editionchars>75) {
+      	plus75taxa.push(i+1);
+      } 
+     if (witnchars*100/editionchars>50) {
+      	plus50taxa.push(i+1);
+      } 
+    if (witnchars*100/editionchars>25) {
+      	plus25taxa.push(i+1);
+      } 
+     if (witnchars*100/editionchars>10) {
+      	plus10taxa.push(i+1);
+      } 
+      taxlabel=taxlabel.replace(/ /gi, "_").replace(/:/gi, "_").replace(/=/gi, "_").replace(/-/gi, "_").replace(/\(/gi, "_").replace(/\)/gi, "_").replace(/\./gi, "_");
+      taxlabels+="&nbsp;&nbsp;&nbsp;&nbsp;["+i+"] "+taxlabel+"<br/>";
       if (wits[i].childNodes[0].nodeValue.indexOf("-")>-1) {
       	if (wits[i].childNodes[0].nodeValue.indexOf("-mod")>-1) {
-      		modtaxa.push(i);
+      		modtaxa.push(i+1);
       	} else if (wits[i].childNodes[0].nodeValue.indexOf("-orig")>-1) {
-      		origtaxa.push(i);
+      		origtaxa.push(i+1);
       	} else {
-      		othertaxa.push(i);
+      		othertaxa.push(i+1);
       	}
+      } else if (wits[i].childNodes[0].nodeValue.indexOf("(")>-1) {  //get cases where repeated elements
+      	 othertaxa.push(i+1);
       }
       witsMap.set(wits[i].childNodes[0].nodeValue, i);
+      //how many occurrences for each wit?
     }
     converted+="<br/>DIMENSIONS<br/>&nbsp;&nbsp;&nbsp;&nbsp;NTAX="+wits.length+"<br/>&nbsp;&nbsp;&nbsp;&nbsp;NCHAR="+apps.length+"<br/>;<br/>"
     converted+='FORMAT<br/>&nbsp;&nbsp;&nbsp;&nbsp;respectcase SYMBOLS="0~9 a~z A~Z"<br/>&nbsp;&nbsp;&nbsp;&nbsp;MISSING=?<br/>&nbsp;&nbsp;&nbsp;&nbsp;GAP=-<br/>&nbsp;&nbsp;&nbsp;&nbsp;TRANSPOSE<br/>;<br/><br/>'
@@ -531,7 +555,7 @@ var DualFunctionService = {
       var from=apps[i].getAttribute("from");
       var to=apps[i].getAttribute("to");
       if (vartype=="main") label+="_"+from+"_"+to; else label+="_whole";
-      label=label.replace(/ /gi, "_").replace(/:/gi, "_").replace(/=/gi, "_").replace(/-/gi, "_");;
+      label=label.replace(/ /gi, "_").replace(/:/gi, "_").replace(/=/gi, "_").replace(/-/gi, "_").replace(/\(/gi, "_").replace(/\)/gi, "_").replace(/\./gi, "_");
       converted+="&nbsp;&nbsp;&nbsp;&nbsp;"+(i+1)+" "+label;
 //build the matrix now too
 //first deal with wits which have or do not have this verse
@@ -539,7 +563,8 @@ var DualFunctionService = {
         var matrixrow = new Array(wits.length)
         matrixrow.fill("?");
       }
-      else {
+      else {  //it's a lacuna. Add this to characters not to be 
+        lacunaechar.push(i+1);
         var matrixrow = new Array(wits.length)
         matrixrow.fill("0");
       }
@@ -575,7 +600,9 @@ var DualFunctionService = {
               var rdgwits=rdgs[j].getElementsByTagName("idno");
               var rdgindex=varnums[rdgs[j].getAttribute("varSeq")-1];  //looks after subreadings too
               //flatten subreadings...
-              converted+=" "+standardChar(rdgs[j].childNodes[0].nodeValue.replace(/ /gi,"_"));
+              if (rdgs[j].childNodes.length>0)  {
+              	converted+=" "+standardChar(rdgs[j].childNodes[0].nodeValue.replace(/ /gi,"_"));
+              }
               for (var k=0; k<rdgwits.length; k++) {
                 var thisWit=rdgwits[k].childNodes[0].nodeValue;
                 var indexWit=witsMap.get(thisWit);
@@ -599,6 +626,21 @@ var DualFunctionService = {
     }
     if (othertaxa.length>0) {
         converted+="TAXSET othertaxa="+othertaxa.join(" ")+";<br/>";
+    }
+    if (plus75taxa.length>0) {
+        converted+="TAXSET plus75taxa="+plus75taxa.join(" ")+";<br/>";
+    }
+    if (plus50taxa.length>0) {
+        converted+="TAXSET plus50taxa="+plus50taxa.join(" ")+";<br/>";
+    }
+     if (plus25taxa.length>0) {
+        converted+="TAXSET plus25taxa="+plus25taxa.join(" ")+";<br/>";
+    }
+   if (plus10taxa.length>0) {
+        converted+="TAXSET plus10taxa="+plus10taxa.join(" ")+";<br/>";
+    }
+   if (lacunaechar.length>0) {
+        converted+="CHARSET lacunaechar="+lacunaechar.join(" ")+";<br/>";
     }
     converted+="endblock;";
     return(converted);

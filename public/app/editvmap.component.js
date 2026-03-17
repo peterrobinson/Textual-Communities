@@ -33,6 +33,7 @@ var EditVmapComponent = ng.core.Component({
     this.chosen={name:"", left:"", top:""};
     this.addwit={name:"", left:50, top:50};
     this.success="";
+
 //    this.pdfjsLib = window['pdfjs-dist/build/pdf'];
 //	this.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
 	$( window ).resize(function() {
@@ -44,6 +45,7 @@ var EditVmapComponent = ng.core.Component({
   }],
   ngOnInit: function() {
   	this.pdf2=this.vMap.pdflabelled.src;
+  	var self=this;
     $('#manageModal').width($(window).width()-15);
     $('#manageModal').height($(window).height()-15);
     var pdf1=atob(this.vMap.pdfunlabelled.src);
@@ -59,23 +61,53 @@ var EditVmapComponent = ng.core.Component({
 			  canvasContext: context,
 			  viewport: viewport
 			};
+			//add drag-events for every wit here...
+/**/
 			page.render(renderContext);
-    	});
-    }); 
+    		for (var i=0; i<self.vMap.wits.length; i++) {
+				document.getElementById(self.vMap.wits[i].name).addEventListener("dragstart", (e) => {
+				  e.dataTransfer.setData("text/plain", e.target.id);
+				  setTimeout(() => e.target.style.opacity = "0.4", 0); // Optional: change style while dragging
+				});
+				document.getElementById(self.vMap.wits[i].name).addEventListener("dragend", (e) => {
+				  e.target.style.opacity = "1"; // Restore style
+				});	 
+			} 
+			const dropTarget=document.getElementById("div1");
+			dropTarget.addEventListener("dragover", (e) => {
+			  e.preventDefault(); // Prevent default to allow drop
+			});
+			dropTarget.addEventListener("drop", (e) => {
+			  e.preventDefault();
+			  const data = e.dataTransfer.getData("text/plain");
+			  const x = e.offsetX;
+			  const y = e.offsetY;
+			  var myWit=self.vMap.wits.filter(wit=>wit.name==data)[0];
+			  self.chosen.name=data;
+			  self.chosen.left=x;
+			  self.chosen.top=y;
+			  myWit.x=x;
+			  myWit.y=y;
+//			  alert("drop me! "+data+ " x "+x+" y "+y);
+//			  const data = e.dataTransfer.getData("text/plain");
+//			  e.target.appendChild(document.getElementById(data));
+			}); 
+	 	}); 
+	 });
   },
   submit: function() {
     var self = this;
     //update wits array
-    for (var i=0; i<this.vMap.wits.length; i++) {
+  /*  for (var i=0; i<this.vMap.wits.length; i++) {
     	var myEl=document.getElementById(this.vMap.wits[i].name);
     	this.vMap.wits[i].x=parseInt(myEl.style.left, 10);
     	this.vMap.wits[i].y=parseInt(myEl.style.top, 10);
-    }
+    } */
     //save this sucker!!
-    $.ajax({
-		url: config.BACKEND_URL+'saveVMap?community='+this.uiService.state.community.attrs.abbr+'&name='+this.vMap.name,
+     $.ajax({
+		url: config.BACKEND_URL+'saveVMap?community='+self.uiService.state.community.attrs.abbr+'&name='+self.vMap.name,
 		type: 'POST',
-		data:  JSON.stringify(this.vMap),
+		data:  JSON.stringify(self.vMap),
 		accepts: 'application/json',
 		contentType: 'application/json; charset=utf-8',
 		dataType: 'json'
@@ -83,6 +115,8 @@ var EditVmapComponent = ng.core.Component({
 		self.success="Variant Map "+self.vMap.name+" saved to database";
 	}).fail(function( jqXHR, textStatus, errorThrown) {
 		self.message="Error " + errorThrown ;
+	}).always(function(){
+		var boo=1;
 	});
   },
   closeModalAP: function() {
@@ -106,6 +140,5 @@ var EditVmapComponent = ng.core.Component({
    	this.addwit.top=50;
   }
 });
-
 
 module.exports = EditVmapComponent;

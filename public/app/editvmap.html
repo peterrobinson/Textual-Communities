@@ -14,11 +14,11 @@
 		 		<button type="button" class="btn btn-primary" (click)="addWitWits()">Save</button> 
 		 	</span>
 		 </p>
-		 <div id="div1" style="width: 612px; height: 792px; overflow: auto; transform: rotate(0deg);"> 
+		 <div id="div1" style="width: 612px; height: 792px; overflow: auto; transform: rotate(0deg);" class="droptarget"> 
 		 	<canvas id="canvas1"></canvas>
 			<ul style="list-style-type:none">
 				<li *ngFor="#place of vMap.wits" style="display:inline">
-					<div (click)="editPlace(place.name)" id="{{place.name}}" style="display: inline; position: absolute; z-index: 999; top:{{place.y}}px; left: {{place.x}}px">
+					<div (click)="editPlace(place.name)" id="{{place.name}}" style="display: inline; position: absolute; z-index: 999; top:{{place.y}}px; left: {{place.x}}px" draggable="true">
 						{{place.name}}
 					</div>
 					<div style="display: inline">&nbsp;</div><div style="display: inline">&nbsp;</div><div style="display: inline">&nbsp;</div><div style="display: inline">&nbsp;</div><div style="display: inline">&nbsp;</div>
@@ -36,7 +36,7 @@
 		 <p>&nbsp;</p>
 		 <div *ngIf="message.length>0" class="alert alert-danger" style="margin-bottom: 10px">
     		{{message}}
-		  </div>
+		  </div>	
 		  <div *ngIf="success.length>0" class="alert alert-success" style="margin-bottom: 10px">
 			{{success}}
 		  </div>
