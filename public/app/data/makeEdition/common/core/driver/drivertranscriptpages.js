@@ -5,6 +5,7 @@ const suffixes=["","-mod","-orig"]; //used to handle alternative app readings
 var hasMultiColumns=false;
 var isPopUpOrigSpelling=false;
 var isShowPopUps=true;
+const taleOrder=["GP", "KT", "L1", "MI", "L2", "RE", "L3", "CO", "L4","L5", "L6"];
 
 function initTranscript () {
 	if (!isstandalone) {
@@ -65,6 +66,8 @@ function createTranscript() { //currEntities read from starting script, allEntit
 	$("#MS").val(currMS);
 	$("#title").html(currMS+" "+currPage);
 	$("#shortTitle").html(shortTitle);
+	writeSStags();
+	initStaticSearch();
 	initializeSplitView();
 	getImageInf();
 	setupPageLinks();
@@ -108,6 +111,49 @@ function createTranscript() { //currEntities read from starting script, allEntit
 		callbackTranscript();
 	})
 }
+
+function writeSStags() { //stick info needed by ss search into metatags
+	if (currEntity=="") {
+		let myEntity="";
+		let myMs=currMS;
+		let myWitN=pageEntitiesMin.findIndex(ms=>ms.witness[0]==myMs);
+		let ssText='<meta name="docTitle" class="staticSearch_docTitle" content="'+myMs+' '+currPage+' (Blanks)" /><meta name="Witnesses" data-ssfiltersortkey="'+myWitN+'" class="staticSearch_desc" content="'+currMS+'" />';
+		$("head").append(ssText);
+	} else {
+		let myEntity=currEntity.slice(0, currEntity.indexOf(":"));
+		let myLine=currEntity.slice(currEntity.indexOf("=")+1);
+		let myMs=currMS;
+		let myAlias=aliases.filter(wit=>wit.topEntity==myEntity)[0].alias;
+		let myWitN=pageEntitiesMin.findIndex(ms=>ms.witness[0]==myMs);
+		if (myLine=="IRE" || myLine=="IRL") myLine="0";
+		let ssText='<meta name="docTitle" class="staticSearch_docTitle" content="'+myMs+' '+currPage+' ('+myEntity+')" /><meta name="Tales and Links" class="staticSearch_desc" data-ssfiltersortkey="'+taleOrder.indexOf(myEntity)+'" content="'+myEntity+'" /><meta name="Witnesses" data-ssfiltersortkey="'+myWitN+'" class="staticSearch_desc" content="'+currMS+'" />';
+		ssText+='<meta name="docSortKey" class="staticSearch_docSortKey" content="'+myLine+'"/>';
+		$("head").append(ssText);
+	}
+};
+
+//note this leaves the FieldSets vacant. Extract from the modified index.htm created by SS, place in common/GP/js/ssFieldsets.json (converting all \r and " into \\r \\"), then load into each transcript file to read at runtime
+function initStaticSearch() {
+	let ssText='\r			    <script src="../../../staticSearch/ssSearch.js"></script>\r\
+			    <script src="../../../staticSearch/ssInitialize.js"></script>\r\
+			    <script src="../../../staticSearch/ssHighlight.js"></script>\r\
+			    <link rel="stylesheet" href="../../../staticSearch/ssSearch.css" type="text/css" />\r\
+			    <noscript>This page requires JavaScript.</noscript>\r\
+			    <form accept-charset="UTF-8" id="ssForm" data-allowphrasal="yes" data-allowwildcards="yes" data-minwordlength="2" data-scrolltotextfragment="no" data-maxkwicstoshow="5" data-resultsperpage="5" onsubmit="return false;" data-versionstring="" data-ssfolder="../../../staticSearch" data-kwictruncatestring="..." data-resultslimit="2000">\r\
+			       <span class="ssQueryAndButton">\r\
+			           <input type="text" id="ssQuery" aria-label="Search"/>\r\
+			       <button id="ssDoSearch">Search</button></span>\r\
+			       <span class="clearButton">\r\
+			          <button id="ssClear">Clear</button></span>\r\
+			       <div class="ssDescFilters">\r\
+			       </div>\r\
+			       <span class="postFilterSearchBtn"><button id="ssDoSearch2">Search</button></span>\r\
+			    </form>\r\
+		<div id="ssSearching">Searching...</div>\r\
+		<div id="ssResults"></div>\r      ';
+	   $("#staticSearch").html(ssText);
+}
+
 
 function callbackTranscript () {
  	//only here if all tasks complete. Prepare for ulitmate display
@@ -785,6 +831,9 @@ function makeTranscriptInf (callback){
 function doWords() {
 	let lines=$("l");
 	for (let i=0; i<lines.length; i++) {
+		if (i==18) {
+			let boo=1;
+		}
 		let newArray=[], openElements=[];
 		let book=$($(lines[i])).parent("div").attr("n");
 		let lineId=$(lines[i]).attr("n");

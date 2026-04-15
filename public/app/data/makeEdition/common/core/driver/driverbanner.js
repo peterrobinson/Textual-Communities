@@ -66,6 +66,7 @@ function makeEntityMenus(theseEntities, i) {
 	}
 }
 
+
 //this is so simple! no more fiddling with sending stuff to a database
 function sendHTML(){
 	if (!hasVBase) $("#VBase").remove();

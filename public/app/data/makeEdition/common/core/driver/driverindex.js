@@ -24,11 +24,13 @@ function createIndex (){
 	$("#longTitle").html(newTitle);
 	$("#imageSplash").attr("src", splash);
 	$("#title").html(shortTitle);
+	$("#shortTitle").html(shortTitle);
 	$("#transcriptLink").attr("href", "javascript:getTranscriptFromVBase('"+currMS+"', '"+firstTranscript.slice(firstTranscript.indexOf("/")+1)+"', '" +firstEntity+"')");
 	$("#imageLink").attr("href", "html/transcripts/"+firstTranscript+".html");
 	let directory=firstEntity.slice(0, firstEntity.lastIndexOf(":"));
 	let cFile=firstEntity.slice(firstEntity.lastIndexOf(":")+1);
 	$("#collationLink").attr("href", "html/collationreg/"+directory+"/"+cFile+".html");
+	$("#compareLink").attr("href", "html/compare/"+firstEntity.split(":")[0]+"/"+firstEntity.split(":")[1]+".html");
 	$("#editorialCredit").html(editorialCredit);
 	sendHTML();
 }

@@ -303,7 +303,7 @@ router.get('/getApprovedCommentaries', function(req, res, next) {
 							}
 						});
 					} else {
-						callback(err, []);
+						callback(null, []);
 					}
 				}, function (err) {
 					cb(null, []);

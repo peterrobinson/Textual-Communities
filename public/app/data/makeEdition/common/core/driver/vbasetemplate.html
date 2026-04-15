@@ -1,3 +1,4 @@
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <html lang="en">
    <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -20,6 +21,9 @@
     <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/common.css" type="text/css">
     <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/banner.css" type="text/css">
     <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/transcript.css" type="text/css">
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/ssButton.css" type="text/css" />
+    <link rel="stylesheet" href="/app/data/makeEdition/staticSearch/ssSearch.css" type="text/css" />
+
         	 	   <!-- used by many editions. You can customize  -->
  	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_regular_macroman/stylesheet.css" type="text/css" charset="utf-8" />
   	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_bold_macroman/stylesheet.css" type="text/css" charset="utf-8" />
@@ -32,96 +36,89 @@
            <div id="page-head">
 				<div id="grp1" style="width: 100%;">
 				<div id="logos"><a href="http://www.inklesseditions.com">
-					<img src="../../../common/core/images/inklesslogo.png" height="33px" /></a>
+					<img src="/app/data/makeEdition/common/core/images/inklesslogo.png" height="33px" /></a>
 				</div>
-				<div id="title"><a style="color:white" href="../../../index.html" id="shortTitle">The Tales of the Reeve and Cook</a></div>
+				<div id="title"><a style="color:white" href="index.html" id="shortTitle">Replace by short title</a></div>
 				<div id="infoLinks">
-				  <span id="aboutLink"><a style="color:white; font-size:100%;" href="../../../html/editorial/menu/About.html"> About </a></span>
+				  <span id="aboutLink"><a style="color:white; font-size:100%;" href="html/editorial/menu/About.html"> About </a></span>
 				</div>
 				<div>
-				  <a href="../../../html/editorial/menu/Copyright.html">
-					<img src="../../../common/core/images/copyright.png" height="18px" />
+				  <a href="html/editorial/menu/Copyright.html">
+					<img src="/app/data/makeEdition/common/core/images/copyright.png" height="18px" />
 				  </a>
 				</div>
 				<div id="VBase">
-				  <a style="color:white; font-size:100%" href="../../../vBase.html">VBase</a>&nbsp;&nbsp;
+				  <a style="color:white; font-size:100%" href="vBase.html">VBase</a>&nbsp;&nbsp;
 				</div>
 				<div id="Search" class="outline" style="text-align:center">
-				  <div id="staticSearch">
-						<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssSearch-debug.js'></script>
-						<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssInitialize.js'></script>
-						<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssHighlight.js'></script>
-						<form xmlns='http://www.w3.org/1999/xhtml' accept-charset='UTF-8' id='ssForm'  
-							data-allowphrasal='yes' data-allowwildcards='yes' data-minwordlength='2' data-scrolltotextfragment='no' data-maxkwicstoshow='5' data-resultsperpage='5'  onsubmit='return false;' data-versionstring='' data-ssfolder='../../../staticSearch' data-kwictruncatestring='...' data-resultslimit='2000'>
-							<span class='ssQueryAndButton'>
-							   <input type='text' id='ssQuery' style='height: 21px' aria-label='Search'/>
-							   <button id='ssDoSearch' style='background-image: url("../../../common/core/images/searchicon.png")'/>Search
-							</span>
-						 </form>
-						<div xmlns='http://www.w3.org/1999/xhtml' id='ssSearching'></div>
-						<div xmlns='http://www.w3.org/1999/xhtml' id='ssResults'></div>
-				  </div>
+					<form xmlns="http://www.w3.org/1999/xhtml" accept-charset="UTF-8" onsubmit="fireSearch1(); return false;">
+						<span class="ssQueryAndButton">
+						<input type="text" style="height: 21px" id="fireQuery" aria-label="Search" />
+						<button id="fireSearchButton" type="submit" style="background-image: url('common/core/images/searchicon.png')">Search</button></span>
+					</form>
+				</div>
 			</div>
+			<div id="grp2"> <!-- contents of editorial and entity menus. Editorial menu ex bootstrap first -->
+       			<div id="editorialMenu"></div>
+      			<div id="entityMenu"></div>
+     		</div>
 		</div>
-       	<div id="grp2"> <!-- contents of editorial and entity menus. Editorial menu ex bootstrap first -->
-       		<div id="editorialMenu"></div>
-      		<div id="entityMenu"></div>
-     	</div>
-           </div>
-            <div id="rTable" style="display:none"> <!-- needed to display search results-->
-				<div id="panel-left"> <!-- image goes here -->
-				</div>
-				<div id="panel-right">
-				</div>  <!-- end panelRight -->
-			</div>  <!-- end rTable -->
-			 <div id="searchVBase" style="display:none">
-				<div id="searchVBContainer">
-					<div id="searchVBheader">
-						<div id="aboutVB"><span><a id="vbTranscriptLink" href="dummy">Transcript</a></span><span class="showTip infoVB msInf">About VBase</span><span class="showTip infoVM msInf">About variant maps</span><span><a id="vbCollationLink" href="dummy">Collation</a></span><span><a id="vbCompareLink" href="dummy">Compare</a></span></div>
-						<div id="VBerror"></div>
-						<div id="VBFrameContainer">
-							<div id="searchVBFrame">
-								<div id="conditions"></div>
-							</div>
+        <div id="rTable" style="display:none"> <!-- needed to display search results-->
+			<div id="panel-left"> <!-- image goes here -->
+			</div>
+			<div id="panel-right">
+			</div>  <!-- end panelRight -->
+		</div>  <!-- end rTable -->
+		 <div id="searchVBase" style="display:none">
+			<div id="searchVBContainer">
+				<div id="searchVBheader">
+					<div id="aboutVB">
+						<span><a id="vbTranscriptLink" href="dummy">Transcript</a></span>
+						<span class="showTip infoVB msInf">About VBase</span>
+						<span><a id="vbCollationLink" href="dummy">Collation</a></span>
+						<span><a id="vbCompareLink" href="javascript:VBtoCompare()">Compare</a></span>
+					</div>
+					<div id="VBerror"></div>
+					<div id="VBFrameContainer">
+						<div id="searchVBFrame">
+							<div id="conditions"> </div>
 						</div>
-						<div id="presetVBs"></div>
-						<div id="VBChoices"><span id="witList"><a href="javascript:showWitList()">Show witnesses</a></span><span id="VBchooseSpan"><input id="VBchoose" onclick="searchVariantSite(null)" type="checkbox" />Find variant sites</span><span style="margin-left: 10px" class="showTip infoVBS msInf">About variant sites search</span>&nbsp;&nbsp;&nbsp;</div>
-						<div id="doSearchVB"><button id="doSearchVButton" onclick="doSearch()">Search</button><span id="VBResultsHead"></span></div>
-						<hr style="border: 1px solid lightgrey"></hr>
 					</div>
-					<div id="searchVBResults"></div>
+					<div id="presetVBs"></div>
+					<div id="VBChoices">
+						<span id="witList"><a href="javascript:showWitList()">Show witnesses</a></span>
+						<span id="VBchooseSpan"><input id="VBchoose" onclick="searchVariantSite(null)" type="checkbox" />Find variant sites</span>
+						<span style="margin-left: 10px" class="showTip infoVBS msInf">About variant sites search</span>&nbsp;&nbsp;&nbsp;
+					</div>
+					<div id="doSearchVB">
+						<button id="doSearchVButton" onclick="doSearch()">Search</button><span id="VBResultsHead"></span>
+					</div>
+					<hr style="border: 1px solid lightgrey" /> 
 				</div>
-			  </div>
-	       </div> <!-- end whole -->
-	       <div id="Ancillaries" style="display:none">
-	       		<div id="popUps">
-	       			<div id="infoVM">
-						<p>At many places in the Collation and VBase views, you will see this symbol to the right of a line:</p>
-						<img src="common/core/images/VMap.png" class="VBVmap" style="position:relative; left:180px"/>
-						<p>If you hover over this image (computer) or press on it (mobile device) you will see a diagram like this:</p>
-						<img src="common/core/images/VMapSample.png" width="270px" style="position:relative; left:75px"/>
-						<p>This is what we call a "variant map." These are hypotheses of relationships among the manuscripts, created by phylogenetic software developed by evolutionary biologists to explore relationships among species. For further explanation of why and how we use this software, see  <a href="Editorial Matter.pdf#VI. The Phylogenetic Analysis" target="_blank">Editorial Matter (PDF) VI. The Phylogenetic Analysis.</a></p>
-						<p>In this variant map of the readings for the first words of <hi rend="i">Inferno</hi> 2 103 we can see that the pair <span style="color:red">Triv Mart-c2</span> agree in one reading ("Beatrice disse"), the pair <span style="color:blue">Ash Ham</span> together with <span style="color:blue">Rb</span> agree in another reading ("Disse Beatrice"; while <span style="color:green">LauSC</span> agrees with <span style="color:green">Urb</span> in a third reading ("E disse Beatrice"). Note that in the VBase and Collation views the variants and manuscripts change color when you invoke the variant map for that variant: thus <span style="color:red">Beatrice disse</span>, <span style="color:blue">disse Beatrice</span> and <span style="color:green">E disse Beatrice</span>.</p>
-					</div>
-					<div id="infoVB">
-						<p>You can use VBase for complex searches on variants, according to their distribution among the manuscripts. For example, you can find  variants likely to have been introduced into the common ancestor of Mart and Triv with this search:</p>
-						<img src="common/core/images/VBaseMartTriv.png" height="100px"/>
-						<ul>
-							<li>The first line specifies that the variant must be in Triv.</li>
-							<li>The second line specifies that the variant must be in "&gt;0" of Mart and Mart-c2: that is either present in the Aldine edition and not altered by Luca Martini ('Mart'), or introduced by Luca into the text ('Mart-c2'), or in both Mart and Mart-c2.</li>
-							<li>The third line specifies that the variant must not be in either Ash or Ham: that is, not likely to have been introduced by a putative common ancestor of Mart/Triv and Ash/Ham.</li>
-							<li>The fourth line specifies that the variant can not be in more than four manuscripts (including Mart and Triv). If it is in so many, it is likely to have been present in the ancestor to the whole tradition.</li>
-						</ul>
-					</div>
-					<div id="infoVBS">
-						<p>Variant site search is a new VBase tool, introduced in this second edition.</p>
-						<p>Sometimes you want to find places where one set of manuscripts has one reading and a second set a different reading. Consider this search:</p>
-						<img src="common/core/images/VBaseAshHamMartTriv.png" height="50px"/>
-						<p>The first line specifies that we are looking for places where there are variants ("variant sites") where Ash and Ham agree on a reading.</p>
-						<p>The second line specifies that we are looking for variant sites where, as well as Ash and Ham agreeing in one reading, Mart/Mart-c2 and Triv agree in a separate reading.</p>
-						<p>(Notice how the search result changes when you select and unselect "Find variant sites.")</p>
-					</div>
-	       		</div>
-	       </div>
-      </body>
-   </html>
+				<div id="searchVBResults"></div>
+			</div>
+		  </div>
+	   </div> <!-- end whole -->
+	   <div id="Ancillaries" style="display:none">
+			<div id="popUps"> 
+				<div id="infoVB">
+					<p>You can use VBase for complex searches on variants, according to their distribution among the manuscripts. Here is the search used to find the most important group in our analysis of the <i>Tales</i>, the <b>o</b> group:</p>
+					<img src="/app/data/makeEdition/common/core/images/VBaseOGroup.png" height="100px"/>
+					<ul>
+						<li>The first line specifies that the variant must be in at least 2 ("&gt;1"") of the core trio Ch El Hg.</li>
+						<li>The second line specifies that the variant must be in "&lt;15" of "\all" manuscripts. If it is in more than 14 manuscripts then it is an original reading found widely across the tradition. But if it is in fewer than 15 manuscripts, it may be an original reading but likely to have been miscopied. We have found that many readings likely to be original are present only in around seven manuscripts, with Ch El Hg at their core. This search is designed to identify those readings. </li>
+						<li>The buttons below the search load and perform pre-set searches, for the <b>o a b cd</b> groups. If you want to save a search for later, copy the address bar after you have carried out the search.  For example, "<a href="vBase.html?name=null&vsite=false&nconds=3&in0=true&spec0=>1&wits0=Hg%20Ch%20El&in1=true&spec1=<15&wits1=\all&in2=true&spec2=&wits2=Gg&in3=undefined&spec3=undefined&wits3=undefined">vBase.html?name=null&vsite=false&nconds=3&in0=true&spec0=>1&wits0=Hg%20Ch%20El&in1=true&spec1=<15&wits1=\all&in2=true&spec2=&wits2=Gg&in3=undefined&spec3=undefined&wits3=undefined</a>" will find you all the <b>o</b> variants present in Gg (you likely will need to paste that address after the "/GP/" path in your address bar).
+					</ul>
+				</div>
+				<div id="infoVBS">
+					<p>Variant site search is a new VBase tool, introduced in this second edition.</p>
+					<p>Sometimes you want to find places where one set of manuscripts has one reading and a second set a different reading. Consider this search:</p>
+					<img src="/app/data/makeEdition/common/core/images/VBaseAshHamMartTriv.png" height="50px"/>
+					<p>The first line specifies that we are looking for places where there are variants ("variant sites") where Ash and Ham agree on a reading.</p>
+					<p>The second line specifies that we are looking for variant sites where, as well as Ash and Ham agreeing in one reading, Mart/Mart-c2 and Triv agree in a separate reading.</p>
+					<p>(Notice how the search result changes when you select and unselect "Find variant sites.")</p>
+				</div>
+			</div>
+	   </div>
+    </body>
+</html>

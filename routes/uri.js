@@ -822,8 +822,8 @@ function processVmap (bits, req, res, community) {
 		  }
 		}); 
 	} else {
-		VMap.findOne({community: community, name: bits[1] }).then (function(err, vmap) {
-			if (err || !vmap) res.json({error: ""});
+		VMap.findOne({community: community, name: bits[1] }).then (function(vmap) {
+			if (!vmap) res.json({error: ""});
 			else res.json(vmap);
 		});
 	}

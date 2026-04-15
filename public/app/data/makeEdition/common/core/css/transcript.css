@@ -393,6 +393,10 @@ p.variant {
 	margin-top: 0px;
 }
 
+p.variant:last-child {
+	display: none;
+}
+
 a.cla {position: relative; top: -5px}
 img.cli {position: relative; top: 6px}
 

@@ -216,5 +216,9 @@ function choosePUsp(element) {
 function transcriptToCompare () {
 	let nowEntity=$("#menu0").val()+":"+$("#line").attr("data-key");
 	let indexEntity=compareIndex.filter(myentity=>myentity.entity==nowEntity)[0].index;
-	getCompareFromCollation (indexEntity, nowEntity, currMS);
+	window.location.href="../../../html/compare/"+indexEntity.split(":")[0]+"/"+indexEntity.split(":")[1]+".html";
+}
+
+function showComparison () {
+	transcriptToCompare();
 }

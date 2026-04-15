@@ -67,7 +67,7 @@ function createEditorial (){
 			}
 			let lastKey="";
 			lastKey=item[i].key.slice(item[i].key.lastIndexOf(":")+1);
-			let thisMS=getDefaultMs(item[i].key);
+			let thisMS="Edition";
 			let compEntity="";
 			if (typeof compareIndex!="undefined") {
 				compEntity=compareIndex.filter(myEntity=>myEntity.entity==item[i].key)[0].index;
@@ -79,6 +79,7 @@ function createEditorial (){
 			content+="<a href='javascript:getCompareFromCollation(\""+compEntity+"\",\""+item[i].key+"\",\""+thisMS+"\")'>Compare</a>";
 			content+="<a  href='../../../vBase.html'>VBase</a>";
 			content+="</div>\n";
+			console.log("driving editorial process");
 			content+="<div class='edBaseLineCtr'><div class='edBaseMS'>"+thisMS+"</div><div data-lineID='"+item[i].key+"-"+thisMS+"' class='edBaseLine'></div></div>";
 			content+="<div class='PUEditorial' id='PUEdColl-"+item[i].key+"-"+thisMS+"'></div>";
 			for (let k=0; k<item[i].text.length; k++) {
@@ -104,17 +105,23 @@ function createEditorial (){
 		resizeRTable();
 	});
 	resizeRTable();
-	makePopUpCollations(function(){ //async, of course
-		$(".popAppTitle").remove();
-		sendHTML();
-	});
+	let commentaries=$(".edComm");
+	if (commentaries.length>0) {
+		makePopUpCollations(function(){ //async, of course
+			$(".popAppTitle").remove();
+			$(".edBaseLine w").removeClass("showTip");
+			sendHTML();
+		});
+	} else {
+			sendHTML();
+	}
 }
 
 function makePopUpCollations(callback) { //go get the line and the collations
 	let commentaries=$(".edComm");
 	async.mapSeries(commentaries, function(commentary, cblines){ 
 		let entity=$(commentary).attr("data-entity");
-		let thisMS=getDefaultMs(entity);
+		let thisMS="Edition";
 		//make the collation line ...
 		//get the collation first, then make the line from it
 		console.log("Making collation for "+entity);
@@ -125,7 +132,7 @@ function makePopUpCollations(callback) { //go get the line and the collations
 				mss.push(thisMS);
 			   	let wits=identifyAppWits(collation, mss)
 			   	if (wits.noApps.length>0) {
-					createCollationLine (collation, wits.noApps[0], 0, entity, "editorial");
+					createCollationLine (collation, wits.noApps, 0, entity, "editorial");
 					let line=$("div[data-lineID='"+entity+"-"+thisMS+"']")[0];
 					createWordAppLine(collation,line, entity, json, thisMS, cblines);
 					let puID="#PUColl-"+entity+"-"+thisMS+"_1";

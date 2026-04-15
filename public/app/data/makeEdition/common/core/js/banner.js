@@ -10,6 +10,43 @@ document.onclick = function(e){
 	}
 };
 
+function fireSearch1() {
+//	window.location.href = window.location.href+"?q="+$("#fireQuery").val();
+	let entity=getEntityFromMenu()
+	let ms=$("#MS").val();
+	let page=getMSPage(entity, ms);
+	window.location.href = "html/transcripts/"+ms+"/"+page+".html?q="+$("#fireQuery").val();
+}
+
+
+function fireSearch2() {
+//	window.location.href = window.location.href+"?q="+$("#fireQuery").val();
+	let entity=getEntityFromMenu()
+	let ms=$("#MS").val();
+	let page=getMSPage(entity, ms);
+	window.location.href = "../../../html/transcripts/"+ms+"/"+page+".html?q="+$("#fireQuery").val();
+}
+
+function fireSearch3() {
+	let entity=getEntityFromMenu()
+	let ms=$("#MS").val();
+	let page=getMSPage(entity, ms);
+	window.location.href = "../../../html/transcripts/"+ms+"/"+page+".html?q="+$("#fireQuery").val();
+}
+
+function getCompareFromCollation () { //just redirect
+	collationToCompare();
+}
+
+function VBtoCompare  (){ 
+	window.location.href = "html/compare/GP/line=1.html";
+}
+
+function collationToCompare() {
+	let nowEntity=$("#menu0").val()+":"+$("#line").attr("data-key");
+	let indexEntity=compareIndex.filter(myentity=>myentity.entity==nowEntity)[0].index;
+	window.location.href="../../../html/compare/"+indexEntity.split(":")[0]+"/"+indexEntity.split(":")[1]+".html";
+}
 
 function initializeEntityChoice (entity, MS) { //given an entity and a MS, set up the menus for it
 	let thisMS=MS;
@@ -292,7 +329,9 @@ function getNextEntities (entities, val, nextval) { //cycle through recursive en
 
 function getMSLine(entity, ms) {
 	let page=getMSPage(entity, ms);
-	getTranscriptFromCollation (ms, page, entity);
+	if (page!="") {
+		getTranscriptFromCollation (ms, page, entity);
+	}
 }
 
 function getEntityFromMenu() {
@@ -312,8 +351,12 @@ function getMSPage(entity, ms) {
 		nextEntities=nextEntities.filter(entity=>entity.entity==parts[i])[0].subentities;
 	}
 	let witnesses=nextEntities.filter(entity=>entity.entity==parts[i])[0].witnesses;
-	let thisPage=witnesses.filter(witness=>witness.name==ms)[0].pages[0];
-	return (thisPage);
+	if (witnesses.filter(witness=>witness.name==ms).length==0 ){
+		return (""); //this entity not in this manuscript
+	} else {
+		let thisPage=witnesses.filter(witness=>witness.name==ms)[0].pages[0];
+		return (thisPage);
+	}
 }
 
 function getTranscriptFromVBase (ms, page, entity) {
@@ -323,6 +366,7 @@ function getTranscriptFromVBase (ms, page, entity) {
 
 function moveBase(source) { //just puts the Base at the beginning of every
 	let destiny=[];
+	return(source);
 	if (source.includes("Base")) {
 		destiny.push("Base");
 		for (let i=0; i<source.length; i++) {

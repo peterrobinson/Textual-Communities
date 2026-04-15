@@ -12,6 +12,7 @@ function initCollation() {
 }
 
 function createCollation() {
+	$("#shortTitle").html(shortTitle);
 	if (!regState) {
 		$("#spellingBox").prop('checked', true);
 		$("#spellingSpan").show();
@@ -23,9 +24,6 @@ function createCollation() {
 	$("#rTable").show();
 	$("#panel-right").show();
 	$("#collationFrame").show();
-	if (!ssSearch) {
-		$("#staticSearch").remove();
-	}
 	if (!hasVBase) {
 		$("#VBase").remove();
 		$("#VBaseLink").remove();
@@ -86,21 +84,19 @@ function setUpVMap(callback) {
 		callback(null, null);
 	} else {
 		//note: will need to deal with different stemmas for different parts of a work. Done in stemmatics.js
-		$.get(TCurl+"/uri/urn:det:tc:usask:"+VMap.community+"/document="+VMap.document+":folio="+VMap.page+"?type=IIIF&format=url", function(url) {
-			if (url.length) {
-				let conscript='\r<script type="text/javascript">\r\tconst iiifURL="'+url[0].url+'";</script>';
-				$( "head" ).append(conscript);
-				$.get(TCurl+"/uri/urn:det:tc:usask:"+community+"/vmap="+VMap.document, function (vMap) {
-					let conscript2='\r<script type="text/javascript">\r\tconst vWitss='+JSON.stringify(vMap.wits)+"; </script>";
-					$( "head" ).append(conscript2);
-					callback(null, null);
-				});
-
-			} else {
-				console.log="No stemma found for "+VMap.document+" "+VMap.page;
-				$( "head" ).append('\r<script type="text/javascript">\r\tconst iiifURL=null; </script>');
-				callback(null, null);
-			}
+		//we now install the image in the iiif folder 
+		
+/*		$.get(TCurl+"/uri/urn:det:tc:usask:"+VMap.community+"/document="+VMap.document+":folio="+VMap.page+"?type=IIIF&format=url", function(url) {
+			if (url.length) { */
+		let conscript='\r<script type="text/javascript">\r\tconst iiifURL="../../../iiifimages/'+VMap.document+'/Stemma/info.json";</script>';
+		$( "head" ).append(conscript);
+//		$.post(TCurl+'/getVMap?community='+VMap.community+'&name='+VMap.document, function(res) {
+		$.get(TCurl+"/uri/urn:det:tc:usask:"+VMap.community+"/vmap="+VMap.document, function (vMap) {
+			let conscript2='\r<script type="text/javascript">\r\tconst vWitss='+JSON.stringify(vMap.wits)+"; </script>";
+			$( "head" ).append(conscript2);
+			callback(null, null);
+		});
+	} 
 	/*		$.get(url[0].url, function(source) {
 				source.overlays=[];
 				$.get(TCurl+"/uri/urn:det:tc:usask:"+community+"/vmap="+thisTale, function (vMap) {
@@ -109,8 +105,7 @@ function setUpVMap(callback) {
 					callback(null, null);
 				});
 			}); */
-		});
-	} 
+ 
 }
 
 function populateVMaps(source) {

@@ -1,8 +1,7 @@
 function initCollation () {
-	$("#page-head").load(universalBannerLocation, function (){
-		if (ssSearch) {
-				$("#staticSearch").html("<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssSearch.js'></script>\n<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssInitialize.js'>\n</script><script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssHighlight.js'></script>\n<form xmlns='http://www.w3.org/1999/xhtml' accept-charset='UTF-8' id='ssForm'  data-allowphrasal='yes' data-allowwildcards='yes' data-minwordlength='2'  data-scrolltotextfragment='no' data-maxkwicstoshow='5' data-resultsperpage='5'  onsubmit='return false;' data-versionstring='' data-ssfolder='../../../staticSearch' data-kwictruncatestring='...' data-resultslimit='2000'><span class='ssQueryAndButton'><input type='text' id='ssQuery' style='height: 26px' aria-label='Search'/><button id='ssDoSearch' style='background-image: url(\"../../../common/core/images/searchicon.png\")');>Search</button></span></form>\n<div xmlns='http://www.w3.org/1999/xhtml' id='ssSearching'></div>")
-			}
+	$.get(universalBannerLocation, function (data, status){
+		$("#editorialMenu").html($(data).find("#editorialMenu").html());
+		$("#entityMenu").html($(data).find("#entityMenu").html());		
 		$("#entityMenu").html(initializeEntityChoice(currEntity));
 		$("#MS").val(currMS);
 		if (hasVMap) {
@@ -20,16 +19,19 @@ function openStemma() {
 	if (iiifURL) {
 		viewer = OpenSeadragon({
 			id: "panel-left",
-			maxZoomPixelRatio: 1,  //0.5 for stemmata
+			maxZoomPixelRatio: 4,  //0.5 for stemmata
 			minZoomImageRatio: 0.7,
 			homeFillsViewer: true,
 			prefixUrl: "https://openseadragon.github.io/openseadragon/images/"
 		});	
 		$.get(iiifURL, function(source) {
 			source.overlays=[];
+			let scale=1;
+			let addX=10;
+			let addY=5;
 			for (let i=0; i<vWitss.length; i++) {
 				vMapMss.push("<span class='vMapMs' id='VMap-"+vWitss[i].name+"'>"+vWitss[i].name+"</span>")
-				source.overlays.push({id: "VMap-"+vWitss[i].name, px:(vWitss[i].x*2.85), py:(vWitss[i].y*2.85), placement:"CENTER" })
+				source.overlays.push({id: "VMap-"+vWitss[i].name, px:(vWitss[i].x*scale+addX), py:(vWitss[i].y*scale+addY), placement:"CENTER" })
 			}
 			$("#VMapIDs").html(vMapMss.join());
 			if (viewer) viewer.open([source]);
@@ -69,7 +71,7 @@ function setVMapColors(appno, id) {
 	for (let i=0; i<outMss.length; i++) {
 		$("#VMap-"+outMss[i]).html("["+outMss[i]+"]");
 		$("#VMap-"+outMss[i]).css("color","black");
-		$("#VMap-"+outMss[i]).css("font-size","50%");
+		$("#VMap-"+outMss[i]).css("font-size","80%");
 		$("#VMap-"+outMss[i]).show();
 	}
 }

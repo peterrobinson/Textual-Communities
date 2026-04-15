@@ -661,6 +661,12 @@ function loadBaseFiles(zip, self, callback) {
 			cb(null, []);
 		})
 	},
+	 function(arguments, cb) {
+		self.restService.http.get('/app/data/makeEdition/common/core/js/compareJs.js').subscribe(function(myfile) {
+			zip.file('edition/common/core/js/compareJs.js',myfile._body);
+			cb(null, []);
+		})
+	},
 /*	function(arguments, cb) {
 		self.restService.http.get('/app/data/makeEdition/common/core/js/transcript.js').subscribe(function(myfile) {
 			zip.file('edition/common/core/js/transcript.js',myfile._body);
@@ -676,6 +682,12 @@ function loadBaseFiles(zip, self, callback) {
 	function(arguments, cb) {
 		self.restService.http.get('/app/data/makeEdition/common/core/js/banner.js').subscribe(function(myfile) {
 			zip.file('edition/common/core/js/banner.js',myfile._body);
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get('/app/data/makeEdition/common/core/js/collationutils.js').subscribe(function(myfile) {
+			zip.file('edition/common/core/js/collationutils.js',myfile._body);
 			cb(null, []);
 		})
 	},
@@ -782,6 +794,18 @@ function loadBaseFiles(zip, self, callback) {
 		})
 	},
 	function(arguments, cb) {
+		self.restService.http.get('/app/data/makeEdition/common/core/css/ssButton.css').subscribe(function(myfile) {
+			zip.file('edition/common/core/css/ssButton.css',myfile._body);
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get('/app/data/makeEdition/common/core/css/titlepage.css').subscribe(function(myfile) {
+			zip.file('edition/common/core/css/titlepage.css',myfile._body);
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {  
 		zip.file('edition/common/core/images/close.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/close.png', cb), {binary:true});
 	},
 	function(arguments, cb) {
@@ -820,9 +844,9 @@ function loadBaseFiles(zip, self, callback) {
 	function(arguments, cb) {
 		zip.file('edition/common/core/images/text.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/text.png', cb), {binary:true});
 	},
-	function(arguments, cb) {
+/*	function(arguments, cb) {
 		zip.file("edition/common/core/js/aliases.js", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/js/aliases.js", cb), {binary:true});
-	},
+	}, */
 	function(arguments, cb) {
 		zip.file("edition/common/core/js/indexJs.js", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/js/indexJs.js", cb), {binary:true});
 	}
@@ -994,11 +1018,11 @@ function makeVBase(self, zip, callback) {
     if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (self.config.standalone && !self.config.makeVBase) {
    		return(callback(null));
-   } else {
+   } else { 
    		$("#MEProgress").html("Creating VBase functionality");
 		$.get(self.config.vBaseTemplate, function(myfile){
 			let srcdoc=myfile;
-			let mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"ssSearch", value: self.config.ssSearch, isobject: true}, {key:"firstTranscript", value: self.config.firstTranscript, isobject:false}, {key:"currEntity", value: self.config.firstEntity, isobject:false}, {key: "VBaseJson", value: self.config.vBaseJson, isobject:false}, {key:"currMS", value: self.config.currMS, isobject:false}], [self.config.vBaseDriverJs]); 
+			let mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"ssSearch", value: self.config.ssSearch, isobject: true}, {key:"firstTranscript", value: self.config.firstTranscript, isobject:false}, {key:"currEntity", value: self.config.firstEntity, isobject:false}, {key: "VBaseJson", value: self.config.vBaseJson, isobject:false}, {key:"currMS", value: self.config.currMS, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false} ], [self.config.vBaseDriverJs]); 
 			$("#MEIframe").attr("srcdoc", mydata); 
 			window.addEventListener("message", function (event){ 
 				if (typeof event.data === "string") {
@@ -1046,9 +1070,9 @@ function makeCollation(self, zip, callback) {
 				//but might not be in this one...
 				currMS=resetCurrMS(currMS, currEntity, self.edition.entityPages);
 				let prevCollation="", nextCollation="";
-				let thisIndex=origEntities.indexOf(currEntity);
-				if (thisIndex>0) prevCollation=origEntities[index-1]; //so we go all the way start to end
-				if (thisIndex<origEntities.length-1) nextCollation=origEntities[index+1];
+				let thisIndex=entitiesArray.indexOf(currEntity);
+				if (thisIndex>0) prevCollation=entitiesArray[thisIndex-1]; //so we go all the way start to end
+				if (thisIndex<entitiesArray.length-1) nextCollation=entitiesArray[thisIndex+1];
 				index++;	
 				let ssSearch=self.config.ssSearch;
 				let hasVBase=self.config.hasVBase;
@@ -1103,7 +1127,7 @@ function doCollation (self, zip, srcdoc, regState, wordState, ssSearch, hasVMap,
 	}
 	let mydata="";
 	if (self.config.standalone) {
-		mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:true, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"hasVMap", value:hasVMap, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"collation", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCollation", value: prevCollation, isobject:false}, {key:"nextCollation", value: nextCollation, isobject:false}, {key:"VMap", value:JSON.stringify(VMap), isobject:true},{key:"regState", value: regState, isobject:true},{key:"wordState", value: wordState, isobject:true}], [self.config.collationDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile]); 
+		mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"shortTitle", value:self.config.shortTitle, isobject: false}, {key:"isstandalone", value:true, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"hasVMap", value:hasVMap, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"collation", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCollation", value: prevCollation, isobject:false}, {key:"nextCollation", value: nextCollation, isobject:false}, {key:"VMap", value:JSON.stringify(VMap), isobject:true},{key:"regState", value: regState, isobject:true},{key:"wordState", value: wordState, isobject:true}], [self.config.collationDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile]); 
 	} else {
 		let banner = clean(self.edition.universalbanner);
 		mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:false, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"hasVMap", value:hasVMap, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"collation", isobject:false}, {key:"universalBanner", value: banner, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCollation", value: prevCollation, isobject:false}, {key:"nextCollation", value: nextCollation, isobject:false}, {key:"VMap", value:JSON.stringif(VMap), isobject:true},{key:"regState", value: regState, isobject:true},{key:"wordState", value: wordState, isobject:true} ], [self.config.collationDriverJs, self.config.collutilsJs,  self.config.entityPagesFile, self.config.aliasesFile]);
@@ -1876,7 +1900,7 @@ function makeHTMLPages(self, zip, documents, pageEntities, callback) {
 					let ssSearch=true;
 					if (typeof self.config.ssSearch=="undefined") ssSearch=false;
 					if (self.config.standalone) {
-						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:true, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false}, {key: "view", value:"transcript", isobject:false}, {key: "TCurl", value: self.config.TCUrl, isobject:false}, {key: "TCimages", value: self.config.TCimagesUrl, isobject:false}, {key: "currMS", value: doc.name, isobject:false},{key: "currPage", value: tpage, isobject:false}, {key: "imagesCommunity", value:self.config.imagesCommunity, isobject:false}, {key: "TCcommunity", value:self.config.TCCommunity, isobject:false}, {key: "currEntity", value:myEntity, isobject:false}, {key: "currEntities", value:JSON.stringify(self.config.entities), isobject:true}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.pagesDriverJs, self.config.collutilsJs, self.config.witnessInfFile, self.config.pageEntitiesMinFile, self.config.entityPagesFile, self.config.aliasesFile]);
+						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:true, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false}, {key: "view", value:"transcript", isobject:false}, {key: "TCurl", value: self.config.TCUrl, isobject:false}, {key: "TCimages", value: self.config.TCimagesUrl, isobject:false}, {key: "currMS", value: doc.name, isobject:false},{key: "currPage", value: tpage, isobject:false}, {key: "imagesCommunity", value:self.config.imagesCommunity, isobject:false}, {key: "TCcommunity", value:self.config.TCCommunity, isobject:false}, {key: "currEntity", value:myEntity, isobject:false}, {key: "currEntities", value:JSON.stringify(self.config.entities), isobject:true}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.pagesDriverJs, self.config.collutilsJs, self.config.witnessInfFile, self.config.pageEntitiesMinFile, self.config.entityPagesFile, self.config.aliasesFile,self.config.indexCompareFile]);
 					} else {
 						let banner= clean(self.edition.universalbanner);
 						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:false, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"item", value:JSON.stringify(thisEditorial), isobject: true},{key: "view", value:"editorial", isobject:false}, {key:"universalBanner", value: banner, isobject:false}], [self.config.editorialDriverJs, self.config.entityPagesFile, self.config.aliasesFile]);
@@ -2074,7 +2098,7 @@ function makeCompare (self, zip, entities, callback) {
 							for (let i=index; i<index+self.config.makeCompareElements && i<entitiesArray.length; i++) {
 								currEntities.push(entitiesArray[i]);
 							}
-							mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:true, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"TCcommunity", value:self.config.TCCommunity, isobject: false}, {key:"imagesCommunity", value:self.config.imagesCommunity, isobject: false},  {key:"currPage", value:self.config.currPage, isobject: false}, {key:"TCimagesUrl", value:self.config.TCimagesUrl, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"compare", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCompare", value: prevCompare, isobject:false}, {key:"nextCompare", value: nextCompare, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}], [self.config.compareDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.entityPagesFile, self.config.aliasesFile, self.config.pageEntitiesMinFile]); 
+							mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:true, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"TCcommunity", value:self.config.TCCommunity, isobject: false}, {key:"imagesCommunity", value:self.config.imagesCommunity, isobject: false},  {key:"currPage", value:self.config.currPage, isobject: false}, {key:"TCimagesUrl", value:self.config.TCimagesUrl, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"compare", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCompare", value: prevCompare, isobject:false}, {key:"nextCompare", value: nextCompare, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.compareDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.entityPagesFile, self.config.aliasesFile, self.config.pageEntitiesMinFile,self.config.indexCompareFile]); 
 						} else {
 							let banner = clean(self.edition.universalbanner);
 							mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:false, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"compare", isobject:false}, {key:"universalBanner", value: banner, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCompare", value: prevCompare, isobject:false}, {key:"nextCompare", value: nextCompare, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}], [self.config.collationDriverJs, self.config.collutilsJs,  self.config.entityPagesFile, self.config.aliasesFile]);

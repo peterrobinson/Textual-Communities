@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/common.css" type="text/css">
     <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/transcript.css" type="text/css">
     <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/banner.css" type="text/css">
+    <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/ssButton.css" type="text/css" />
+    <link rel="stylesheet" href="/app/data/makeEdition/staticSearch/ssSearch.css" type="text/css" />
 
         	 	   <!-- used by many editions. You can customize xxx  -->
  	 <link rel="stylesheet" href="/app/data/makeEdition/common/core/css/junicode_regular_macroman/stylesheet.css" type="text/css" charset="utf-8" />
@@ -48,40 +50,32 @@
 <body onload="initCollation()">
   <div id="whole">
    <div id="page-head">
-   <div id="grp1" style="width: 100%;">
+  	 <div id="grp1" style="width: 100%;">
 			<div id="logos"><a href="http://www.inklesseditions.com">
 				<img src="../../../common/core/images/inklesslogo.png" height="33px" /></a>
 			</div>
-			<div id="title"><a style="color:white" href="../../../index.html" id="shortTitle">The Tales of the Reeve and Cook</a></div>
-			<!-- div id="infoLinks">
+			<div id="title"><a style="color:white" href="../../../index.html" id="shortTitle">Dummy</a></div>
+			<div id="infoLinks">
 			  <span id="aboutLink"><a style="color:white; font-size:100%;" href="../../../html/editorial/menu/About.html"> About </a></span>
-			</div-->
+			</div>
 			<div>
 			  <a href="../../../html/editorial/menu/Copyright.html">
 				<img src="../../../common/core/images/copyright.png" height="18px" />
 			  </a>
 			</div>
-			<div id="Search" class="outline" style="text-align:center">
-			  <div id="staticSearch">
-			  		<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssSearch-debug.js'></script>
-			  		<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssInitialize.js'></script>
-			  		<script xmlns='http://www.w3.org/1999/xhtml' src='../../../staticSearch/ssHighlight.js'></script>
-			  		<form xmlns='http://www.w3.org/1999/xhtml' accept-charset='UTF-8' id='ssForm'  
-			  		    data-allowphrasal='yes' data-allowwildcards='yes' data-minwordlength='2' data-scrolltotextfragment='no' data-maxkwicstoshow='5' data-resultsperpage='5'  onsubmit='return false;' data-versionstring='' data-ssfolder='../../../staticSearch' data-kwictruncatestring='...' data-resultslimit='2000'>
-			  		    <span class='ssQueryAndButton'>
-			  		       <input type='text' id='ssQuery' style='height: 21px' aria-label='Search'/>
-			  		       <button id='ssDoSearch' style='background-image: url("../../../common/core/images/searchicon.png")'/>Search
-			  		    </span>
-			  		 </form>
-			  		<div xmlns='http://www.w3.org/1999/xhtml' id='ssSearching'></div>
-			  		<div xmlns='http://www.w3.org/1999/xhtml' id='ssResults'></div>
-			  </div>
+			<div id="VBase">
+			  <a style="color:white; font-size:100%" href="../../../vBase.html">VBase</a>&nbsp;&nbsp;
 			</div>
-		</div>
-       	<div id="grp2"> <!-- contents of editorial and entity menus. Editorial menu ex bootstrap first -->
-       		<div id="editorialMenu"></div>
-      		<div id="entityMenu"></div>
-     	</div>
+			<form xmlns="http://www.w3.org/1999/xhtml" accept-charset="UTF-8" onsubmit="fireSearch3(); return false;">
+				<span class="ssQueryAndButton"><input type="text" style='height: 21px' id="fireQuery" aria-label="Search" />
+				<button id="fireSearchButton" type="submit">Search</button></span>
+		    </form>
+
+	</div>
+	<div id="grp2"> <!-- contents of editorial and entity menus. Editorial menu ex bootstrap first -->
+		<div id="editorialMenu"></div>
+		<div id="entityMenu"></div>
+	</div>
    </div>
    <div id="rTable" style="display:none">
   	<div id="panel-left"> <!-- image goes here -->
@@ -94,7 +88,16 @@
 					<span id="collSummary">Info here</span><span id="nextColl"><a id="nextCollLink"  href="gothere"><img src="/app/data/makeEdition/common/core/images/iconNext.png" height="16px" />&nbsp;&nbsp;&nbsp;</a></span>	
 				</div>
 				<div class="pageLinks">
-					<span><a id="collTranscriptLink" href="dummy">Transcript&nbsp;</a></span><span><a id="collCompareLink" href="dummy">Compare&nbsp;</a></span><span><a id="collXMLLink" href="dummy">XML&nbsp;</a></span><span title="Check box to see original spelling" id="collStateTitle"><input onclick="dummy" id="collSpellingBox" type="checkbox" /><span id="collStateText"> Original spelling</span><span id="collSpellingSpan" style="display:none" title="Check box to see original spellings by words"><input onclick="dummy" id="collWordsBox" type="checkbox" /><span id="collStateWords">  By words</span></span> &nbsp;<span><a title="Search for variants" href="../../../vBase.html">VBase</a></span>
+					<span><a id="collTranscriptLink" href="dummy">Transcript&nbsp;</a></span>
+					<span><a id="collCompareLink" href="javascript:collationToCompare()">Compare </a></span>
+					<span><a id="collXMLLink" href="dummy">XML&nbsp;</a></span>
+					<span title="Check box to see original spelling" id="collStateTitle">
+						<input onclick="dummy" id="collSpellingBox" type="checkbox" />
+						<span id="collStateText"> Original spelling</span>
+						<span id="collSpellingSpan" style="display:none" title="Check box to see original spellings by words"><input onclick="dummy" id="collWordsBox" type="checkbox" /></span>
+						<span id="collStateWords">  By words</span>
+					</span> &nbsp;
+					<span><a title="Search for variants" href="../../../vBase.html">VBase</a></span>
 				</div>
 			</div>
 			<div id="collation">
@@ -106,7 +109,6 @@
   <div id="ancillaries">
 		<div id="editorial"><p>Stuff</p></div>
 		<div id="searchVBase"></div>
-		<div id="searchContainer"> </div>
 		<div id="popUps">
 			<div id="infoVM"><p>On the left hand side of the screen you will see what we call "Variant Maps." These are hypotheses of relationships among the manuscripts, created by phylogenetic software developed by evolutionary biologists to explore relationships among species. For explanation of how we use these maps see....</p></div>
 		</div>

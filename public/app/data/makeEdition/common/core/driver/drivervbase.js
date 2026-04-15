@@ -3,18 +3,19 @@ function createVBase () {
 	console.log("hello");
 	$("#rTable").hide();
 	$("#searchVBase").show();
-	$("#title").html("Variant database (VBase) for the "+vBase.name);
 	setUpVBase();
 }
 
 function setUpVBase (){
 	$.get(VBaseJson, function(data){
+		$("#shortTitle").html(shortTitle);
 		let vbJSONscript="<script>const vBase="+JSON.stringify(data)+"</script>";
 		$("head").append(vbJSONscript);
 		for (let i=1; i<vBase.conditionsets.length; i++) {
    			$("#presetVBs").append("<span class='preset'><input onclick='writePresets(\""+i+"\")' type='radio' name='presetVB'>"+vBase.conditionsets[i].name+"</span>");
    		}
 		if (!vBase.witlist.includes('\\all')) vBase.witlist.push("\\all");
+		$("#title").html("Variant database (VBase) for the "+vBase.name);
 		$("#vbTranscriptLink").attr("href", "javascript:getTranscriptFromVBase('"+currMS+"', '"+firstTranscript.slice(firstTranscript.indexOf("/")+1)+"', '" +currEntity+"')");
 		$("#vbCollationLink").attr("href", "html/collationreg/"+currEntity.slice(0, currEntity.indexOf(":"))+"/"+currEntity.slice(currEntity.indexOf(":")+1)+".html");
  		sendHTML();

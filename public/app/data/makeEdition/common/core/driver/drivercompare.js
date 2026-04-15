@@ -21,6 +21,7 @@ function initCompare () {
 
 function createCompare() {
 	$("#title").html("Compare: "+makeEntitySpan(reformEntities(currEntities)));
+	$("#shortTitle").html(shortTitle);
 	$("#entityMenu").html(initializeEntityChoice(currEntity));
 	$("#rTable").show();
 	$("#panel-left").hide();
@@ -47,7 +48,7 @@ function createCompare() {
 /*	for (let i=0; i<entityPages.filter(page=>page.entity==topEntity)[0].witnesses.length; i++) {
 		wits.push(entityPages.filter(page=>page.entity==topEntity)[0].witnesses[i].name);
 	}  */
-	console.log("here");
+//	console.log("here");
 	for (let i=0; i<currEntities.length; i++) {
 		thisTopEntity=currEntities[i].slice(0, currEntities[i].lastIndexOf(":"));
 		if (thisTopEntity==topEntity) {
@@ -63,8 +64,8 @@ function createCompare() {
 		}
 	}
 //	wits.splice(5);  // to test on just a few mss	
-	let mss=moveBase(wits.sort());
-	if (mss[0]=="Base")	mss[0]="Edition";
+	let mss=wits;
+//	if (mss[0]=="Base")	mss[0]="Edition";
 //	mss=["Edition"];  //for test
 	let select="";
 	let boxes="";
@@ -89,7 +90,7 @@ function createCompare() {
 	//remove image link from edition
 	$("#cfWitsFrame").html(boxes);
 	$("#cfTextAdd0").remove();
-	if (mss[0]=="Edition") mss[0]="Base";
+//	if (mss[0]=="Edition") mss[0]="Base";
 	fillTextImageBoxes(mss, function(){
 		//get the approved collation for each line
 		doImages(mss, function(){
@@ -102,8 +103,8 @@ function createCompare() {
 
 
 function doPUCollations(mss, callback){ //just do edition now
-	let index=0;
-	let myMss=[mss[0]];
+	let index=mss.findIndex(ms=>ms=="Edition");
+	let myMss=["Edition"];
 	async.mapSeries(myMss, function(ms, cbmss) {
 		console.log("Making popup collations for "+ms)
 		let lines=$("#cfTextWords"+index).find("l");
@@ -128,6 +129,9 @@ function doImages(mss, cb) {
 		if (ms=="Base") {
 			callback(null,[]);
 		} else {
+			if (ms=="Fi") {
+				console.log("pause here");
+			}
 			let witn=mss.indexOf(ms);
 			let lines=$("#cfTextWords"+witn).find("l");
 			let lastPage="";
@@ -140,26 +144,30 @@ function doImages(mss, cb) {
 					 let myEntity=$(line).attr("data-entity");
 					 let myMs= $(line).attr("data-ms");
 					 let myPage=getMSPage(myEntity, myMs);
-					 if (myPage==lastPage) {
-					 	if (lastIIIF!="")  {
-					 		$(line).attr("data-iiifURL", lastIIIF);
-					 		$(line).attr("data-page", myPage);
-					 	}
+					 if (myPage=="") {  //this ms does not have this entity
 					 	cbline(null, []);
 					 } else {
-						 $.get(TCimagesUrl+"/uri/urn:det:tc:usask:"+imagesCommunity+"/document="+myMs+":folio="+myPage+"?type=IIIF&format=url", function(url) {
-							if (url.length) {
-								lastPage=myPage;
-								$(line).attr("data-iiifURL", url[0].url);
-								$(line).attr("data-page", myPage);
-								lastIIIF=url[0].url;
-							} else {
-								lastPage=myPage;
-								lastIIIF="";
-							}
+						 if (myPage==lastPage) {
+							$(line).attr("data-page", myPage);
 							cbline(null, []);
-						 });
-					 }
+						 } else {  //we don't need to look up the url: handle this at run time in compare to look up live url
+								$(line).attr("data-page", myPage);
+								lastPage=myPage;
+								cbline(null, []);
+						/*	 $.get(TCimagesUrl+"/uri/urn:det:tc:usask:"+imagesCommunity+"/document="+myMs+":folio="+myPage+"?type=IIIF&format=url", function(url) {
+								if (url.length) {
+									lastPage=myPage;
+									$(line).attr("data-iiifURL", url[0].url);
+									$(line).attr("data-page", myPage);
+									lastIIIF=url[0].url;
+								} else {
+									lastPage=myPage;
+									lastIIIF="";
+								}
+								cbline(null, []);
+							 }); */
+						 }
+					  }
 				}
 			}, function (err){
 				callback(null, []);

@@ -87,7 +87,7 @@ function resizeRTable() {
 	}
 	if ($("#searchVBase").is(":visible")) {
 		$("#searchVBase").height(($("body").height()-$("#page-head").height()-10)*99/100);
-		$("#searchVBResults").height(($("body").height()-$("#page-head").height()-10-$("#searchVBheader").height()));
+		$("#searchVBResults").height(($("body").height()-$("#page-head").height()-40-$("#searchVBheader").height()));
 		return;
 	}
 

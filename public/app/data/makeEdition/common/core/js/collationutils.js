@@ -36,13 +36,14 @@ function formatLink (source) {
 
 function createLinks(){
 	let prevLink="", nextLink="";
-	if (prevCollation!="undefined") {
+//	console.log("stop here");
+	if (prevCollation!="") {
 		let previous=formatLink(prevCollation);			
 		prevLink="<span id='prevlink'><a class='cla' href='../"+previous.link+"'><img class='cli' src='/app/data/makeEdition/common/core/images/iconPrev.png' height='24'> "+previous.name+"</a> </span>"
 	} else {
 		prevLink="<span></span>";
 	}
-	if (nextCollation!="undefined") {
+	if (nextCollation!="") {
 		let next=formatLink(nextCollation);
 		nextLink="<span id='nextlink'> <a  class='cla' href='../"+next.link+"'>"+next.name+" <img class='cli' src='/app/data/makeEdition/common/core/images/iconNext.png' height='24'></a> </span>"
 	} else {
@@ -65,9 +66,13 @@ function createLinks(){
 	let dirName=currEntity.slice(0,currEntity.lastIndexOf(":"));
 	let transcriptMS=getDefaultMs(currEntity);
 	//only do this when in compare view, when compareIndex is enable
-	if (typeof compareIndex!="undefined") {
-		let compEntity=compareIndex.filter(myEntity=>myEntity.entity==currEntity)[0].index;
-		$("#collCompareLink").attr("href","javascript:getCompareFromCollation('"+compEntity+"','"+currEntity+"','"+transcriptMS+"')");
+	try { //if we have a compare Index file and it includes this entity
+		if (typeof compareIndex!="undefined") {
+			let compEntity=compareIndex.filter(myEntity=>myEntity.entity==currEntity)[0].index;
+			$("#collCompareLink").attr("href","javascript:getCompareFromCollation('"+compEntity+"','"+currEntity+"','"+transcriptMS+"')");
+		}
+	} catch {
+			//do nothing
 	}
 	$("#collTranscriptLink").attr("href","javascript:getMSLine('"+currEntity+"','"+transcriptMS+"')");
 	if (!regState) {
@@ -132,10 +137,13 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 		}
 		for (var m=0; m<currMSS.length; m++) {
 			let witName=currMSS[m].name;
-			if (currMSS[m].name=="Base") witName="Edition"
-			inWits.push("<a href='javascript:getMSLine(\""+currEntity+"\",\""+currMSS[m].name+"\")'>"+witName+"</a>");
+			if (currMSS[m].name=="Base") {
+				witName="Edition"; //ignore now
+			} else {
+				inWits.push("<a href='javascript:getMSLine(\""+currEntity+"\",\""+currMSS[m].name+"\")'>"+witName+"</a>");
+			}
 		}
-		appText+="<div id='VMLine'><p class='lemma'>"+label(currEntity)+" is in "+currMSS.length+" witnesses ("+inWits.join(" ")+")</p>" ;
+		appText+="<div id='VMLine'><p class='lemma'>"+label(currEntity)+" is in "+(currMSS.length-1)+" witnesses ("+inWits.join(" ")+")</p>" ;
 		if (outMSS.length==1) appText+="<p class='lemma' id='VMLout'> OUT 1 witness ("+outMSS[0]+")</p>";
 		else if (outMSS.length>1) appText+="<p class='lemma'  id='VMLout'> OUT "+outMSS.length+" witnesses ("+outMSS.join(" ")+")</p>";
 		appText+="</div><hr/>";
@@ -149,11 +157,17 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 	if (onlyReg) {
 		for (var i=0, n=0; i<collation.structure.apparatus.length; i++, n++) { //need m as overlap variants also occur
 			VMapApp.push({lemma:"", variants:[]});
+			if (i==2) {
+				var boo=1;
+			}
 			VMapApp[n].variants.push({variant:"[lemma]", id: ""+n+"-0", wits:[]});
 			var overLem="";
 			for (var j=0; j<collation.structure.apparatus[i].readings.length; j++) {
 				//lemma is always first reading..
 				var vartext="";
+				if (j==3) {
+					var boo=1;
+				}
 				if (!(collation.structure.apparatus[i].readings[j].created || collation.structure.apparatus[i].readings[j].overlap_status=="duplicate")) {
 					for (k=0; k<collation.structure.apparatus[i].readings[j].text.length; k++) {
 						vartext+=collation.structure.apparatus[i].readings[j].text[k].interface;
@@ -189,11 +203,15 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 							var thisWit=collation.structure.apparatus[i].readings[j].witnesses[m];
 		//					if (thisWit=="Base") nwits--;
 		//					else {
-								let witName=thisWit;
-								if (thisWit=="Base") witName="Edition";
-								appText+="<a href='javascript:getMSLine(\""+currEntity+"\",\""+thisWit+"\")'>"+witName+"</a> ";
+							let witName=thisWit;
+							if (thisWit=="Base") witName="Edition";
+							appText+="<a href='javascript:getMSLine(\""+currEntity+"\",\""+thisWit+"\")'>"+witName+"</a> ";
+							if (typeof VMapApp[n].variants[j]=="undefined") {
+								let boo=1; //fpr some reason, we have not pushed this variant to VMappApp. So push it
+								VMapApp[n].variants[j-1].wits.push(thisWit);
+							} else {
 								VMapApp[n].variants[j].wits.push(thisWit);
-		//					}
+							}
 						}
 					}
 					appText+="("+nwits+")";
@@ -813,8 +831,11 @@ function createUnRegRdgME(rdg, vno, transform, context, isPopApp, VMapApp, entit
 		for (var j=0; j<srcWits[i].spellWits.length; j++) {
 			if (!transform) {
 				let witName=srcWits[i].spellWits[j];
-				if (srcWits[i].spellWits[j]=="Base") witName="Edition";
-				apparatus+="<a href='javascript:getMSLine(\""+entity+"\",\""+srcWits[i].spellWits[j]+"\")'>"+witName+"</a>";
+				if (srcWits[i].spellWits[j]=="Base") {
+					//just ignore now we have a real edition
+				} else {
+					apparatus+="<a href='javascript:getMSLine(\""+entity+"\",\""+srcWits[i].spellWits[j]+"\")'>"+witName+"</a>";
+				}
 			} else {
 			   	spellingMss+=srcWits[i].spellWits[j];
 			   	spellingWits+='<idno>'+srcWits[i].spellWits[j]+'</idno>'
@@ -1112,24 +1133,24 @@ function getAppLine(TCcommunity, entity, hasApp, witn, context, callback) {
 
 function createCollationLine (collation, myWit, witn, entity, context) {
 	let thisLine="", nOmissions=0;
-	if (collation.lac_readings.includes(myWit)) {
+	if (collation.lac_readings.includes(myWit[0])) {
 		thisLine="<span class=\"cfTextOut\">"+formatEntityLabel(entity)+": OUT</span>"
 	} else {
 		for (let j=0; j<collation.apparatus.length; j++) {
 			//dig into find the word...
 			for (let k=0; k<collation.apparatus[j].readings.length; k++) {
-				if (collation.apparatus[j].readings[k].witnesses.includes(myWit)) {
+				if (collation.apparatus[j].readings[k].witnesses.includes(myWit[0])) {
 					//we have this reading...could be in SR_text or text. which?
 					if (collation.apparatus[j].readings[k].type=="om") {
-						if (collation.apparatus[j].readings[k].witnesses.includes(myWit)) {
+						if (collation.apparatus[j].readings[k].witnesses.includes(myWit[0])) {
 							thisLine+=" <w n='Omit"+nOmissions+"'>[..]</w> ";
 							nOmissions++;
 						}
 					} else if (collation.apparatus[j].readings[k].type=="om_verse") {
 						thisLine+="[...]"
-					} else if (typeof collation.apparatus[j].readings[k].text[0][myWit]!="undefined") {
+					} else if (typeof collation.apparatus[j].readings[k].text[0][myWit[0]]!="undefined") {
 						for (let m=0; m<collation.apparatus[j].readings[k].text.length; m++) {
-							let thisColl=collation.apparatus[j].readings[k].text[m][myWit];
+							let thisColl=collation.apparatus[j].readings[k].text[m][myWit[0]];
 							thisLine+="<w n=\""+thisColl.index+"\">";
 							if (thisColl.hasOwnProperty("fullxml")) {
 								thisLine+=thisColl.fullxml.replaceAll("&lt;","<").replaceAll("&nbsp;"," ").replaceAll("''",'"');
@@ -1141,13 +1162,13 @@ function createCollationLine (collation, myWit, witn, entity, context) {
 							}
 							thisLine+="</w> ";
 						}
-					} else if (typeof collation.apparatus[j].readings[k].SR_text[myWit]!="undefined") {
-						for (let m=0; m<collation.apparatus[j].readings[k].SR_text[myWit].text.length; m++) {
-							let thisColl=collation.apparatus[j].readings[k].SR_text[myWit].text[m][myWit];
+					} else if (typeof collation.apparatus[j].readings[k].SR_text[myWit[0]]!="undefined") {
+						for (let m=0; m<collation.apparatus[j].readings[k].SR_text[myWit[0]].text.length; m++) {
+							let thisColl=collation.apparatus[j].readings[k].SR_text[myWit[0]].text[m][myWit];
 							thisLine+="<w n=\""+thisColl.index+"\">"+thisColl.original+"</w> ";
 						}
 					} else {//something else going on here
-						console.log("handle tbis "+myWit+" "+entity+" reading "+j);
+						console.log("handle tbis "+myWit[0]+" "+entity+" reading "+j);
 					}
 				}
 			}
@@ -1243,7 +1264,7 @@ function identifyAppWits(collation, mss) {
 				for (let n=1; n<suffixes.length && !hasApp; n++) {
 					if (collation.apparatus[j].readings[k].witnesses[m].indexOf(suffixes[n])>-1) {
 						let newWit=collation.apparatus[j].readings[k].witnesses[m].slice(0, collation.apparatus[j].readings[k].witnesses[m].indexOf(suffixes[n]));
-						if (mss.includes(newWit)) {
+						if (mss.filter(witness=>witness[0]==newWit).length>0) {
 							if (!hasApps.includes(newWit)) hasApps.push(newWit);
 							hasApp=true;
 						} else {
@@ -1381,7 +1402,12 @@ function doWordsOneLine(newArray, newline, line, openElements, witness, context)
 		for (let j=0; j<myline.length; j++) {
 			if (punctuation.includes(myline[j])) {
 				if (j==0) {
-					tempArray.push(myline[j]+" "+myline[1]);
+					//don't add myline[1] if it is not defined -- as is the case where an initial punctuation is followed by xml, as in Ph2 2r line 19
+					if (typeof myline[1]=="undefined") {
+						tempArray.push(myline[j]);
+					} else {
+						tempArray.push(myline[j]+" "+myline[1]);
+					}
 					j++;
 				} else {
 					tempArray[tempArray.length-1]=tempArray[tempArray.length-1]+" "+myline[j];
@@ -1639,6 +1665,7 @@ function constructWElements(newArray, line) {
 
 //get apparatus for each word, given the line on which we have the apparatus
 function createWordAppLine(structure, line, entity, json, ms, callback) {
+//	console.log("we are here");
 	let words=$(line).find("w"), appNumber=0, wordNumber=2, prevOmission=false;
 	while (appNumber<structure.apparatus.length) {
 		let apparatus=getPopUpCollationME(line, structure, entity, wordNumber, appNumber, ms);
