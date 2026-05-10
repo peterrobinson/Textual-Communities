@@ -1198,6 +1198,7 @@ function createPopUpCollationME(callback) {
 	let lines=[];
 	for (let i=0; i<myPageEntities.length; i++) {
 		let entityN=myPageEntities[i].entity.split(":")[1].split("=")[1];
+		let lineNum=myPageEntities[i].entity.split(":")[2].split("=")[1];
 //		let entityN=$($(lines[i]).parents("div[type='G']")[0]).attr("n");
 		//this entity may not be a target in this publication -- eg end Millers Tale at start of L2
 		if (!currEntities.includes(entityN)) {
@@ -1208,11 +1209,12 @@ function createPopUpCollationME(callback) {
 		}
 		//now read down the entity name to the element...add it to the lines structure
 		let entParts=myPageEntities[i].entity.split(":");
-		let findStr="$(\"[n='"+entityN+"']\")[0]";
-		for (let j=2; j<entParts.length; j++) {
+		let myLine=$("[n='"+lineNum+"']").closest("div[n='"+entityN+"']").find("l[n='"+lineNum+"']");
+//		let findStr="$(\"[n='"+lineNum+"']\").closest(\"div[n='"+entityN+"']\").find(\"l[n='"+lineNum+"']\")";
+/*		for (let j=2; j<entParts.length; j++) {
 			findStr="$("+findStr+").find(\"[n='"+entParts[j].split("=")[1]+"']\")";
 		}
-		let myLine=eval(findStr);
+		let myLine=eval(findStr); */
 		if (typeof myLine=="undefined") {
 			console.log("Can't find collated unit "+myPageEntities[i].entity+" on page "+currPage+" of "+currMS)
 			continue;

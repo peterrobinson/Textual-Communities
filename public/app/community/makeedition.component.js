@@ -2157,7 +2157,7 @@ function resetCurrMS(currMS, currEntity, source) {
 					} else if (witnesses.filter(wit=>wit.name=="Ch").length>0) {
 						return("Ch");
 					} else {
-						return (witnesses[1].name)
+						return (witnesses[0].name)   //edition, not base
 					}
 				}
 			}

@@ -68,15 +68,11 @@ function createEditorial (){
 			let lastKey="";
 			lastKey=item[i].key.slice(item[i].key.lastIndexOf(":")+1);
 			let thisMS="Edition";
-			let compEntity="";
-			if (typeof compareIndex!="undefined") {
-				compEntity=compareIndex.filter(myEntity=>myEntity.entity==item[i].key)[0].index;
-			}
 			content+="</h3>";
 			content+="<span class='selectEdSpellingLink' title='Check box to see original spelling'><input class='selectEdSpelling' onclick='javascript:selectEdSpelling(this)' type='checkbox' />Original Spelling</span>";
 			content+="<a href='javascript:getMSLine(\""+item[i].key+"\",\""+thisMS+"\")'>Transcript</a>";
 			content+="<a href='../../../html/collationreg/"+item[i].key.slice(0, item[i].key.lastIndexOf(":"))+"/"+lastKey+".html'>Collation</a>"
-			content+="<a href='javascript:getCompareFromCollation(\""+compEntity+"\",\""+item[i].key+"\",\""+thisMS+"\")'>Compare</a>";
+			content+="<a href='javascript:getCompareFromCollation(\""+item[i].key+"\")'>Compare</a>";
 			content+="<a  href='../../../vBase.html'>VBase</a>";
 			content+="</div>\n";
 			console.log("driving editorial process");

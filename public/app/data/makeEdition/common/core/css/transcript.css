@@ -59,18 +59,19 @@ l[rend=indent20] {margin-left:20px;}
 hi[rend=ul]{text-decoration: underline;}
 seg[rend=strike]{ text-decoration: line-through;}
 seg[type=st]{ text-decoration: line-through;}
-space[unit=lines][quantity="1"] {display: block;height: 8px;}
-space[unit=lines][quantity="2"] {display: block; height: 15px;}
-space[unit=lines][quantity="3"] {display: block;height: 30px;}
-space[unit=lines][quantity="4"] {display: block;height: 40px;}
-space[unit=lines][quantity="5"] {display: block;height: 50px;}
-space[unit=lines][quantity="6"] {display: block;height: 60px;}
-space[unit=lines][quantity="7"] {display: block;height: 70px;}
-space[unit=lines][quantity="8"] {display: block;height: 80px;}
-space[unit=lines][quantity="23"] {display: block;height: 230px;}
-space[unit=chars][quantity="6"]::before {content: '[......]'; color:green}
-space[unit=chars][quantity="7"]::before {content: '[.......]'; color:green}
-gap[unit=chars][quantity="1"]::before {content: '..'; color:gree}
+/* after converting space and gap to span*/
+span[unit=lines][quantity="1"] {display: block;height: 8px;}
+span[unit=lines][quantity="2"] {display: block; height: 15px;}
+span[unit=lines][quantity="3"] {display: block;height: 30px;}
+span[unit=lines][quantity="4"] {display: block;height: 40px;}
+span[unit=lines][quantity="5"] {display: block;height: 50px;}
+span[unit=lines][quantity="6"] {display: block;height: 60px;}
+span[unit=lines][quantity="7"] {display: block;height: 70px;}
+span[unit=lines][quantity="8"] {display: block;height: 80px;}
+span[unit=lines][quantity="23"] {display: block;height: 230px;}
+span[unit=chars][quantity="6"]::before {content: '[......]'; color:green}
+span[unit=chars][quantity="7"]::before {content: '[.......]'; color:green}
+span[unit=chars][quantity="1"]::before {content: '..'; color:gree}
 span.ud {display: inline-block; position: relative; }
 span.ud::before {content: '.';display: inline-block; position: absolute; font-size: 110%; bottom: -0.20em; left: 0; text-align: center;width: 100%;}
 
@@ -105,8 +106,8 @@ span.ud::before {content: '.';display: inline-block; position: absolute; font-si
 	margin-right: auto;
 	font-family: "Junicode";
 	width: 750px; 
-//	transform: rotate(0deg);	  
-//needed to reset viewport to enable scrolling of fixed elements. see http://meyerweb.com/eric/thoughts/2011/09/12/un-fixing-fixed-elements-with-css-transforms/																																																																																							
+/*	transform: rotate(0deg);	  
+needed to reset viewport to enable scrolling of fixed elements. see http://meyerweb.com/eric/thoughts/2011/09/12/un-fixing-fixed-elements-with-css-transforms/		*/																																																																																				
 }
 
 #appmenu {

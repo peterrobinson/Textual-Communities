@@ -522,6 +522,11 @@ function doMargins(column, isTwoColumns) {
 				$(notes[i]).detach().appendTo("#transcript-bm-centre"); break;
 			case "br":
 				$(notes[i]).detach().appendTo("#transcript-bm-right"); break;
+			case "il":
+				let myLine=$($("div[n='"+book+"']")[0]).find("l[n='"+lineNum+"']")[0];
+				$(notes[i]).detach().appendTo(myLine); 
+				$(notes[i]).addClass("interlinear");
+				break;
 			default:
 				let muyString="Place attribute '"+noteplace+"' missing or not recognized on note element in ms "+currMS+", page "+currPage;
 				alert(muyString); break;  //for some reason console.log breaks here. Why..???? hmm. 
@@ -554,6 +559,9 @@ function emptyMargins() { //reset widths too; and also
 
 function adjustText(xml) {  //sets up popups within text
 	let text=xml.replace("<text>","").replace("</text>","").replace("<body>","").replace("</body>","").replaceAll("<lb/><lb/>","<br>").replaceAll("<lb/>","<br>").replaceAll("<head n=\"Title\">","<l type=\"Title\" n=\"Title\">").replaceAll("</head>","</l>");
+	//get rid of xml empty elements, replace by span data-tei = tei element because we cannot put height attributes etc on <br>
+	text=text.replaceAll(/<space([^\/>]+)[\/>]+/g, "<span data-tei=\"space\"$1></span>").replaceAll("</space>","");
+	text=text.replaceAll(/<gap([^\/>]+)[\/>]+/g, "<span data-tei=\"gap\"$1></span>").replaceAll("</gap>","");
 	//remove the <pb.. 
 	text=text.slice(0, text.indexOf("<pb"))+text.slice(text.indexOf(">",text.indexOf("<pb"))+1);
 	//first, are there any notes in here???

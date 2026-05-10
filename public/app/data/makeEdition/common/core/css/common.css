@@ -204,7 +204,12 @@ a.splash {
 #rdgApp {display:flex; align-items: center; line-height: 110%; }
 #popAppTitle {display:flex; justify-content: space-between; width: 50%}
 
-
+.interlinear {
+	position:relative;
+	font-size:smaller;
+	top:-13px;
+	left:-12px;
+}
 
 #splitter {     
    flex: none;

@@ -81,6 +81,9 @@ function initializeEntityChoice (entity, MS) { //given an entity and a MS, set u
 			}
 			if (thisVal==entities[j].entity) {
 				witnesses=entities[j].witnesses;
+				for (let i=0; i<witnesses.length; i++) {
+					if (witnesses[i].name[0]=="Base") { witnesses.splice(i--, 1);}
+				}
 				let nextVal=null;
 				if (i<entityParts.length-1) nextVal=entityParts[i+1];
 				nextEntities=getNextEntities(entities, thisVal, nextVal); 
@@ -90,6 +93,9 @@ function initializeEntityChoice (entity, MS) { //given an entity and a MS, set u
 					} else {
 						if (entities[j].subentities.filter(line=>line.entity==entityParts[entityParts.length-1]).length>0) {
 							witnesses=entities[j].subentities.filter(line=>line.entity==entityParts[entityParts.length-1])[0].witnesses;
+							for (let i=0; i<witnesses.length; i++) {
+								if (witnesses[i].name[0]=="Base") { witnesses.splice(i--, 1);}
+							}
 							if (typeof $("#MS").val()=="undefined") {
 								$("#MS").val(witnesses[0].name);
 								thisMS=$("#MS").val(witnesses[0].name);
