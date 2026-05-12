@@ -216,7 +216,9 @@ var EditCommunityComponent = ng.core.Component({
 		} else {
 			try {
 				eval(contents);
-				self.edit.collationents=collentities;
+				self.edit.collents=collentities;
+				self.collationents=collentities;
+				self.collentsfilename=collentFileN;
 				self.edit.collentsfilename=collentFileN;
 			} catch (e) {
 				self.message=e.message;
@@ -265,11 +267,21 @@ var EditCommunityComponent = ng.core.Component({
     //if editing existing: state community will be identical to this one. else it will be new
     if (this.community && (this.community._id==this._uiService.state.community._id)) {
       communityService.createCommunity(self.edit).subscribe(function(community) {
-        self.success='Community "'+self.edit.name+'" saved';
-//        if ($('#PreviewImg')) $('#PreviewImg').remove();
-//        self.initEdit(community);
-        document.getElementById("ECSuccess").scrollIntoView(true);
-      });
+      	$.ajax({
+		  url: config.BACKEND_URL+'writeCollationents?community='+self._uiService.state.community.attrs.abbr,
+		  type: 'POST',
+		  data:  JSON.stringify({collationents: self.edit.collents}),
+		  accepts: 'application/json',
+		  contentType: 'application/json; charset=utf-8',
+		  dataType: 'json'
+		})
+		 .done(function( data ) {
+			self.success='Community "'+self.edit.name+'" saved';
+	//        if ($('#PreviewImg')) $('#PreviewImg').remove();
+	//        self.initEdit(community);
+			document.getElementById("ECSuccess").scrollIntoView(true);
+		  });
+		});
     }
     else $.post(config.BACKEND_URL+'isAlreadyCommunity?'+'abbr='+this.edit.abbr+'&name='+this.edit.name, function(res) {
       if (res.success=="1")   {

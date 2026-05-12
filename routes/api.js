@@ -264,6 +264,17 @@ router.get('/isMakeEdition', function(req, res, next) {
 	});
 });
 
+router.post('/writeCollationents', function(req, res, next){ //neede because mongodb will not upgrade array automoatically
+	var community= req.query.community;
+	var collEnts=req.body; 
+	console.log("in collation ents length "+collEnts.collationents.length+" community "+community);
+	Community.updateOne({abbr:community}, {$set:{collents:collEnts.collationents}}).then (function(result){
+		console.log("worked");
+	  	console.log("result "+result)
+		res.json({success: 0});
+	})
+});
+
 router.post('/writeCommentary', function(req, res, next) {
 	var commentary=req.body; 
 	var communityID= req.query.community;
@@ -4229,7 +4240,7 @@ router.get('/ceconfig', function(req, res, next) {
 //    console.log("looking for ce "+community)
 //  if ceconfig.witnesses is not empty -- use it!!!
     if (community.ceconfig.witnesses && community.ceconfig.witnesses.length>0) {
-    	community.ceconfig.collationents=community.collationents;
+    	community.ceconfig.collationents=community.collents;
     	community.ceconfig.collationparallels=community.collationparallels;
     	res.json(community.ceconfig);
     }  else {

@@ -43,16 +43,16 @@ var RetrieveCollationComponent = ng.core.Component({
   },
   ngOnInit: function() {
     this.header="Retrieve Collations for "+this.community.attrs.name;
-    if (this.community.attrs.collationents.length>1) {
-    	this.success="Collation entity file "+this.community.attrs.collentsfilename+" loaded with "+this.community.attrs.collationents.length+" entities.";
+    if (this.community.attrs.collents.length>1) {
+    	this.success="Collation entity file "+this.community.attrs.collentsfilename+" loaded with "+this.community.attrs.collents.length+" entities.";
     } else {
     	this.success="No collation entity file loaded. If your texts are complex or long you should load a collation entity file through the Edit community dialogue.";
     }
     this.ranges=[{start:this.community.attrs.abbr+"/entity=X:line=Y", end:this.community.attrs.abbr+"/entity=X:line=Y", count:0}];
     let self=this;
     this.inSearch=false;
-    if (this.community.attrs.collationents.length>1) {
-    	self.nAllCollations=self.community.attrs.collationents.length;
+    if (this.community.attrs.collents.length>1) {
+    	self.nAllCollations=self.community.attrs.collents.length;
     } else {
 		$.get(config.BACKEND_URL+'countCommunityCollations?community='+this.community.attrs.abbr, function(res) {
 			if (res.success) self.nAllCollations=res.count;
@@ -94,7 +94,7 @@ var RetrieveCollationComponent = ng.core.Component({
 		  $.ajax({
 			url:config.BACKEND_URL+'countRangeCollations?community='+self.community.attrs.abbr,
 			type: 'POST',
-			data: JSON.stringify({range: self.ranges[i], collentities: self.community.attrs.collationents}),
+			data: JSON.stringify({range: self.ranges[i], collentities: self.community.attrs.collents}),
 			accepts: 'application/json',
 			contentType: 'application/json; charset=utf-8',
 			dataType: 'json'
@@ -131,7 +131,7 @@ var RetrieveCollationComponent = ng.core.Component({
       $.ajax({
       	url:config.BACKEND_URL+'getCollations?community='+self.community.attrs.abbr,
       	type: 'POST',
-      	data: JSON.stringify({ranges: self.ranges, collentities: self.community.attrs.collationents, output:choice, partorall:partorall}),
+      	data: JSON.stringify({ranges: self.ranges, collentities: self.community.attrs.collents, output:choice, partorall:partorall}),
 		accepts: 'application/json',
 		contentType: 'application/json; charset=utf-8',
 		dataType: 'json'

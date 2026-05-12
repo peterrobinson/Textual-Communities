@@ -36,7 +36,7 @@ var CommunitySchema = new Schema({
   members: [{type: ObjectId, ref: 'User'}],
   ceconfig: {},
   collentsfilename: String,
-  collentities: [String],
+  collents: [String],
   collationparallels: String,
   collationparallelsfilename: String,
   documents: [{type: ObjectId, ref: 'Doc'}],
