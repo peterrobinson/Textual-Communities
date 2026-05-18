@@ -90,6 +90,7 @@ function setUpVMap(callback) {
 			if (url.length) { */
 		let conscript='\r<script type="text/javascript">\r\tconst iiifURL="../../../iiifimages/'+VMap.document+'/Stemma/info.json";</script>';
 		$( "head" ).append(conscript);
+//		console.log("in the driver");
 //		$.post(TCurl+'/getVMap?community='+VMap.community+'&name='+VMap.document, function(res) {
 		$.get(TCurl+"/uri/urn:det:tc:usask:"+VMap.community+"/vmap="+VMap.document, function (vMap) {
 			let conscript2='\r<script type="text/javascript">\r\tconst vWitss='+JSON.stringify(vMap.wits)+"; </script>";

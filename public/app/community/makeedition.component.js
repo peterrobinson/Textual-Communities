@@ -209,6 +209,11 @@ var CommunityMakeEditionComponent = ng.core.Component({
 				cb1(result,[]);
 			});
 		},
+		function (arguments, cb1) { //write the compare files
+			checkEntities(self, function callback(result) {
+				cb1(result,[]);
+			});
+		},
 		function (arguments, cb1) {  //we make the collation
 			makeCollation(self, zip, function callback(result) {
 				cb1(result,[]);
@@ -1050,6 +1055,7 @@ function makeCollation(self, zip, callback) {
    			let index=0; ci=0;
  			convertEntityPages(self.edition.entityPages, entitiesArray);
   			convertEntityPages(self.edition.entityPages, origEntities);
+  			//here we put a routine to check entitiesArray against entities flat.
   			if (typeof self.config.entitiesLimit!="undefined") {
   				entitiesArray.splice(self.config.entitiesLimit);
   			}
@@ -2049,7 +2055,7 @@ function makeCompare (self, zip, entities, callback) {
 			let currMS=self.config.currMS;
   			let index=0, currIndex=0; compareIndex=[];
   			let endInScope=false;
-  			if (typeof self.config.entitiesLimit!="undefined") {
+			if (typeof self.config.entitiesLimit!="undefined") {
   				entitiesArray.splice(self.config.entitiesLimit);
   			}
   			async.mapSeries(entitiesArray, function(thisEntity, eaCB){
@@ -2221,5 +2227,50 @@ function adjustCommedia(self, source, isIndex, persistVals, persistScripts) {
 	if (isIndex) source=source.replaceAll("../../../", "");
 	return(source);
  }
+
+
+function checkEntities(self, callback) {
+	if (self.config.standalone && !self.config.checkEntities) {
+   		return(callback(null));
+   } else {
+   		let entitiesArray=[];
+   		convertEntityPages(self.edition.entityPages, entitiesArray);
+   		 $("#MEProgress").html("reading in "+self.config.entitiesflatfile);
+   		$.get(self.config.entitiesflatfile, function(data){ //load th
+ 			eval(data);  //should give us collentities
+ 			if (typeof collentities=="undefined") {
+ 				 $("#MEProgress").html("Error reading in "+self.config.entitiesflatfile+". No collentities defined");
+ 				 return(callback(null));
+ 			} else { //we do a check against each other. For each top level entity, we check it has the same members (but in different orders maybe)
+				let errorstr1="", errorstr2="";
+				for (let i=0; i<collentities.length; i++) {collentities[i]=collentities[i].replace("entity=", "")}
+				for (let i=0; i<self.config.entities.length;i++) {
+					let topent=self.config.entities[i];
+					//check first in flatfile
+					let flatents=collentities.filter(collent=>collent.indexOf(topent+":")==0);
+					//now check that each flatent is in entities array derived from the witnesses
+					for (let j=0; j<flatents.length; j++) {
+						if (entitiesArray.findIndex(entity=>entity==flatents[j])==-1) {
+							errorstr1+=flatents[j]+" ";
+						}
+					}
+					flatents=entitiesArray.filter(collent=>collent.indexOf(topent+":")==0);
+					for (let j=0; j<flatents.length; j++) {
+						if (collentities.findIndex(entity=>entity==flatents[j])==-1) {
+							errorstr2+=flatents[j]+" ";
+						}
+					}
+				}
+				if (errorstr1!="") errorstr1="Entities "+errorstr1+" present in "+self.config.entitiesflatfile+" but not found in the collateable documents in this community";
+				if (errorstr2!="") errorstr2=" Entities "+errorstr2+" present in the collatable documents but not found in "+self.config.entitiesflatfile;
+				if (errorstr1!="" || errorstr2!="") {
+					return(callback(errorstr1+errorstr2+". You should check these"));
+				} else {	
+					return(callback(null)); 
+				}
+			} 				
+ 		 });
+   	 }
+}
 
 module.exports = CommunityMakeEditionComponent;
