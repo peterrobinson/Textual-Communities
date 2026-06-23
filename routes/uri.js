@@ -275,6 +275,7 @@ function formatXML(texts, isXML) {
     });
   });
   var myPage= json2xmlDoc(root).children[0].outerHTML.normalize();
+  console.log("no error here")
   myPage=myPage.replace(/\n/g, "");
   if (isXML)  myPage=myPage.replace(/><\/pb>/g, "/>").replace(/><\/lb>/g, "/>").replace(/><\/cb>/g, "/>").replace(/><\/gap>/g, "/>");
   return(myPage);

@@ -34,6 +34,23 @@ function fireSearch3() {
 	window.location.href = "../../../html/transcripts/"+ms+"/"+page+".html?q="+$("#fireQuery").val();
 }
 
+function makeConcord(book, line) {  //ensure that concorder file is included in pages which call this
+	bookArr=concorder.find(item => book in item);
+	let myRange=bookArr[book][0].ranges.filter(item=>item.start<=Number(line) && Number(line)<=item.end)[0];
+	let concorderRef="LC-"+book+"-"+line;
+	let concorderLink= '<span class="showTip '+concorderRef+'">'+line+'</span>';
+	let content="";
+	content+="<p class='concorder'><b>CTP</b>: "+book+" "+line+"</p>";
+	let groupN=Number(line)+myRange.groupOffset;
+	let fragN=Number(line)+myRange.fragmentOffset;
+	content+="<p class='concorder'><b>Group (Traditional)</b>: "+myRange.group+" "+groupN+"</p>";
+	content+="<p class='concorder'><b>Fragment (Riverside)</b>: "+myRange.fragment+" "+fragN+"</p>";
+	let concorderShow='<div id="'+concorderRef+'">'+content+'</div>';
+	$("#popUps").append(concorderShow);
+	return(concorderLink);
+}
+
+
 function getCompareFromCollation () { //just redirect
 	collationToCompare();
 }
@@ -370,7 +387,7 @@ function getTranscriptFromVBase (ms, page, entity) {
 	window.location.href="html/transcripts/"+ms+"/"+page+".html";
 }
 
-function moveBase(source) { //just puts the Base at the beginning of every
+function moveBase(source) { //just puts the Base at the beginning of every. Obsolete 2026
 	let destiny=[];
 	return(source);
 	if (source.includes("Base")) {

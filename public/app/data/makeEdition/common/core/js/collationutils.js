@@ -208,7 +208,9 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 							appText+="<a href='javascript:getMSLine(\""+currEntity+"\",\""+thisWit+"\")'>"+witName+"</a> ";
 							if (typeof VMapApp[n].variants[j]=="undefined") {
 								let boo=1; //fpr some reason, we have not pushed this variant to VMappApp. So push it
-								VMapApp[n].variants[j-1].wits.push(thisWit);
+								if (typeof VMapApp[n].variants[j-1]!="undefined") {  //why does this happen??
+									VMapApp[n].variants[j-1].wits.push(thisWit);
+								}
 							} else {
 								VMapApp[n].variants[j].wits.push(thisWit);
 							}

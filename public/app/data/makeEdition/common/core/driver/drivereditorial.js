@@ -2,6 +2,7 @@ const punctuation=".,:-/&@¶§;·⸫▽?!'"+'"';
 const suffixes=["","-mod","-orig"]
 
 function initEditorial () {
+	console.log("Making editorial files");
 	if (!isstandalone) {
 		let banner=universalBanner;
 	    banner=banner.replaceAll("xxxx", "<").replaceAll("yyyy", ">").replaceAll("zzzz", "&nbsp;");
@@ -11,10 +12,10 @@ function initEditorial () {
 		if (!ssSearch) {
 			$("#staticSearch").remove();
 		}
-		if (!hasVBase) {
+/*		if (!hasVBase) {
 			$("#VBase").remove();
 			$("#VBaseLink").remove();
-		}
+		} */
 		$("#shortTitle").html(shortTitle);
 		createEditorial();  //we don't load the banner until run time
 	}
@@ -26,15 +27,79 @@ function createEditorial (){
 	if (!Array.isArray(item)) {
 		content+="<h2>"+item.title+"</h2>\n";
 		$("title").html(item.title);
-		for (let i=0; i<item.text.length; i++) {
-			if (item.text[i].hasOwnProperty("attr")) {
-				let attr=item.text[i].attr.slice(0,item.text[i].attr.indexOf("="));
-				let value=item.text[i].attr.slice(item.text[i].attr.indexOf("=")+1);
-				content+="<"+item.text[i].type+" "+attr+"='"+value+"'>"+item.text[i].text+"</"+item.text[i].type+">";
-			} else {
-				content+="<"+item.text[i].type+">"+item.text[i].text+"</"+item.text[i].type+">";
+		if (item.key=="Scribal") {
+			content+="<div class='speclines'>\r"
+			content+="<p>We label a line as \"scribal\" if we think it is unlikely that the line was present in <b>o</b>, the collection of materials relating to the <i>Tales</i> left behind by Chaucer at his death. Typically, these lines appear in just one manuscript, and so probably were created by the scribe at the moment of copying. We label these lines as \"1-a\", \"100-b\", indicating that this line appears where lines 1 and 100 occur, and is the first or second scribal line at that place.</p>";
+			for (let i=0; i<item.scribalLines.length;i++) {
+				content+="\r<h3>"+item.scribalLines[i][0].title+"</h3>"
+				for (let j=0; j<item.scribalLines[i][0].lines.length;j++) {
+					content+="\n<p><b>"+item.scribalLines[i][0].lines[j].place.slice(item.scribalLines[i][0].lines[j].place.indexOf(" ")+1)+"</b>";
+					content+=" "+item.scribalLines[i][0].lines[j].line+" "
+					content+=item.scribalLines[i][0].lines[j].witnesses+"</p>"
+				}
 			}
-		} 
+			content+="\r</div>";
+		} else if (item.key=="OnotHg") {
+			content+="<div class='speclines'>\r"
+			content+="<p>We label a line as \"<b>o</b> not Hg\" if we think it is likely that the line was present in <b>o</b>, the collection of materials relating to the <i>Tales</i> left behind by Chaucer at his death, but not present in Hg. Typically, these lines appear in many manuscripts across the whole tradition but for some reason were not copied into Hg. We label these lines as \"1-1\", \"100-2\", indicating that this line appears where lines 1 and 100 occur in Hg, and is the first or second  line at that place.</p>";
+			for (let i=0; i<item.originalLines.length;i++) {
+				content+="\r<h3>"+item.originalLines[i][0].title+"</h3>"
+				for (let j=0; j<item.originalLines[i][0].lines.length;j++) {
+					content+="\n<p><b>"+item.originalLines[i][0].lines[j].place.slice(item.originalLines[i][0].lines[j].place.indexOf(" ")+1)+"</b>";
+					content+=" "+item.originalLines[i][0].lines[j].line+" "
+					content+=item.originalLines[i][0].lines[j].witnesses+"</p>"
+				}
+			}
+			content+="\r</div>";
+		} else if (item.key=="emendations") {
+			content+="<div class='emendations'>\r"
+//			content+="<h2>Emendations</h2>\r";
+			for (let i=0; i<item.lines.length; i++) {
+				content+="<h3>"+item.lines[i][0].title+"</h3>\r";
+				for (let j=0; j<item.lines[i].length; j++) {
+					for (let k=0; k<item.lines[i][j].lines.length; k++) {
+						let lastKey="";
+						let entity=item.lines[i][j].lines[k].key;
+						lastKey=entity.slice(entity.lastIndexOf(":")+1);
+						let thisMS="Edition";
+						content+="<div class='edComm' id='"+entity+"' data-entity='"+entity+"'>";
+						content+="<div class='edCommHead'>";
+						content+="<b>Line "+item.lines[i][j].lines[k].title+"</b>";
+						content+="<span class='selectEdSpellingLink' title='Check box to see original spelling'><input class='selectEdSpelling' onclick='javascript:selectEdSpelling(this)' type='checkbox' />Original Spelling</span>";
+						content+="<a href='javascript:getMSLine(\""+entity+"\",\""+thisMS+"\")'>Transcript</a>";
+						content+="<a href='../../../html/collationreg/"+entity.slice(0, entity.lastIndexOf(":"))+"/"+lastKey+".html'>Collation</a>"
+						content+="<a href='javascript:getCompareFromCollation(\""+entity+"\")'>Compare</a>";
+						content+="<a  href='../../../vBase.html'>VBase</a>";
+						content+="</div>\n";
+						console.log("driving editorial process");
+						content+="<div class='edBaseLineCtr'><div class='edBaseMS'>"+thisMS+"</div><div data-lineID='"+entity+"-"+thisMS+"' class='edBaseLine'></div></div>";
+						content+="<div class='PUEditorial' id='PUEdColl-"+entity+"-"+thisMS+"'></div>";
+						let myItem=item.lines[i][j].lines[k];
+						for (let l=0; l<myItem.text.length; l++) {
+							if (myItem.text[l].hasOwnProperty("attr")) {
+								let attr=myItem.text[l].attr.slice(0,myItem.text[l].attr.indexOf("="));
+								let value=myItem.text[l].attr.slice(myItem.text[l].attr.indexOf("=")+1);
+								content+="<"+myItem.text[k].type+" "+attr+"='"+value+"'>"+item[i].text[k].text+"</"+item[i].text[k].type+">";
+							} else {
+							content+="<"+myItem.text[l].type+">"+myItem.text[l].text+"</"+myItem.text[l].type+">";
+						}
+						content+="<p class='edRespons'>("+myItem.approver+", "+formatDate(myItem.date)+")</p>\n";
+						content+="</div>\n"
+					 }
+				  }
+				}
+			}
+		}  else {
+			for (let i=0; i<item.text.length; i++) {
+				if (item.text[i].hasOwnProperty("attr")) {
+					let attr=item.text[i].attr.slice(0,item.text[i].attr.indexOf("="));
+					let value=item.text[i].attr.slice(item.text[i].attr.indexOf("=")+1);
+					content+="<"+item.text[i].type+" "+attr+"='"+value+"'>"+item.text[i].text+"</"+item.text[i].type+">";
+				} else {
+					content+="<"+item.text[i].type+">"+item.text[i].text+"</"+item.text[i].type+">";
+				}
+			} 
+		}
 	} else { //must be a commentary. Could be lots and lots of them
 		//get the title
 		let eName=item[0].key.slice(0, item[0].key.indexOf(":"));

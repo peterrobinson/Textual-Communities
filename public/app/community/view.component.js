@@ -49,6 +49,7 @@ var ViewComponent = ng.core.Component({
     this.callCollationEditor='';
 //    this.documents=this._communityService._docService.state.community.attrs.documents;
 //    this.rebuild=true; //temporary, to upgrade images
+     this.backupIIIF=true; //temporary, to upgrade images
  	if (this.state.community.attrs.documents.length>0 && !this.state.community.attrs.documents[0].attrs.hasOwnProperty('name')) {
 		$.get(config.BACKEND_URL+'getDocNames/?community='+this.state.community._id)
 		.done ( function(res) {
@@ -302,6 +303,63 @@ var ViewComponent = ng.core.Component({
 			console.log("Created "+index+" IIIF images.");
 		});
 	});
+  },
+  makeIIIFLocal: function(doc) { //expects images to have been downloaded to local image storage
+  	  let index=1;
+  	let self=this;
+  	let dezoomList="";
+  	let errorMessage="";
+  	this._docService.refreshDocument(doc).subscribe(function(mydoc) { 
+  	    async.mapSeries(mydoc.attrs.children, function(page, callback) {
+  	    	console.log("Creating local version of remote IIIF image for "+mydoc.attrs.name+", "+page.attrs.name+", "+index+" of "+mydoc.attrs.children.length);
+			index++;
+			$.get(config.BACKEND_URL+'makeIIIFLocalImage/?community='+this.state.community.attrs.abbr+'&doc='+mydoc.attrs.name[0]+'&page='+page.attrs.name[0])
+			.done (function(res){
+				if (res.success) { //just do one for now
+			//	   callback({success:false});
+				   callback(null, []);
+				} else {
+					console.log("We have a problem on page "+page.attrs.name+". ");
+			//		callback({success:false});
+					errorMessage+=page.attrs.name+" ";
+				    callback(null, []);
+				}
+			  })
+			  .fail (function( jqXHR, textStatus, errorThrown ) {
+					console.log(jqXHR);
+					console.log(textStatus);
+					console.log(errorThrown );
+					callback(null);
+				});
+			}, function (err){
+				if (errorMessage!="") {
+					console.log(index+" local IIIF pages made. Problems with: "+errorMessage);
+				}
+			});
+  	    });
+   },
+  makeIIIFList: function(doc) {
+    let index=1;
+  	let self=this;
+  	let dezoomList="";
+  	this._docService.refreshDocument(doc).subscribe(function(mydoc) { 
+  		async.mapSeries(mydoc.attrs.children, function(page, callback) {
+  			console.log("Creating dezoominfy bulk list for "+mydoc.attrs.name+", "+page.attrs.name+", "+index+" of "+mydoc.attrs.children.length);
+			index++;
+			if (! page.attrs.image || typeof page.attrs.image=="undefined" || page.attrs.image=="" || !page.attrs.image.startsWith("http") || page.attrs.image.indexOf("textualcommunities.com")!=-1) {
+				console.log("Image for "+page.attrs.name+" is missing, is not a iiif image, or is already in textualcommunities");
+				callback(null, []);
+			} else {
+				//
+				dezoomList+=page.attrs.image+"/info.json "+mydoc.attrs.name+"-"+page.attrs.name+"\n";
+				callback(null, []);
+			}
+  		}, function (err){
+  			if (dezoomList!="") {
+  			 BrowserFunctionService.download(dezoomList, mydoc.attrs.name+"-dezoomlist.txt", "text");
+  		   }
+  		}); 
+  	})
   },
   rebuildIIIF: function(doc) { //used only to create new default jpegs
   	let index=1;

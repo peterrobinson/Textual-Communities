@@ -49,6 +49,14 @@ body {
     top: 10px;
 }
 
+.scribal {display:none}
+.speclines note {display:none}
+.speclines p {    
+	margin-left: 15px;
+    margin-right: 15px;
+    text-indent: -30px;
+    padding-left: 30px;
+}
 #longTitle {font-size: x-large; margin-bottom: 0px; margin-top: 0px;}
 #page-head a {text-decoration:none}
 #grp1 {display:flex; justify-content: space-between;   padding-left: 10px; align-items: center; flex-grow:1; white-space:no-wrap; padding-right: 5px;}

@@ -11,10 +11,10 @@ function initIndex () {
 			createIndex();
 		});  */
 		if (!ssSearch) $("#Search").remove();
-		if (!hasVBase) {
+/*		if (!hasVBase) {
 			$("#VBase").remove();
 			$("#VBaseLink").remove();
-		}
+		} */
 		createIndex();
 	}
 }

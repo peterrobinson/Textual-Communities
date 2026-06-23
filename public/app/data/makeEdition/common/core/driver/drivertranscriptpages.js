@@ -17,9 +17,14 @@ function initTranscript () {
 		if (!ssSearch) {
 			$("#staticSearch").remove();
 		}
-		if (!hasVBase) {
+/*		if (!hasVBase) {
 			$("#VBase").remove();
 			$("#VBaseLink").remove();
+		} */
+		if (currMS!="Edition") {
+			$("#selectScribal").remove();
+		} else {
+			$('#showScribal').prop('checked', false);
 		}
 		createTranscript();
 	}
@@ -71,6 +76,7 @@ function createTranscript() { //currEntities read from starting script, allEntit
 	initializeSplitView();
 	getImageInf();
 	setupPageLinks();
+	console.log("here we are");
 	async.waterfall([
 		function(callback) {
 			getImageCall(callback);
@@ -86,6 +92,9 @@ function createTranscript() { //currEntities read from starting script, allEntit
 		 }, 
 		  function(arguments, callback) { 
 			if (currEntity=="") {callback(null, [])} else {doLineNumbers(2, callback)};
+		 },
+		 function(arguments, callback) {
+		 	if (currMS!="Edition") {callback(null, [])}  else {doEditionScribal(callback)};
 		 },
 		 function(arguments, callback) { 
 		 	if (currEntity=="") {callback(null, [])} else {
@@ -292,15 +301,17 @@ function openTranscript(callback) {
 		if (text.indexOf("<cb")>-1) {
 			hasMultiColumns=true;
 			doTextColumns(text);
+			adjustMarginSizes();  //call this before and after filling margins
 			doMargins(1, true);
 			doMargins(2);
-			adjustMarginSizes();
+//			adjustMarginSizes();
 			$($("#t-c2-linenumbers")[0]).css("width", "25px");
 		} else {
 			$("#t-c1-text").html("<div>"+text+"</div>");
 			hasMultiColumns=false;
-			doMargins(1,false);
 			adjustMarginSizes();
+			doMargins(1,false);
+//			adjustMarginSizes();
 		}
 		if (typeof $("am")[0]!="undefined") {$("#selectAbbrev").show(); $("ex").hide();} else {$("#selectAbbrev").hide()}
 		if (typeof $("app")[0]!="undefined")  {$("#selectApp").show()} else { $("#selectApp").hide()}
@@ -462,6 +473,9 @@ function doMargins(column, isTwoColumns) {
 			noteplace=$(notes[i]).attr("place");
 		}
 		let lineNum=$($(notes[i])).parent("l").attr("n");
+		if (typeof $($(notes[i])).parent("l").attr("n")=="undefined") {
+			console.log("note element not within line in "+currMS+", "+currPage);
+		}
 		//we need to put an id on the note so it can be found in the line; pick up when we make transcript and compare views
 		let book=$($(notes[i])).parents("div").attr("n");
 		let noteId=book+"-"+lineNum;
@@ -469,28 +483,42 @@ function doMargins(column, isTwoColumns) {
 		//here are going to 
 		switch(noteplace) {
 			case "margin-left":
-				let top=notes[i].offsetTop;
-				$(notes[i]).attr("n", "N"+column+"-"+book+lineNum);
-				if (column==1) {
-					$(notes[i]).detach().appendTo("#t-c1-left"); 
-				} //complexb things happening .. right and left depend on how many columns
-				let numtop=$("note[n='N"+column+"-"+book+lineNum+"']")[0].offsetTop;
-				$($("note[n='N"+column+"-"+book+lineNum+"']")[0]).css({position:"relative", top:""+(top-numtop+3)+"px"});
+				$(notes[i]).attr("n", "LL"+column+"-"+book+lineNum);
+				let myLine1=$(notes[i]).parent("l")
+				let myElement=$("note[n=LL"+column+"-"+book+lineNum+"]").clone();
+				$(notes[i]).remove();
+				$(myLine1)[0].prepend(myElement[0]); //done before words are allocated; have to alter so the note does not go within the word
+				//figure out exactlu where to put this note
+				let notewidth=$(myElement[0]).width();
+				if ($("#t-c1-text").has(myLine1)) { //ok, set width of 
+					if ($("#t-c1-left").width()< notewidth) $("#t-c1-left").width(notewidth+6);
+				}
+				let offset=notewidth+$("#t-c1-linenumbers").width()+26;
+				$($("note[n='LL"+column+"-"+book+lineNum+"']")[0]).css({position:"relative", left:"-"+offset+"px", "font-size":"80%","display":"inline-block", "white-space":"nowrap", width:"0px"});
 				break;
 			case "margin":
 				$(notes[i]).detach().appendTo("#t-c1-left"); break;  //we deprecate use of this;  replace by margin left or right
 			case "margin-right":
-				let rtop=notes[i].offsetTop;
+				$(notes[i]).attr("n", "LL"+column+"-"+book+lineNum);
+				let rtop=$($(notes[i]).parents("l")[0]).position().top-$($(notes[i]).parents("div")[0]).position().top;  //doesnt put it in the right place, but ee dont care	
+				let myLine2=$(notes[i]).parent("l");
+				let myElement2=$("note[n=LL"+column+"-"+book+lineNum+"]").clone();
 				if (column==1 && isTwoColumns) {
 					$(notes[i]).attr("n", "RG"+column+"-"+book+lineNum);
 					$(notes[i]).detach().appendTo("#t-c1c2-gutter"); 
 					let rnumtop=$("note[n='RG"+column+"-"+book+lineNum+"']")[0].offsetTop;
 					$($("note[n='RG"+column+"-"+book+lineNum+"']")[0]).css({position:"relative", top:""+(rtop-rnumtop+3)+"px"});
 				} else {
-					$(notes[i]).attr("n", "RN"+column+"-"+book+lineNum);
-					$(notes[i]).detach().appendTo("#t-c2-right"); 
-					let rnumtop=$("note[n='RN"+column+"-"+book+lineNum+"']")[0].offsetTop;
-					$($("note[n='RN"+column+"-"+book+lineNum+"']")[0]).css({position:"relative", top:""+(rtop-rnumtop)+"px"});
+//					let rnumtop=$("note[n='RN"+column+"-"+book+lineNum+"']")[0].offsetTop;
+					$(notes[i]).remove();
+				//if the note containd line breaks put it in the right column
+					if ($(myElement2[0]).has("br").length>0) {
+						$(myElement2[0]).appendTo("#t-c2-text");
+						$(myElement2[0]).css({position:"relative", top:rtop+"px","display":"inline-block", "font-size":"80%", "white-space":"nowrap"});
+					} else {
+						$(myLine2)[0].prepend(myElement2[0]);
+						$(myElement2[0]).css({position:"relative", left:$("#t-c1-text").width()+20+"px","display":"inline-block", "font-size":"80%", "white-space":"nowrap", width:"0px"});
+					}
 				}				
 				break;
 			case "2col-banner":  //this one is complex! see Wy e3v
@@ -601,28 +629,45 @@ function popNotes (text, type) {
 	}
 	return(text);
 }
-
+ 
+ 
 function doLineNumbers(column, cbmain) {
 	if (column==2 && !hasMultiColumns) {
 		cbmain(null, []);
 	} else {
 		let lines=$("#t-c"+column+"-text").find("l");  //this has to be redone to handle prose and generic structures
+		//revised to just put the number to the left ...
 		async.mapSeries(lines, function(line, callback){ 
 			let LineN=$(line).attr("n");
-			let top=line.offsetTop;
+//			let top=line.offsetTop;
 			let DivN=$($(line).parents("div[type=G]")[0]).attr("n"); //we should not use div types here. And we should be prepared to go up as many n attribute content elements as we need
 			if (typeof DivN=="undefined") {
 				DivN=$($(line).parent("div")[0]).attr("n");
 			}
-			$("#t-c"+column+"-linenumbers").append("<div class='lineN' n='"+DivN+"-"+LineN+"'></div>");
-			let numtop=$("div[n='"+DivN+"-"+LineN+"']")[0].offsetTop;
-			$($("div[n='"+DivN+"-"+LineN+"']")[0]).css({position:"relative", top:""+(top-numtop+3)+"px"});
+	//		$("#t-c"+column+"-linenumbers").append("<div class='lineN' n='"+DivN+"-"+LineN+"'></div>");
+	//2026 Now put this new div at the start of the line and offset it left
+	//		let numtop=$("div[n='"+DivN+"-"+LineN+"']")[0].offsetTop;
+//			$($("div[n='"+DivN+"-"+LineN+"']")[0]).css({position:"relative", top:""+(top-numtop+3)+"px"});
+		if (!isNaN(LineN) && (parseInt(LineN) % 5==0)) {
+				let concordLine=makeConcord(DivN, LineN);
+				let leftOffset=-43
+				var myDiv = $("<div class='line' n='"+DivN+"-"+LineN+"'>"+concordLine+"</div>"); 
+				$(line)[0].prepend(myDiv[0]);
+				let isOrncp=false;
+				if (typeof $($($(line).children("w")[0]).children("hi")[0]).attr("rend")!="undefined") {
+					let rend=$($($(line).children("w")[0]).children("hi")[0]).attr("rend");
+					if (rend.indexOf("orncp")>-1) isOrncp =true; 
+				}
+				if (isOrncp) leftOffset=-61;
+				$($("div[n='"+DivN+"-"+LineN+"']")[0]).css({"position":"relative", "left": leftOffset+"px","display":"inline-block", "white-space":"nowrap", width:"0px"});
+			}
 			let searchUrl="https://textualcommunities.com/api/getCommentaries?entity="+TCcommunity+"/entity="+DivN+":line="+LineN+"&entityTo=";
 			 $.post(searchUrl, function(res) {
 				if (res.success) {
 					let commentary=selectCommentary(res.commentaries);
 					if (!isNaN(LineN) && (parseInt(LineN) % 5==0)) {
-						$($("div[n='"+DivN+"-"+LineN+"']")[0]).html(LineN+" <span class='showTip Comm-"+DivN+"-"+LineN+" commRef'>C</span>");
+						let concordLine=makeConcord(DivN, LineN);
+						$($("div[n='"+DivN+"-"+LineN+"']")[0]).html(concordLine+" <span class='showTip Comm-"+DivN+"-"+LineN+" commRef'>C</span>");
 						$("#popUps").append("<div id=\"Comm-"+DivN+"-"+LineN+"\">"+commentary+"</div>");
 						callback(null,[]);
 					} else {
@@ -631,12 +676,13 @@ function doLineNumbers(column, cbmain) {
 						callback(null,[]);
 					}
 				} else {
-					if (!isNaN(LineN) && (parseInt(LineN) % 5==0)) {
+					callback(null,[]);
+				/*	if (!isNaN(LineN) && (parseInt(LineN) % 5==0)) {
 						$($("div[n='"+DivN+"-"+LineN+"']")[0]).html(LineN);
 						callback(null,[]);
 					} else {
 						callback(null,[]);
-					}
+					} */
 				}
 			 });	
 		}, function (err) {
@@ -767,6 +813,20 @@ function getImageInf() {
 	resizeRTable();
 }
 
+function doEditionScribal(callback){
+	let lines=$("l");
+	for (let i=0; i<lines.length; i++) {
+		let lineN=$($(lines)[i]).attr("n");
+		let divN=$($($(lines)[i]).parent("div")).attr("n");
+		let entityRef="entity="+divN+":line="+lineN;
+		if (scribal.filter(ent=>ent==entityRef).length>0) {
+			//hide it! and the preceding break..
+			$($($(lines)[i]).prev("br")).addClass("scribal");
+			$($(lines)[i]).addClass('scribal');
+		}
+	}
+	callback(null, []);
+}
 function makeTranscriptInf (callback){
 	$('#OAstatement').css("height", "auto");
 //does Base exist? if not, use currMS
@@ -839,14 +899,30 @@ function makeTranscriptInf (callback){
 function doWords() {
 	let lines=$("l");
 	for (let i=0; i<lines.length; i++) {
-		if (i==18) {
-			let boo=1;
-		}
-		let newArray=[], openElements=[];
+		let newArray=[], openElements=[], notes=[], noteIsLine=false, note=[];
 		let book=$($(lines[i])).parent("div").attr("n");
 		let lineId=$(lines[i]).attr("n");
+		if ($(lines[i]).has("note").length) {
+			if ($(lines[i]).contents().length>1) { //normal, note embedded in line with text
+				notes=$(lines[i]).find("note").clone();
+				$(lines[i]).find("note").remove();
+			} else { //note contaims whole line in a margin
+				noteIsLine=true;
+				note=$(lines[i]).find("note").clone();
+				$(lines[i]).html($(note).html());
+			}
+		}
 		let result=doWordsOneLine(newArray, $(lines[i]).html(), book+"-"+lineId, openElements, currMS, "transcript");
-		$(lines[i]).html(result);
+		if (noteIsLine) {
+			$(lines[i]).html($(note).html(result));
+			//hide next <br>
+			$($(lines[i]).next("br")[0]).hide();
+		} else {
+			$(lines[i]).html(result);
+		}
+		if (notes.length) {//put notes back in the element at its start
+			$(lines[i]).prepend(notes);
+		}
 	}
 }
 

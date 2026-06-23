@@ -73,9 +73,13 @@
 
             <a target="_blank" *ngIf="rebuild" data-toggle="tooltip" title="Create Deep Zoom IIIF images" (click)="createIIIF(doc)">
                 <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" >Z</span>
+            </a> 
+            <a target="_blank" *ngIf="backupIIIF" data-toggle="tooltip" title="Create dezoomify bulk file" (click)="makeIIIFList(doc)">
+                <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" >L</span>
             </a>
-           
-            
+            <a target="_blank" *ngIf="backupIIIF" data-toggle="tooltip" title="Create local IIIF images" (click)="makeIIIFLocal(doc)">
+                <span onmouseover="this.style.fontSize='30px'" onmouseout="this.style.fontSize='15px'" >I</span>
+            </a>
             <span *ngIf="(role=='LEADER'||role=='CREATOR') && showAddFirstPage(doc)" (click)="addFirstPage(doc)"
               class="add-page-after"></span>
           </div>

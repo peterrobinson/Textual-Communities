@@ -12,7 +12,6 @@ var UIService = require('../services/ui')
 ;
 
 
-
 var CommunityMakeEditionComponent = ng.core.Component({
   selector: 'tc-community-makeEdition',
   templateUrl: '/app/community/makeedition.html',
@@ -854,6 +853,48 @@ function loadBaseFiles(zip, self, callback) {
 	}, */
 	function(arguments, cb) {
 		zip.file("edition/common/core/js/indexJs.js", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/js/indexJs.js", cb), {binary:true});
+	},      //next load in three base files needed by CTP
+	function(arguments, cb) {
+		self.restService.http.get(self.config.chaucerNotHgFile).subscribe(function(myFile) {
+			eval(myFile._body);
+			self.config.chaucernotHg=chaucernotHg;
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get(self.config.scribalFile).subscribe(function(myFile) {
+			eval(myFile._body);
+			self.config.scribal=scribal;
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get(self.config.entitiesflatfile).subscribe(function(myFile) {
+			eval(myFile._body);
+			self.config.collentities=collentities;
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get(self.config.emendationsFile).subscribe(function(myFile) {
+			eval(myFile._body);
+			self.config.emendations=emendations;
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get(self.config.bibliographyFile).subscribe(function(myFile) {
+			eval(myFile._body);
+			self.config.bibliography=bibliography;
+			cb(null, []);
+		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get(self.config.concorderFile).subscribe(function(myFile) {
+			eval(myFile._body);
+			self.config.concorder=concorder;
+			cb(null, []);
+		})
 	}
   ], function (err) {
   	 if (self.config.standalone) {
@@ -1051,11 +1092,27 @@ function makeCollation(self, zip, callback) {
    } else {
    		$("#MEProgress").html("Creating html for collated elements");
    		$.get(self.config.collationTemplate, function(myfile){
+   			//altered June 2026. We now have collationflatents, containing a  complete, ordered and validated entity list
+   			//so we just use thqt list, loaded into self.config.collentities, filtered for current entities
+   			
    			let entitiesArray=[], origEntities=[] ;
    			let index=0; ci=0;
- 			convertEntityPages(self.edition.entityPages, entitiesArray);
-  			convertEntityPages(self.edition.entityPages, origEntities);
-  			//here we put a routine to check entitiesArray against entities flat.
+   			entitiesArray=self.config.collentities;
+   			//remove entity=...
+   			for (let i=0; i<entitiesArray.length; i++) {
+   				let keepEntity=false;
+   				for (let j=0; j<self.edition.entityPages.length; j++) {
+   					if (entitiesArray[i].startsWith("entity="+self.edition.entityPages[j].entity)) keepEntity=true;
+   				}
+   				if (keepEntity) {
+   					entitiesArray[i]=entitiesArray[i].slice(7);
+   				} else {
+   				 	entitiesArray.splice(i, 1);
+   				 	i--;
+   				}
+   			}
+ //			convertEntityPages(self.edition.entityPages, entitiesArray);
+ // 		convertEntityPages(self.edition.entityPages, origEntities);
   			if (typeof self.config.entitiesLimit!="undefined") {
   				entitiesArray.splice(self.config.entitiesLimit);
   			}
@@ -1292,6 +1349,9 @@ function makePageEntities(self, pageEntities, documents, zip, callback) { //we d
 			}
 			let thisMs=pageEntities.filter(function (obj){return obj.witness==doc.name})[0];
 			async.mapSeries(doc.pages, function (myPage, saCB) {
+/*				if (doc.name[0]!="El") {
+					return(saCB(null));
+				} */
 				$("#MEProgress").html("Reading entities on "+myPage+" in "+doc.name);
 				$.get(self.config.TCUrl+'/uri/urn:det:tc:usask:'+self.config.TCCommunity+'/entity=*:document='+doc.name+':pb='+myPage+'?type=list', function (pEnts) {
 					//remove lines, and sort remaining pEnts...
@@ -1301,6 +1361,7 @@ function makePageEntities(self, pageEntities, documents, zip, callback) { //we d
 							self.edition.messages+="Error on page "+myPage+" of document "+doc.name+". Empty entity found, this should not happen. Likely error in encoding. Check the transcription";
 							return(saCB(null));
 						}
+						console.log("Processing entity "+pEnts[i].entity+" on "+myPage+" in "+doc.name);
 						pEnts[i].match=makeMatch(pEnts[i].entity, self);
 						if (pEnts[i].match[1]=="") { 
 							pEnts.splice(i--, 1);
@@ -1462,7 +1523,7 @@ function makeEditorial(self, zip, callback) {
 //					myEntity.topMatch=myEntity.match.split("_")[0]; //do we need this??/
 					async.waterfall([
 						function (cb) {
-							if (!myEntity.hasCommentary || commEntities.includes(myEntity.entity)) { 
+							if (/* !myEntity.hasCommentary || */ commEntities.includes(myEntity.entity) ) { 
 								cb(null, []);
 							} else {
 								$.get(self.edition.TCUrl+'/api/getApprovedCommentaries?entity='+searchEnt, function (json){
@@ -1511,16 +1572,21 @@ function makeEditorial(self, zip, callback) {
 							}
 						},
 						function (arguments, cb) { 
-							if (!myEntity.hasCollation || collEntities.includes(myEntity.entity)) { 
+							if (/* !myEntity.hasCollation || */ collEntities.includes(myEntity.entity)) { 
 								cb(null, []);
 							} else {
 								$.get(self.edition.TCUrl+"/uri/urn:det:tc:usask:"+searchEnt+"?type=apparatus&format=xml/positive", function (xml) {
 									collEntities.push(myEntity.entity);
-									zip.file('edition/xml/collation/'+ myEntity.match[0]+"/"+ myEntity.match[1]+'.xml', xml.replaceAll("&lt;","<"));
-									cb(null, []);							
+									if (xml.result==0) {
+										console.log(xml.message);
+										cb(null, []);
+									} else {
+										zip.file('edition/xml/collation/'+ myEntity.match[0]+"/"+ myEntity.match[1]+'.xml', xml.replaceAll("&lt;","<"));
+										cb(null, []);	
+									}						
 								});
 							}
-						}
+						} 
 					], function (err) {
 						doneEntities.push(myEntity.entity);		
 						cbWitness(null, []);
@@ -1529,11 +1595,184 @@ function makeEditorial(self, zip, callback) {
 		   }, function (err) {
 				cbPE(null,[]);
 		   });
-		}, function (err) {
-			self.edition.editorial=editorial;
-			zip.file('edition/common/local/js/editorial.js', 'var editorial='+JSON.stringify(editorial));
-			zip.file('edition/output/editorial.js', 'var editorial='+JSON.stringify(editorial));
-			return(callback(null));
+		}, function (err) { //deal with scribal additions etc here
+			var scribalLines=[];
+			var originalLines=[];
+			var emendations=[];
+			var bibliography=[];
+		    async.waterfall([
+		    	function (cb1) { 
+		    		var scribal=[];
+					for (let i=0; i<self.config.entities.length; i++) {
+						let myScribal=self.config.scribal.filter(entry=>(entry.startsWith("entity="+self.config.entities[i])));
+						if (myScribal.length) {
+							scribal.push(myScribal);
+						}
+					}
+					async.mapSeries(scribal, function (scribal_arr, cbscribal) { 
+						let thisScribalLine=[];
+				//		let title=scribal_arr[0].slice(7, scribal_arr[0].indexOf(":"));
+						let aliases=applyAliases(self.config.aliases, "CTP2:"+scribal_arr[0]);
+						thisScribalLine.push({"title":aliases[0], "lines":[]});
+		    			async.mapSeries(scribal_arr, function (scribal1, cbonescribal) {
+							$("#MEProgress").html("Processing scribal lines for "+scribal1);
+		    				let fetchEnt="CTP2/"+scribal1;
+		    				let edText="";
+		    				let msList="";
+		    				async.parallel([
+		    					function (cb3) { 
+		    						$.get(self.edition.TCUrl+"/uri/urn:det:tc:usask:"+fetchEnt+":document=Edition?type=transcript&format=xml", function(textLine) {
+		    							edText=textLine[0].text;
+		    							cb3(null, "");
+		    						});		    
+		    					},
+		    					function (cb3) {
+		    						$.get(self.edition.TCUrl+"/uri/urn:det:tc:usask:"+fetchEnt+":document=*?type=list", function(witnessList) {
+		    							let nWits=witnessList.length;
+		    							for (let i=0; i<witnessList.length; i++) {
+		    								if (witnessList[i].name[0]=="Edition") {
+		    									nWits--;
+		    								} else if (witnessList[i].name[0]=="Base") {
+		    									nWits--;
+		    								} else  {
+		    									msList+='<a href="javascript:getMSLine(\''+scribal1.slice(scribal1.indexOf("=")+1)+'\', \''+witnessList[i].name[0]+'\')">'+witnessList[i].name[0]+'</a> ';
+		    								}
+		    							}
+		    							msList+=" ("+nWits+")"
+		    							cb3(null, "");
+		    						});	 
+		    					} 
+		    				], function (err) {
+								aliases=applyAliases(self.config.aliases, "CTP2:"+scribal1);
+								thisScribalLine[0].lines.push({"line":edText, "place": aliases[1],"witnesses":msList});
+								return(cbonescribal(null));
+		    				}); 
+		    			}, function(err){
+		    				scribalLines.push(thisScribalLine)
+		    				cbscribal(null,[]);
+		    			}); 
+		    		}, function (err){  
+		    			editorial.push({"title":"Scribal Lines", "key":"Scribal", "aliases": JSON.stringify(aliases), "scribalLines":scribalLines});
+		    			cb1(null,[]);
+		    		}); 
+		    	}, 
+		    	function (args, cb1) { 
+		    		var original=[];	
+					for (let i=0; i<self.config.entities.length; i++) {
+						let myOriginal=self.config.chaucernotHg.filter(entry=>(entry.startsWith("entity="+self.config.entities[i])));
+						if (myOriginal.length) {
+							original.push(myOriginal);
+						}
+					}
+					async.mapSeries(original, function (original_arr, cboriginal) { 
+						$("#MEProgress").html("Processing scribal lines for "+original_arr[0]);
+						let thisOriginalLine=[];
+				//		let title=scribal_arr[0].slice(7, scribal_arr[0].indexOf(":"));
+						let aliases=applyAliases(self.config.aliases, "CTP2:"+original_arr[0]);
+						thisOriginalLine.push({"title":aliases[0], "lines":[]});
+		    			async.mapSeries(original_arr, function (original1, cboneoriginal) {
+		    				$("#MEProgress").html("Processing o lines not in Hg for "+original1);
+		    				let fetchEnt="CTP2/"+original1;
+		    				let edText="";
+		    				let msList="";
+		    				async.parallel([
+		    					function (cb3) {
+		    						$.get(self.edition.TCUrl+"/uri/urn:det:tc:usask:"+fetchEnt+":document=Edition?type=transcript&format=xml", function(textLine) {
+		    							edText=textLine[0].text;
+		    							cb3(null, "");
+		    						});		    						
+		    					},
+		    					function (cb3) {
+		    						$.get(self.edition.TCUrl+"/uri/urn:det:tc:usask:"+fetchEnt+":document=*?type=list", function(witnessList) {
+		    							let nWits=witnessList.length;
+		    							for (let i=0; i<witnessList.length; i++) {
+		    								if (witnessList[i].name[0]=="Base") {
+		    									nWits--;
+		    								} else  {
+		    									msList+='<a href="javascript:getMSLine(\''+original1.slice(original1.indexOf("=")+1)+'\', \''+witnessList[i].name[0]+'\')">'+witnessList[i].name[0]+'</a> ';
+		    								}
+		    							}
+		    							msList+=" ("+nWits+")";
+		    							cb3(null, "");
+		    						});	
+		    					}
+		    				], function (err){
+								aliases=applyAliases(self.config.aliases, "CTP2:"+original1);
+								thisOriginalLine[0].lines.push({"line":edText, "place": aliases[1], "witnesses":msList});
+								return(cboneoriginal(null));
+		    				});
+		    			}, function(err){
+		    				originalLines.push(thisOriginalLine);
+		    				return(cboriginal(null));
+		    			});
+		    		}, function (err){  
+		    			editorial.push({"title":"O Lines not in Hg", "key":"OnotHg", "aliases": JSON.stringify(aliases), "originalLines":originalLines});
+		    			cb1(null,[]);
+		    		});
+		    	}, 
+		    	function (args, cb1) { //get the emendations together
+		    		var emendations=[], emendationGroups=[];	
+					for (let i=0; i<self.config.entities.length; i++) {
+						let myEmendation=self.config.emendations.filter(entry=>(entry.startsWith("entity="+self.config.entities[i])));
+						if (myEmendation.length) {
+							emendations.push(myEmendation);
+						}
+					}	   
+					async.mapSeries(emendations, function (emendations_arr, cbemendation) { 
+						$("#MEProgress").html("Processing emendations for "+emendations_arr[0]);
+						let thisEmendationLine=[];
+						let aliases=applyAliases(self.config.aliases, "CTP2:"+emendations_arr[0]);
+						thisEmendationLine.push({"title":aliases[0], "lines":[]});
+						async.mapSeries(emendations_arr, function (emendation1, cbemendation1) {
+							$("#MEProgress").html("Processing emendation for "+emendation1);
+							let fetchEnt="CTP2/"+emendation1;
+							//now we have the emendation ...process it..
+							$.get(self.edition.TCUrl+'/api/getApprovedCommentaries?entity='+fetchEnt, function (json){
+								var boo=1;
+								for (let i=0; i<json.results.length; i++) {
+									if (json.results[i].text.indexOf("<br>")>-1) { //go through this one paragraph at a time
+										let myText=json.results[i].text, myFixed=[];
+										myText=myText.replace(/(\r\n|\n|\r)/gm, "");
+										while (myText.indexOf("<br>")>-1) {
+											myFixed.push({"type":"p", "text":myText.slice(0, myText.indexOf("<br>"))});
+											myText=myText.slice(myText.indexOf("<br>")+4);
+										}
+										myFixed.push({"type":"p", "text":myText});
+										//readin alias at this point
+										let aliases=[];
+										if (self.config.hasOwnProperty("aliases")) {
+											aliases=applyAliases(self.config.aliases, emendation1);
+										}
+										thisEmendationLine[0].lines.push({"title":emendation1, "aliases": JSON.stringify(aliases), "title":aliases[0], "key":emendation1.slice(7), "text":myFixed, "date": json.results[i].date, "approver": json.results[i].approver});
+								//		editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":myFixed, "date": json.results[i].date, "approver": json.results[i].approver});
+									} else {
+										let aliases=[];
+										if (self.config.hasOwnProperty("aliases")) {
+											aliases=applyAliases(self.config.aliases, emendation1);
+										}
+										//check for alias
+										thisEmendationLine[0].lines.push({"key":emendation1.slice(7),"title":aliases[0], "text":[{"type":"p", "text":json.results[i].text}], "date": json.results[i].date, "approver": json.results[i].approver}); //add here text of related commentary
+
+//										editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":[{"type":"p", "text":json.results[i].text}], "date": json.results[i].date, "approver": json.results[i].approver});
+									}
+								} 
+								cbemendation1(null, "");
+							});
+						}, function (err){
+							emendationGroups.push(thisEmendationLine);
+							cbemendation(null, "");
+						});
+					}, function (err){
+						editorial.push({"title":"Emendations", "key":"emendations", "lines":emendationGroups});
+						cb1(null,"");
+					}); 	
+		    	}
+		    ], function (err){
+				self.edition.editorial=editorial;
+				zip.file('edition/common/local/js/editorial.js', 'var editorial='+JSON.stringify(editorial));
+				zip.file('edition/output/editorial.js', 'var editorial='+JSON.stringify(editorial));
+				return(callback(null));
+		    });
 		});  
 	} 
 }
@@ -1681,10 +1920,14 @@ function doMakeEditorialPages(self, zip, callback) { //ready to roll!
 					let ssSearch=true;
 					if (typeof self.config.ssSearch=="undefined") ssSearch=false;
 					let str=BrowserFunctionService.adjustResult(self, event.data, false, [{key:"ssSearch", value:ssSearch, isobject: true},{key:"currMS", value: self.config.currMS, isobject:false}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key: "currEntity", value:self.config.firstEntity, isobject:false}, {key: "view", value:"editorial", isobject:false}],[self.config.editorialJs, self.config.entityPagesFile, self.config.aliasesFile]);	
-					if (!Array.isArray(thisEditorial)) {
+					if (thisEditorial.hasOwnProperty("key") && (thisEditorial.key=="Scribal" || thisEditorial.key=="OnotHg")) {
 						zip.file('edition/html/editorial/menu/'+thisEditorial.key+".html", str);
 					} else {
-						zip.file('edition/html/editorial/commentary/'+thisEditorial[0].key.slice(0,thisEditorial[0].key.indexOf(":") )+".html", str);
+						if (!Array.isArray(thisEditorial)) {
+							zip.file('edition/html/editorial/menu/'+thisEditorial.key+".html", str);
+						} else {
+							zip.file('edition/html/editorial/commentary/'+thisEditorial[0].key.slice(0,thisEditorial[0].key.indexOf(":") )+".html", str);
+						}
 					}
 					cbedmat(null);
 				}
@@ -1763,7 +2006,7 @@ function makeMenu(self, zip, callback) {
 					processMenu(self, myMenu, self.edition.editorial[i].key, self.edition.editorial[i].key.slice(index2+1), [titleOrig], aliases, 1);
 				} else {
 					menu.push({"title": self.edition.editorial[i].title, "key":self.edition.editorial[i].key});
-				}
+				} 
 			}
 		}
 		zip.file('edition/output/menu.js', 'var menu='+JSON.stringify(menu));
@@ -1906,7 +2149,7 @@ function makeHTMLPages(self, zip, documents, pageEntities, callback) {
 					let ssSearch=true;
 					if (typeof self.config.ssSearch=="undefined") ssSearch=false;
 					if (self.config.standalone) {
-						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:true, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false}, {key: "view", value:"transcript", isobject:false}, {key: "TCurl", value: self.config.TCUrl, isobject:false}, {key: "TCimages", value: self.config.TCimagesUrl, isobject:false}, {key: "currMS", value: doc.name, isobject:false},{key: "currPage", value: tpage, isobject:false}, {key: "imagesCommunity", value:self.config.imagesCommunity, isobject:false}, {key: "TCcommunity", value:self.config.TCCommunity, isobject:false}, {key: "currEntity", value:myEntity, isobject:false}, {key: "currEntities", value:JSON.stringify(self.config.entities), isobject:true}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.pagesDriverJs, self.config.collutilsJs, self.config.witnessInfFile, self.config.pageEntitiesMinFile, self.config.entityPagesFile, self.config.aliasesFile,self.config.indexCompareFile]);
+						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:true, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"scribal", value: JSON.stringify(self.config.scribal), isobject:true}, {key:"concorder", value: JSON.stringify(self.config.concorder), isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false}, {key: "view", value:"transcript", isobject:false}, {key: "TCurl", value: self.config.TCUrl, isobject:false}, {key: "TCimages", value: self.config.TCimagesUrl, isobject:false}, {key: "currMS", value: doc.name, isobject:false},{key: "currPage", value: tpage, isobject:false}, {key: "imagesCommunity", value:self.config.imagesCommunity, isobject:false}, {key: "TCcommunity", value:self.config.TCCommunity, isobject:false}, {key: "currEntity", value:myEntity, isobject:false}, {key: "currEntities", value:JSON.stringify(self.config.entities), isobject:true}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.pagesDriverJs, self.config.collutilsJs, self.config.witnessInfFile, self.config.pageEntitiesMinFile, self.config.entityPagesFile, self.config.aliasesFile,self.config.indexCompareFile]);
 					} else {
 						let banner= clean(self.edition.universalbanner);
 						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:false, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"item", value:JSON.stringify(thisEditorial), isobject: true},{key: "view", value:"editorial", isobject:false}, {key:"universalBanner", value: banner, isobject:false}], [self.config.editorialDriverJs, self.config.entityPagesFile, self.config.aliasesFile]);
@@ -2235,7 +2478,7 @@ function checkEntities(self, callback) {
    } else {
    		let entitiesArray=[];
    		convertEntityPages(self.edition.entityPages, entitiesArray);
-   		 $("#MEProgress").html("reading in "+self.config.entitiesflatfile);
+   		 $("#MEProgress").html("reading in "+self.config.entitiesflatfile);  //superfluous; already loaded
    		$.get(self.config.entitiesflatfile, function(data){ //load th
  			eval(data);  //should give us collentities
  			if (typeof collentities=="undefined") {

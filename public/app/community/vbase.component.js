@@ -471,9 +471,11 @@ var VBaseComponent = ng.core.Component({
 			}
 			for (var k=start; k<=end; k++) {
 				//exclude cases where we have an overlap: ie varfrom of consecutive varsites are identical
-				if (this.vBase.varsites[k].from!=this.vBase.varsites[k-1].from) {
+				if (k>0 && this.vBase.varsites[k].from!=this.vBase.varsites[k-1].from) {
 					if (this.vBase.varsites[k].from==lemstart) lemma+="<span style='color:red'>"+this.vBase.varsites[k].variants[0]+"</span> ";
 					else if (parseInt(this.vBase.varsites[k].from)<lemstart || parseInt(this.vBase.varsites[k].to)>lemend ) lemma+=this.vBase.varsites[k].variants[0]+" ";
+				} else if (k==0) {
+					lemma+=this.vBase.varsites[k].variants[0]+" ";
 				}
 			}
 		}

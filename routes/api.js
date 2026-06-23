@@ -883,6 +883,24 @@ router.post('/upload', function(req, res, next) {
     });
 });
 
+router.get('/makeIIIFLocalImage', function(req, res, next) {
+	var page=req.query.page;
+	var doc=req.query.doc;
+	var community=req.query.community;
+	console.log("making local version of remote IIIF file for "+doc+", "+page);
+	let srcFile=config.TCIMAGE_STORAGE+"/"+doc+"-"+page+".jpg";
+	let dstDir=config.TCIMAGE_STORAGE+"/"+community+"/"+doc+"/"+page;
+	let iiifId="https://textualcommunities.com/app/data/tcimages/"+community+"/"+doc;
+	let vipsParam="'"+srcFile+"' '"+dstDir+"' --layout iiif --id '"+iiifId+"'";	
+	exec("vips dzsave "+vipsParam, (error, stdout, stderr) => {
+		if (error) { console.log(`error: ${error.message}`); res.json({success:false});return}
+		if (stderr) {console.log(`stderr: ${stderr}`);res.json({success:false});return}
+//		console.log("successfully made IIIF image ");
+		res.json({success:true});
+   })
+});
+
+
 router.get('/makeIIIFImage', function(req, res, next) {
 	var page=req.query.page;
 	var doc=req.query.doc;

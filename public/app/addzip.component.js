@@ -79,6 +79,7 @@ var AddZipComponent = ng.core.Component({
            var fname=myFile.name.slice(myFile.name.lastIndexOf('/')+1);
            var pname=fname.split('.')[0];
            //there could be several facs docs!! same image shared in several places say
+           
            var facsDoc=self.document.attrs.children.filter(function (obj){return (obj.attrs.facs && obj.attrs.facs.toLowerCase()== fname.toLowerCase());});
            if (facsDoc[0]) {
              for (var i=0; i<facsDoc.length; i++) {
@@ -88,7 +89,16 @@ var AddZipComponent = ng.core.Component({
                matchedFiles+=facsDoc[i].attrs.name+ " ("+fname+")";
                self.fileNames.push({"key": key, "file":fname, "page": facsDoc[i].attrs.name, "id":facsDoc[i].attrs._id});
              }
-           } else {
+           } else {//special routines if we have Ha4-..
+           	 if (pname.indexOf("Ha4-")!=-1) {
+           	 	if (pname.indexOf("Ha4-00")!=-1) {
+           	 		pname=pname.slice(6) 
+           	 	} else if (pname.indexOf("Ha4-0")!=-1) {
+           	 		pname=pname.slice(5);
+           	 	}  else {
+           	 		pname=pname.slice(4);
+           	 	}
+           	 }
              var nameDoc=self.document.attrs.children.filter(function (obj){return (obj.attrs.name && obj.attrs.name[0].toLowerCase()== pname.toLowerCase());})[0];
              if (nameDoc) {
                if (matchedFiles!="") matchedFiles+=", ";
@@ -137,11 +147,7 @@ var AddZipComponent = ng.core.Component({
       if (self.isDocTranscript) self.message="Commencing upload of files for "+self.fileNames.length+" pages to the server"
       else self.message="Commencing upload of "+self.unmatchedFileNames.length+" files to the server"
       var i=0;
-      var url = config.IMAGE_UPLOAD_URL;
-      if (config.env !== 'production') {
-        url += '?env=' + config.env;
-      }
-      //do it in parallek async for matched files, ie document is not empty
+       //do it in parallek async for matched files, ie document is not empty
       //do it in series async where document is empty
       //
       if (self.isDocTranscript) {
@@ -152,6 +158,11 @@ var AddZipComponent = ng.core.Component({
     //          fd.append("filename", self.fileNames[i].file);
               var blob = new Blob([myImage], { type: "image/jpeg"});
               fd.append('file', blob, thisFile.file);
+             var url = config.IMAGE_UPLOAD_URL;
+			  if (config.env !== 'production') {
+				url += '?env=' + config.env;
+			  }
+              url+="&community="+state.community.attrs.abbr+"&doc="+self.document.attrs.name[0]+"&page="+thisFile.page[0];
               $.ajax({
           			type: 'POST',
           			url: url,
