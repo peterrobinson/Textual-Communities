@@ -1,7 +1,7 @@
 var _ = require('lodash')
   , ejs = require('ejs')
   , fs = require('fs')
-  , fetch = require("node-fetch")
+  , fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args))
   , https = require('https')
   , path = require('path')
   , crypto = require('crypto')
