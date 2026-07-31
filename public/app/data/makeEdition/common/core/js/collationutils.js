@@ -99,6 +99,7 @@ function createLinks(){
 function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap, transform, isPopApp, entity, callback) {
 	var inWits=[], outMSS=[], VMapApp=[];
 	let parts=entity.split(":");
+//	console.log("starting the app now")
 	var collation=JSON.parse(apparatus);
 	//there could be duplicate readings, a by-product of overlapping variants. Resolve them.
 	//we are loading both the xml and the json app. No need to have both, really
@@ -168,6 +169,7 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 				if (j==3) {
 					var boo=1;
 				}
+				if  (collation.structure.apparatus[i].readings[j].type=="lac_verse") continue;
 				if (!(collation.structure.apparatus[i].readings[j].created || collation.structure.apparatus[i].readings[j].overlap_status=="duplicate")) {
 					for (k=0; k<collation.structure.apparatus[i].readings[j].text.length; k++) {
 						vartext+=collation.structure.apparatus[i].readings[j].text[k].interface;
@@ -189,14 +191,19 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 					if (collation.structure.apparatus[i].readings[j].type=="om" || collation.structure.apparatus[i].readings[j].type=="om_verse") {
 					  //omitted include lac also. So filter by presence in inwits and - indicating mod orig etc
 					   nwits=0;
-					   for (var m=0; m<collation.structure.apparatus[i].readings[j].witnesses.length; m++) {
-							var thisWit=collation.structure.apparatus[i].readings[j].witnesses[m];
-							if (currWits.includes(thisWit) || thisWit.indexOf("-")!=-1) {
+					   //using currwits does not work...
+					   for (let a=0;a<collation.structure.apparatus[i].readings[j].witnesses.length; a++) {
+							if (collation.structure.lac_readings.filter(wit=>wit==collation.structure.apparatus[i].readings[j].witnesses[a]).length==0) {
+								appText+="<a href='javascript:getMSLine(\""+currEntity+"\",\""+collation.structure.apparatus[i].readings[j].witnesses[a]+"\")'>"+collation.structure.apparatus[i].readings[j].witnesses[a]+"</a> ";
+								VMapApp[n].variants[j].wits.push(collation.structure.apparatus[i].readings[j].witnesses[a]);
+								nwits++;
+							}
+						}
+						/*	if (currWits.includes(thisWit) || thisWit.indexOf("-")!=-1) {
 								appText+="<a href='javascript:getMSLine(\""+currEntity+"\",\""+thisWit+"\")'>"+thisWit+"</a> ";
 								VMapApp[n].variants[j].wits.push(thisWit);
 								nwits++;
-							}  
-					   }
+							}  */
 					} else {
 						collation.structure.apparatus[i].readings[j].witnesses=moveBase(collation.structure.apparatus[i].readings[j].witnesses);
 						for (var m=0; m<collation.structure.apparatus[i].readings[j].witnesses.length; m++) {
@@ -286,7 +293,8 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 			for (var j=0; j<collation.structure.apparatus[i].readings.length; j++) {
 				if (collation.structure.apparatus[i].readings[j].created) continue;
 				if  (collation.structure.apparatus[i].readings[j].overlap_status=="duplicate") continue; //there is an apparatus2, dealt with below
-				if ((collation.structure.apparatus[i].readings[j].type=="om" || collation.structure.apparatus[i].readings[j].type=="om_verse") && collation.structure.apparatus[i].readings[j].overlap_status!="duplicate") {
+				if  (collation.structure.apparatus[i].readings[j].type=="lac_verse") continue;
+				if ((/*collation.structure.apparatus[i].readings[j].type=="om" ||*/ collation.structure.apparatus[i].readings[j].type=="om_verse") && collation.structure.apparatus[i].readings[j].overlap_status!="duplicate") {
 					if (!transform) {
 						if (isPopApp) {
 							if  (collation.structure.apparatus[i].readings[j].type=="om_verse") {
@@ -299,7 +307,7 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 								}
 							}
 						} else {
-							appText+="<p class='variant'><i>omitted</i> ";
+	//						appText+="<p class='variant'><i>Omitted</i> "; //not here
 						}
 					}
 					VMapApp[n].variants.push({variant:"<p class='variant'><span data-n='"+n+"-"+j+"'><i>Omitted</i> ", spellings:[{spelling: "omitted", wits:[]}]});
@@ -321,11 +329,22 @@ function makeFromAppME(XMLapparatus, currMSS, apparatus, onlyReg, words, hasVMap
 						VMapApp[n].variants[j].spellings[0].wits.push(thisWit);
 				   }
 				   if (isPopApp) appText+="</span></div>"
-				} else {
+				} else { //we have a variant! (note, treat omissions differently)
 					vartext="";
-					for (k=0; k<collation.structure.apparatus[i].readings[j].text.length; k++) {
-						vartext+=collation.structure.apparatus[i].readings[j].text[k].interface;
-						if (k<collation.structure.apparatus[i].readings[j].text.length-1) vartext+=" ";
+					if (collation.structure.apparatus[i].readings[j].hasOwnProperty("type") && collation.structure.apparatus[i].readings[j].type=="om") {
+						vartext="<i>Omitted</i>";
+						//because we have an omission: all the lac_verse mss are added here so we need to remove them
+						for (let a=0;a<collation.structure.apparatus[i].readings[j].witnesses.length; a++) {
+							if (collation.structure.lac_readings.filter(wit=>wit==collation.structure.apparatus[i].readings[j].witnesses[a]).length>0) {
+								collation.structure.apparatus[i].readings[j].witnesses.splice(a, 1);
+								a--;
+							}
+						}
+					} else {
+						for (k=0; k<collation.structure.apparatus[i].readings[j].text.length; k++) {
+							vartext+=collation.structure.apparatus[i].readings[j].text[k].interface;
+							if (k<collation.structure.apparatus[i].readings[j].text.length-1) vartext+=" ";
+						}
 					}
 					if (j==0) {
 						if (!transform) {
@@ -776,6 +795,12 @@ function createUnRegRdgME(rdg, vno, transform, context, isPopApp, VMapApp, entit
 	//note offset. First reading in xml app is always info on block present/absent. So appN is one less: skip for app
 	var apparatus=""; 
 	var srcWits=[];
+	if (rdg.hasOwnProperty("type") && rdg.type=="om") {
+		for (let i=0; i<rdg.witnesses.length; i++) {
+			apparatus+="<a href='javascript:getMSLine(\""+entity+"\",\""+rdg.witnesses[i]+"\")'>"+rdg.witnesses[i]+"</a>";
+		}
+		return(apparatus);
+	}
 	for (var m=0; m<rdg.witnesses.length; m++) {
 		srcWits.push({name: rdg.witnesses[m], text:"", spellWits: []});  //use ms name as key
 	}
@@ -1434,9 +1459,11 @@ function doWordsOneLine(newArray, newline, line, openElements, witness, context)
 	}
 	if (newArray.length==0) {//likely because the data has been stuck in a marginal note; use the lref to get text of the marginal note and put it in there
 		let thisLine=$("[data-lref='"+line+"']").html();
-		doWordsOneLine(newArray, thisLine, line, openElements, witness, context);
-		let newStr=constructWElements(newArray, line);
-		$("[data-lref='"+line+"']").html(newStr);
+		if (typeof thisLine!="undefined") { //we have to go back andd look at this
+			doWordsOneLine(newArray, thisLine, line, openElements, witness, context);
+			let newStr=constructWElements(newArray, line);
+			$("[data-lref='"+line+"']").html(newStr);
+		}
 		return;
 	}
 	let newStr=constructWElements(newArray, line);

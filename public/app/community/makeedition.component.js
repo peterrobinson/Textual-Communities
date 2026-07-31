@@ -6,6 +6,9 @@ var UIService = require('../services/ui')
 , RESTService = require('../services/rest')
 , Router = ng.router.Router
 , JSZip = require('jszip')
+, fs = require('fs')
+//, fspromises = require('fspromises')
+, path = require('path')
 , JSZipUtils = require('jszip-utils')
 , FileSaver = require ('file-saver')
 , BrowserFunctionService = require('../services/functions')
@@ -203,8 +206,13 @@ var CommunityMakeEditionComponent = ng.core.Component({
 				cb1(result,[]);
 			});  
 		},
-		function(arguments, cb1) {
+		function(arguments, cb1) { //not sure what this does lol
 			updateImages(self, zip, self.edition.documents, function callback(result) {
+				cb1(result,[]);
+			});
+		},
+		function(arguments, cb1) {
+			makeImagesFile(self, zip, self.edition.documents, function callback(result) {
 				cb1(result,[]);
 			});
 		},
@@ -232,6 +240,11 @@ var CommunityMakeEditionComponent = ng.core.Component({
 			makeConversion(self, zip, function callback(result){
 				cb1(result, []);
 			})
+		},
+		function (arguments, cb1) { //move required images to iiif folder
+			copyImages(self, zip, function callback(result){
+				cb1(result, []);
+			})
 		}
 	], function (err) {
 		if (err) {
@@ -255,10 +268,44 @@ var CommunityMakeEditionComponent = ng.core.Component({
   }
 });
 
+function copyImages (self, zip, callback) {
+ 	if (self.config.copyImages) {
+ 		errorStr="";
+ 		async.mapSeries(self.config.documents, function (mydocument, cbdocs){ 
+ 			$("#MEProgress").html("Copying document "+mydocument.name[0]);
+ 		    var boo=1;
+ 		    async.mapSeries(mydocument.pages, function (mypage, cbpages) {
+ 		    	$("#MEProgress").html("Copying page "+mydocument.name+" "+mypage[0]);
+ 		    	//copy it here
+ 		    	$.post(self.config.TCUrl+'/api/copyFiles?source=/Users/pmr906/venv/TCangular/tc/public/app/data/tcimages/CTP2/'+mydocument.name[0]+"/"+mypage[0]+"&dest="+self.config.imagesDestination+"/"+mydocument.name[0]+"/"+mypage[0], function (json) {
+ 		    		if (json.success==0) {
+ 		    			console.log("error in loading "+mypage[0]);
+ 		    			$("#MEProgress").html("Error in copying page "+mydocument.name+" "+mypage[0]);
+// 		    			errorStr+="Error in "+mydocument.name+" "+mypage[0]+" ("+json.message+")\n";
+						errorStr+="Error in "+mydocument.name+" "+mypage[0];
+ 		    		};
+ 		    		cbpages(null);
+ 		    	});
+		    }, function (err) {
+ 		    	cbdocs(null);
+ 		    });
+ 		}, function (err) {
+ 			if (errorStr=="") {
+ 				zip.file('edition/output/noerrors.txt', "No errors");
+ 			} else {
+ 				zip.file('edition/output/errors.txt', errorStr);
+ 			}
+ 			return(callback(null));
+ 		})
+ 	} else {
+		return(callback(null));
+	}
+};
+
 function makeConversion(self, zip, callback) {
 	if (self.config.shortTitle!="Commedia") { return(callback(null));}
 	//ok lets convert!!! start by getting the linesInf file
-	if(self.config.gatherApparatus) {
+	if (self.config.gatherApparatus) {
 	    let fullApp="<div>\r";
 		$.get(self.config.srcCantos, function (myfile) {
 			eval(myfile._body);   //gets us cantoLines
@@ -809,6 +856,19 @@ function loadBaseFiles(zip, self, callback) {
 			cb(null, []);
 		})
 	},
+	function(arguments, cb) {
+		self.restService.http.get('/app/data/makeEdition/common/core/js/openimage.js').subscribe(function(myfile) {
+//			eval(myfile._body);
+			self.edition.openFile=myfile._body;
+			cb(null, []);		})
+	},
+	function(arguments, cb) {
+		self.restService.http.get(self.config.witnessInfFile).subscribe(function(myfile) {
+			eval(myfile._body);
+			self.edition.witnessInf=witnessInf;
+			cb(null, []);
+		})
+	},
 	function(arguments, cb) {  
 		zip.file('edition/common/core/images/close.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/close.png', cb), {binary:true});
 	},
@@ -840,7 +900,7 @@ function loadBaseFiles(zip, self, callback) {
 		zip.file('edition/common/core/images/noteIcon.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/noteIcon.png', cb), {binary:true});
 	},
 	function(arguments, cb) {
-		zip.file('edition/common/core/images/Inkless.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/Inkless.png', cb), {binary:true});
+		zip.file('edition/common/core/images/inkless.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/inkless.png', cb), {binary:true});
 	},
 	function(arguments, cb) {
 		zip.file('edition/common/core/images/camera-black.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/camera-black.png', cb), {binary:true});
@@ -848,6 +908,79 @@ function loadBaseFiles(zip, self, callback) {
 	function(arguments, cb) {
 		zip.file('edition/common/core/images/text.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/text.png', cb), {binary:true});
 	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/fullpage_grouphover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/fullpage_grouphover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/fullpage_hover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/fullpage_hover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/fullpage_pressed.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/fullpage_pressed.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/fullpage_rest.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/fullpage_rest.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/home_grouphover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/home_grouphover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/home_hover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/home_hover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/home_pressed.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/home_pressed.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/home_rest.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/home_rest.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomin_grouphover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomin_grouphover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomin_hover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomin_hover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomin_pressed.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomin_pressed.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomin_rest.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomin_rest.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomout_grouphover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomout_grouphover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomout_hover.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomout_hover.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomout_pressed.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomout_pressed.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/zoomout_rest.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/zoomout_rest.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/chelhgstemma.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/chelhgstemma.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/osearch.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/osearch.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/wholestemma.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/wholestemma.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/hgtitle.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/hgtitle.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/elendtitle.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/elendtitle.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/pntitle.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/pntitle.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/wytitle.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/wytitle.png', cb), {binary:true});
+	},
+	function(arguments, cb) {
+		zip.file('edition/common/core/images/thtitle.png', BrowserFunctionService.urlToPromise('/app/data/makeEdition/common/core/images/thtitle.png', cb), {binary:true});
+	},
+
 /*	function(arguments, cb) {
 		zip.file("edition/common/core/js/aliases.js", BrowserFunctionService.urlToPromise("/app/data/makeEdition/common/core/js/aliases.js", cb), {binary:true});
 	}, */
@@ -1068,12 +1201,12 @@ function makeVBase(self, zip, callback) {
    		$("#MEProgress").html("Creating VBase functionality");
 		$.get(self.config.vBaseTemplate, function(myfile){
 			let srcdoc=myfile;
-			let mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"ssSearch", value: self.config.ssSearch, isobject: true}, {key:"firstTranscript", value: self.config.firstTranscript, isobject:false}, {key:"currEntity", value: self.config.firstEntity, isobject:false}, {key: "VBaseJson", value: self.config.vBaseJson, isobject:false}, {key:"currMS", value: self.config.currMS, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false} ], [self.config.vBaseDriverJs]); 
+			let mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"ssSearch", value: self.config.ssSearch, isobject: true}, {key:"gTag", value:self.config.gTag, isobject: false}, {key:"firstTranscript", value: self.config.firstTranscript, isobject:false}, {key:"currEntity", value: self.config.firstEntity, isobject:false}, {key: "VBaseJson", value: self.config.vBaseJson, isobject:false}, {key:"currMS", value: self.config.currMS, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false} ], [self.config.vBaseDriverJs]); 
 			$("#MEIframe").attr("srcdoc", mydata); 
 			window.addEventListener("message", function (event){ 
 				if (typeof event.data === "string") {
 					let ssSearch=true;
-					let str=BrowserFunctionService.adjustResult(self, event.data, true, [{key:"ssSearch", value: self.config.ssSearch, isobject: true}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},{key: "view", value:"vbase", isobject:false}, {key: "currMS", value:self.config.currMS, isobject:false},  {key: "currEntity", value:self.config.firstEntity, isobject:false}],[self.config.vBaseJs, self.config.entityPagesFile, self.config.aliasesFile]);	
+					let str=BrowserFunctionService.adjustResult(self, event.data, true, [{key:"ssSearch", value: self.config.ssSearch, isobject: true}, {key:"gTag", value:self.config.gTag, isobject: false}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},{key: "view", value:"vbase", isobject:false}, {key: "currMS", value:self.config.currMS, isobject:false},  {key: "currEntity", value:self.config.firstEntity, isobject:false}],[self.config.vBaseJs, self.config.entityPagesFile, self.config.aliasesFile]);	
 					zip.file("edition/vBase.html", str);
 		//			console.log("Collation of "+currEntity+" written to zip file for "+zipFolder+'/'+folder+"/"+filename+" (timer: "+(end - start)+")");
 					callback(null);
@@ -1190,7 +1323,7 @@ function doCollation (self, zip, srcdoc, regState, wordState, ssSearch, hasVMap,
 	}
 	let mydata="";
 	if (self.config.standalone) {
-		mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"shortTitle", value:self.config.shortTitle, isobject: false}, {key:"isstandalone", value:true, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"hasVMap", value:hasVMap, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"collation", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCollation", value: prevCollation, isobject:false}, {key:"nextCollation", value: nextCollation, isobject:false}, {key:"VMap", value:JSON.stringify(VMap), isobject:true},{key:"regState", value: regState, isobject:true},{key:"wordState", value: wordState, isobject:true}], [self.config.collationDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile]); 
+		mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"shortTitle", value:self.config.shortTitle, isobject: false}, {key:"isstandalone", value:true, isobject: true}, {key:"gTag", value:self.config.gTag, isobject: false}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"hasVMap", value:hasVMap, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"collation", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCollation", value: prevCollation, isobject:false}, {key:"nextCollation", value: nextCollation, isobject:false}, {key:"VMap", value:JSON.stringify(VMap), isobject:true},{key:"regState", value: regState, isobject:true},{key:"wordState", value: wordState, isobject:true}], [self.config.collationDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile]); 
 	} else {
 		let banner = clean(self.edition.universalbanner);
 		mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:false, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"hasVMap", value:hasVMap, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"collation", isobject:false}, {key:"universalBanner", value: banner, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCollation", value: prevCollation, isobject:false}, {key:"nextCollation", value: nextCollation, isobject:false}, {key:"VMap", value:JSON.stringif(VMap), isobject:true},{key:"regState", value: regState, isobject:true},{key:"wordState", value: wordState, isobject:true} ], [self.config.collationDriverJs, self.config.collutilsJs,  self.config.entityPagesFile, self.config.aliasesFile]);
@@ -1353,6 +1486,9 @@ function makePageEntities(self, pageEntities, documents, zip, callback) { //we d
 					return(saCB(null));
 				} */
 				$("#MEProgress").html("Reading entities on "+myPage+" in "+doc.name);
+				if (doc.name=="Edition" && myPage=="28") {
+					var boo=1;
+				}
 				$.get(self.config.TCUrl+'/uri/urn:det:tc:usask:'+self.config.TCCommunity+'/entity=*:document='+doc.name+':pb='+myPage+'?type=list', function (pEnts) {
 					//remove lines, and sort remaining pEnts...
 					let fred=1;
@@ -1379,6 +1515,9 @@ function makePageEntities(self, pageEntities, documents, zip, callback) { //we d
 					async.mapSeries(pEnts, function (thisEnt, sbCB)	{
 						let hasCollation=false, hasCommentary=false;
 						let searchEnt=thisEnt.entity.replace(":","/");
+						if (thisEnt.entity=="CTP2:entity=GP:line=788-a") {
+							var boo=1;
+						}
 						async.waterfall([
 							function (scCB) { //is there a collation
 								if (collEntities.includes(thisEnt.entity)) {
@@ -1399,8 +1538,8 @@ function makePageEntities(self, pageEntities, documents, zip, callback) { //we d
 									hasCommentary=true;
 									scCB(null,[]); 
 								} else {
-									$.get(self.config.TCUrl+'/api/getApprovedCommentaries?entity='+searchEnt, function (json){
-										if (json.results.length) {
+									$.post(self.config.TCUrl+'/api/getCommentaries?entity='+searchEnt+"&entityTo=", function (json){
+										if (json.success && json.commentaries.length>0 && json.commentaries[json.commentaries.length-1].status=="APPROVED" ) {
 											hasCommentary=true;
 											commEntities.push(thisEnt.entity);
 										};
@@ -1462,8 +1601,8 @@ function makeIndexFile(self, zip,  callback) {
 		$("#MEProgress").html("Creating index file");
 		self.restService.http.get(self.config.indexTemplate).subscribe(function(myfile) {
 			let srcdoc=myfile._body;
-			if (self.config.standalone) {
-				mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"editorialCredit", value:self.config.editorialCredit, isobject: false}, {key:"isstandalone", value:true, isobject: true},{key: "firstEntity", value: self.config.firstEntity, isobject:false}, {key: "view", value:"index", isobject:false}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"currMS", value: self.config.currMS, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"splash", value: self.config.splash, isobject:false},  {key:"shortTitle", value: self.edition.shorttitle, isobject:false}, {key:"longTitle", value: self.edition.title, isobject:false}, {key:"firstTranscript", value: self.config.firstTranscript, isobject:false}, {key:"ssSearch", value: self.config.ssSearch, isobject:true}], [self.config.indexDriverJs, self.config.entityPagesFile, self.config.aliasesFile]);
+			if (self.config.standalone) {  
+				mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:true, isobject: true},{key:"partEditor", value:self.config.partEditor, isobject: false},{key:"hasPartEditor", value:self.config.hasPartEditor, isobject: true},{key:"pubYear", value:self.config.pubYear, isobject: false},{key:"pubname", value:self.config.pubname, isobject: false},{key:"pubpart", value:self.config.pubpart, isobject: false},{key:"firstEditionPage", value:self.config.firstEditionPage, isobject: false},{key:"editorialCredit", value:self.config.editorialCredit, isobject: false}, {key:"generalEditors", value:self.config.generalEditors, isobject: false}, {key:"gTag", value:self.config.gTag, isobject: false},  {key: "firstEntity", value: self.config.firstEntity, isobject:false}, {key: "view", value:"index", isobject:false}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"currMS", value: self.config.currMS, isobject:false}, {key:"startCompare", value: self.config.startCompare, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"splash", value: self.config.splash, isobject:false},  {key:"shortTitle", value: self.edition.shorttitle, isobject:false}, {key:"longTitle", value: self.edition.title, isobject:false}, {key:"firstTranscript", value: self.config.firstTranscript, isobject:false}, {key:"ssSearch", value: self.config.ssSearch, isobject:true}], [self.config.indexDriverJs, self.config.entityPagesFile, self.config.aliasesFile]);
 			} else {
 				let banner = clean(self.edition.universalbanner);
 				mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:false, isobject: true}, {key: "firstEntity", value: self.config.firstEntity, isobject:false} ,{key: "view", value:"index", isobject:false}, {key:"universalBanner", value: banner, isobject:false}, {key:"currMS", value: self.config.currMS, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"splash", value: self.config.splash, isobject:false},  {key:"shortTitle", value: self.edition.shorttitle, isobject:false}, {key:"longTitle", value: self.edition.title, isobject:false}], [self.config.indexDriverJs, self.config.entityPagesFile, self.config.aliasesFile]);
@@ -1509,10 +1648,118 @@ function makeEditorial(self, zip, callback) {
 		$("#MEProgress").html("Assembling collation and commentary files");
 		//load the aliases file please
 		const doneEntities=[], collEntities=[], commEntities=[]; //coz commMneuEntities is a collection of objects, not an array
-		var editorial=[];
-		editorial.push({"title":"About this edition","key":"About","text":[{"type":"p", "text":self.config.longTitle+" edited by "+self.config.editor}, {"type":"p", "text":"second paragraph"}]});
-		editorial.push({"title":"Copyright", "key":"Copyright", "text":[{"type":"p", "text":"Copyright statement here"}]});
-		editorial.push({"title":"Title Page", "key":"TitlePage", "text":[{"type":"p", "attr":"class=work", "text": self.config.longTitle}, {"type":"p", "attr":"class=editor3", "text":"<i>Edited by</i>"}, {"type":"p", "attr":"class=editor", "text":self.config.editor}]});
+		let editorial=[];
+		let copyrightText=[];
+		copyrightText.push({"type":"h2", "text": 'Copyrights in this Edition'});	
+		copyrightText.push({"type":"p", "attr":"class=text", "text": 'All transcriptions, collations, commentaries and stemmatic images ("these materials") published in this edition are copyright the general editors, Barbara Bordalejo and Peter Robinson. The editors make these materials available as "Free Cultural Works" under the Creative Commons "CC BY Attribution" license. This allows anyone to distribute, remix, and build upon these materials (even commercially), provided they give credit to the original editors. This permission applies to all forms of these materials (HTML, Text Encoding Initiative XML, JSON), published both in this edition and on other sites (e.g. Zenodo; various institutional repositories.) The “Attribution 4.0 International” licence is available in summary form at <a href="https://creativecommons.org/licenses/by/4.0/">https://creativecommons.org/licenses/by/4.0/</a> (full legal code at <a href="https://creativecommons.org/licenses/by/4.0/legalcode.en">https://creativecommons.org/licenses/by/4.0/legalcode.en</a>). The editors assert their moral rights over these materials.'});
+		copyrightText.push({"type":"p", "attr":"class=text", "text": 'The copyright situation for the document images referenced by this edition is more complex. Where possible, the edition references images available from the holding institution\'s website. These references are usually to full-colour high-resolution IIIF-compatible images. The references are held in a separate <a href="../../../images.js">images.js</a> file in this publication to enable their updating as new images are made. The copyright in all such images is held by the holding institution and the publishing conditions vary from institution to institution. Readers are advised to consult the holding institution regarding any uses of these images beyond viewing within this edition. However, in many cases no recent IIIF-compatible images are available from the holding institutions. In those cases, this edition provides monochrome images taken from microfilm, some deriving from the original reproductions made by <ref target="MANL40">Manly and Rickert</ref> in the 1920s. These images are made available in this publication for personal research use. If you want to make any other uses of these images you are advised to contact the holding institution. (cf. the <ref target="ALLA99">1999 Bridgeman Art Library</ref> case)'});
+		editorial.push({"title":"Copyright", "key":"Copyright", "text":copyrightText});
+		let aboutText=[];
+		aboutText.push({"type":"h2", "text": 'About this Edition'});	
+		if (self.config.hasPartEditor) aboutText.push({"type":"h3", "text": 'Part Editor\'s Introduction. Thomas J. Farrell. '});
+		if (self.config.hasPartEditor) aboutText.push({"type":"p", "attr":"class=text", "text": 'My interest in the Canterbury Tales Project began long before my participation in it.  I was intrigued by its first publication, The Wife of Bath\'s Prologue on CD-ROM, for its inclusion and—for 1996—remarkably accessible display of the full range of variants in that work.  I slowly became more engaged with The Project\'s innovative and evolving theory of witness relations, as detailed in Peter Robinson\'s groundbreaking "A Stemmatic Analysis of the Fifteenth Century Witnesses to the Wife of Bath\'s Prologue," his "Analysis Workshop" on the General Prologue on CD-ROM, and many conversations over many years with Peter and Barbara Bordalejo.  I used its evidence in several articles, and the generally unthinking resistance to that use by some readers ultimately encouraged me to address "The Value of the Canterbury Tales Project and Textual Evidence in the Emendation of Canterbury Tales III 117," in a <ref target="FARR21">2021 article in JEGP</ref>.  By the time that article appeared I had agreed to start transcribing the witnesses to the Reeve\'s Tale and Prologue, setting in motion the process whose product is before you.  As a footnote to my article noted, "I affiliated myself with the CTP after being persuaded of its value, not vice versa."'});
+ 		if (self.config.hasPartEditor) aboutText.push({"type":"p", "attr":"class=text", "text": 'The process of making this edition followed the protocols of earlier CTP editions.  All 58 fifteenth-century witnesses to the Reeve\'s Prologue (Link 2). the Reeve\'s Tale, the Cook\'s Prologue (Link 3), and the unfinished Cook\'s Tale were transcribed and then collated; phylogenetic Variant Maps were generated using PAUP* software, and the Stemmatic Commentaries generated out of those data using the Project\'s standard procedures.  I either made or reviewed the transcripts and the collation; Peter Robinson generated the Variant Maps, and Peter, Barbara Bordalejo, and I all contributed to the Commentary.'});
+ 		 if (self.config.hasPartEditor)  aboutText.push({"type":"p", "attr":"class=text", "text": 'Part of the interest of the Reeve\'s Tale has always been its deployment of various dialect forms, especially in the speech of Aleyn and John.  The existence of those variants also proved to be interesting in editorial terms.  As I collated, it was relatively easy to distinguish dialect forms incorporating a distinct word—"I is" rather than "I am," for example—but words in which only a vowel changes present a more formidable challenge, especially given the number of vowels that might occur in the textual record at any point.  An early attempt to collate distinctly all the dialect forms that might reasonably be attributed to Chaucer failed because 1) it was insurmountably difficult to establish a consistent protocol determining which forms should and should not be distinguished and 2) phylogenetic analysis of such efforts suggested results incommensurate with what we already knew: the pair of group a witnesses Cn Ma, for instance, were in such maps placed far apart from their group mates Dd En1 Ds1.  In the end, standard collation practices, regularizing dialect variants, were employed for most dialect forms.'});
+ 		if (self.config.hasPartEditor) aboutText.push({"type":"p", "attr":"class=text", "text": 'But there is no perfect solution to this dilemma.  When the dialect program in the tale generates different words, those forms are distinguished in the collation.  When only a morpheme changes, the two forms are usually regularized.  But when the changed morpheme is placed in rhyme position, they must again be distinguished, especially because any given manuscript may well use one morpheme in the a-rhyme and another in the b-rhyme.'});
+ 		 if (self.config.hasPartEditor) aboutText.push({"type":"p", "attr":"class=text", "text": 'In short, the Reeve\'s Tale, perhaps more than most of the  <i>Tales</i>, ought to provide its readers with what the General Editors describe as "not only the critical edition but also the materials that made it possible, because only that complete record will give readers both a text to analyze and the tools to investigate the logic of its existence."'});
+   		if (self.config.hasPartEditor) aboutText.push({"type":"h3", "text": 'General Editors\' Introduction. Barbara Bordalejo and Peter Robinson.'});
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'This edition is the result of more than 30 years of research on the textual tradition of Chaucer\’s <i>Tales</i>. Its origins date to the beginning of the Canterbury Tales Project (CTP) in the 1990s collaboration between Norman Blake, Elizabeth Solopova, and Peter Robinson. While this edition could not have existed without the CTP project and might be identified with it, it is more than the project.'});
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'The editors have very different backgrounds and perspectives, and their lived experiences afford them distinct vantage points from which to elucidate and interpret the text. This edition differs from the Wife of Bath\’s Prologue on CD-ROM (<ref target="ROBI96">1996</ref>), General Prologue (<ref target="SOLO00">2000</ref>), Hengwrt Chaucer Digital Facsimile (<ref target="STUB00">2000</ref>), Caxton\’s Canterbury Tales (<ref target="BORD03">2003</ref>), the Miller\’s Tale (<ref target="ROBI04">2004</ref>), and the Nun\’s Priest\’s Tale (<ref target="THOM06">2004</ref>). Here we present a critical edition of <i>The Book of the Tales of Canterbury</i>. Like most critical editions, it has been a long time in the making. Conceptually, it goes back to our earliest forays into textual criticism, to the very different times and circumstances in which we both became acquainted with theories surrounding scholarly editing and textual transmission. '});
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'Our work on the textual tradition of the <i>Tales</i>, detailed as it is, is built on our transcription and collation of the text. Bordalejo\’s <ref target="BORD02">Ph.D. research</ref> on Caxton\'s second edition of the <i>Tales</i> confirmed that the corrections included in that edition had their origin in a manuscript, now lost, that was likely independently descended from the archetype of the tradition. More recently, our article, “The Christ Church manuscript of the Book of the Tales of Canterbury” (<ref target="BOROF0">forthcoming</ref>), documents one of the most consequential discoveries the Canterbury Tales Project has made: the identification of Christ Church Oxford as a manuscript containing not only a very early version of the text, but one that contributes meaningfully to the construction of our own critical edition (also Robinson and Tresoldi <ref target="ROBI25">2025</ref>).'});
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'When we talk about a constructed critical edition, we highlight the fact that, as stated in “The Editorial Principles of the Critical Edition of the Book of the Tales of Canterbury", (<ref target="BORDF1">forthcoming</ref>) the aim of our critical text is not to conjure Chaucer\’s intended text into existence, but rather to build a text that empowers readers to understand its textual history through the readings chosen for our editions. To achieve this, we highlight crucial places of variation so the reader can explore how the textual tradition reveals the social, cultural, and transmissional circumstances that drive textual change. An example of this can be found on the first line of the text, for which we retained the Hg reading, \'Aueryll\'. Readers will find this reading in italics, with a link to the editors\' textual explanation. '});
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'This approach to our conceptualization of the edition arose from our collaborations with biblical textual scholars, particularly with the Institute for Greek New Testament Textual Studies in Münster. In a conversation with Klaus Wachtel of the Institute around 2004, he remarked that one could see the Nestle-Aland text of the Greek New Testament as "the text that best explains all the extant documents." This conception is behind everything we have done.' });
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'We hope that our text of the <i>Tales</i> serves as a portal to access different worlds. Readers are invited to immerse themselves in the world of Chaucer\’s work and to engage with the many facets of manuscript culture and textual transmission. By offering not only the critical edition but also the materials that made it possible, we give readers both a text to analyze and the tools to investigate the logic of its existence. '});
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'We believe that editions are arguments about a text (<ref target="ROBI13">2013</ref>). This edition is an argument with a long and complex history. It is an argument informed by our knowledge of the textual tradition and by everything we have learned in the process of transcribing, collating, and editing the text, as well as in our classrooms, with our students, as when we debated the interpretation of specific lines or phrases or explored how the lack of punctuation caused scribal confusion regarding speakers and pronouns.'});
+		aboutText.push({"type":"p", "attr":"class=text", "text": 'Here, we invite readers to take part in the long tradition of the <i>Book of the Tales of Canterbury</i>, from Chaucer\’s first conception of the text to our critical edition, the latest in a long-standing endeavour to make sense of it.'});
+		aboutText.push({"type":"h3", "text": 'Acknowledgements'});	
+		aboutText.push({"type":"p", "attr":"class=text", "text": self.config.GeneralEdThanks});
+		aboutText.push({"type":"p", "attr":"class=text", "text": self.config.institutionalThanks});
+		editorial.push({"title":"About this edition","key":"About","text":aboutText});
+		let citeText=[];
+		citeText.push({"type":"h2", "text": 'How to Cite this Edition'});	
+		if (self.config.hasPartEditor) {
+			citeText.push({"type":"p", "attr":"class=text", "text": "Cite this publication as: \""+self.config.pubpart+"\", edited by "+self.config.partEditor+". "+self.config.pubYear+". In <i>The Book of the Tales of Canterbury by Geoffrey Chaucer.</i> A Critical Edition. Edited by Barbara Bordalejo and Peter Robinson. Inkless Editions, 2026-. At <a href='https://www.talesofcanterbury.org/"+self.config.partCode+"'>www.talesofcanterbury.org/"+self.config.partCode+"</a>."});
+		} else {
+			citeText.push({"type":"p", "attr":"class=text", "text": "Cite this publication as: \""+self.config.pubpart+"\", "+self.config.pubYear+". In <i>The Book of the Tales of Canterbury by Geoffrey Chaucer.</i> A Critical Edition. Edited by Barbara Bordalejo and Peter Robinson. Inkless Editions, 2026-. At <a href='https://www.talesofcanterbury.org/"+self.config.partCode+"'>www.talesofcanterbury.org/"+self.config.partCode+"</a>."});
+		}
+		editorial.push({"title":"Cite this edition","key":"CiteEdition","text":citeText});
+		let historyText=[];
+		historyText.push({"type":"h2", "text": 'History of this Project'});
+		historyText.push({"type":"p", "attr":"class=text", "text": 'This edition builds on the work of the Canterbury Tales Project from 1993 onwards. The beginnings of this project lie in work done at Oxford University by Peter Robinson from 1989 to 1992 in the "Computers and Manuscripts" project. This work was funded by the Leverhulme Trust, with support from News International, the Faculty of English Language and Literature and the Centre for Socio-Legal Studies at Oxford. In 1993 Peter Robinson and Elizabeth Solopova joined forces with Norman Blake, then at the University of Sheffield, to extend the experiments of the "Computers and Manuscripts" project with the Wife of Bath\'s Prologue to the whole of the <i>Tales</i>: hence the Canterbury Tales Project. Further partnerships and funding followed: with Cambridge University Press, the University of Sheffield, the British Academy, the Arts and Humanities Research Board, and De Montfort University, where the project base moved in 1993.'});
+		historyText.push({"type":"p", "attr":"class=text", "text": 'Outside the UK, crucial partnerships were forged with Paul Thomas of Brigham Young University and Dan Mosser of Virginia Tech. Paul oversaw the transcription of the whole of the massive "Fragment 7" of the <i>Tales</i> while Dan Mosser developed his ground-breaking <ref target="MOSS10">Digital Catalogue</ref> of the manuscripts and incunabula alongside our work. In 1999 Barbara Bordalejo joined the project, first as a doctoral student, then a post-doctoral researcher, from 2020 as director of the project and now as joint general editor with Robinson. The first phase of the project (up to around 2004) saw multiple publications on CD-ROM (later DVD), first with Cambridge University Press, enabled by Kevin Taylor and Andrew Brown at the Press (Robinson\'s <ref target="ROBI96">The Wife of Bath\'s Prologue</ref>, Solopova\'s <ref target="SOLO00">The General Prologue</ref>), then with Scholarly Digital Editions (Stubbs\'s <ref target="STUB00">Hengwrt Chaucer</ref>, Robinson\'s <ref target="ROBI04">The Miller\'s Tale</ref>, Thomas\'s <ref target="THOM06">Nun\'s Priest\'s Tale</ref>, Bordalejo\'s <ref target="BORD03">Caxton\'s Canterbury Tales</ref>, Mosser\'s <ref target="MOSS10">Digital Catalogue</ref>). Print publications by project participants also followed, on the <ref target="ROBI03">project\'s work</ref> and on the <ref target="BORD14">significance of Caxton\'s second edition</ref> of the <i>Tales</i>. Collaborations with partners on other sections of the <i>Tales</i> will ground future publications: thus with Martha Rust and David Hoover on the Clerk\'s Tale, with Jacob Thaisen on the Man of Law\'s Tale, Gabrielle Müller-Oberhauser and Ulrike Grassnick on the Pardoner\'s Tale. Tom Farrell\'s edition of the Reeve\'s Tale is one of the three initial publications of this edition. Two events around 2004-5 changed the project\'s direction, to the point that we speak of two project phases: one before 2004-5, and one after those years. The first event was the incapacitation of our long-time leader Norman Blake in May 2004, which left him unable to take any further part in the project and was followed by the dissolution of the partnership with the University of Sheffield. The second was the growing recognition that the methods and structures which had served us to that point would not scale to the whole of the <i>Tales</i>. To continue, the project would have to change. For example, up to 2004 all our digital publications were on CD-ROM or DVD. Already by 2004 it was clear that this technology was becoming obsolete and the project would have to move to full web publication.'});
+		historyText.push({"type":"p", "attr":"class=text", "text": 'As well as our many collaborations and partners within the project, we profited greatly from our collaborations outside the project. From the early 1990s, Robinson had been working with Prue Shaw on her editions of Dante\'s <ref target="SHAW06"><i>Monarchia</i></ref> and <ref target="SHAW10"><i>Commedia</i></ref> and with many scholars, notably David Parker and Klaus Wachtel in England and Germany, on the long-running Greek New Testament editions based in Birmingham and Münster. The thinking of these scholars about the possibilities of digital editions (thus, Parker\'s <ref target="PARK97"><i>Living Text of the Gospels</i></ref>) and through Shaw encountering the traditions of Italian textual scholarship centered on <ref target="CONT86">Gianfranco Contini</ref> were critical to the Project, especially in the development of our fundamental transcription protocols, first formulated by Robinson and Solopova and then refined by Bordalejo, based on her work on the <ref target="BORD10">Dante transcription guidelines</ref>. Working with Edvige Agostinelli and William Coleman on their edition of <ref target="AGOS23">Boccacio\'s Teseida</ref> was also critical. Over this period, close involvement with the Text Encoding Initiative, through Michael Sperberg-McQuuen and Lou Burnard, underpinned our encodings. Two crucial collaborations with experts in evolutionary biology, <ref target="OHAR93">Robert O\'Hara</ref> and <ref target="BARB98">Chris Howe</ref>, introduced the Project to the use of methods and tools from evolutionary biology to understand how manuscripts relate to one another, leading to understandings foundational to our editions. These partnerships led to the Project\'s base moving to Birminhgam in 2005, to the Institute for Textual Scholarship and Electronic Editing newly-founded by Robinson, Parker and Bordalejo. It was now clear that the project would need extensive support to move its development and publications fully to the internet. In 2010 the project moved again, this time to Canada and the University of Saskatchewan, prompted by the promises of close collaboration with Canadian digital humanists and of access to generous public funding. The fulfilment of these promises, with the support of the University of Saskwatchewan (Yin Liu, Brent Nelson, Allison Muri) and later of the University of Lethbridge (Dan O\'Donnell), and funding from the Social Sciences and Humanities Research Council and the Canada Foundation for Innovation, has made this edition finally possible.'});
+		editorial.push({"title":"Project History","key":"history","text":historyText});		
+		let stemmaText=[];
+		stemmaText.push({"type":"h2", "text": 'Stemma and Manuscript Groups'});
+		stemmaText.push({"type":"p", "attr":"class=text", "text":"This edition refers to manuscript groups <b>o a b cd ungrouped</b>. The relationships between these groups are summarized in this stemma (<ref target=\"BOROF0\">Forthcoming</ref>), which sets out the relationships, as we have determined them, for the c. sixty full copies of the <i>Tales</i>:"}); 
+		stemmaText.push({"type":"p", "attr":"class=stemmaimage", "text":"<img src='../../../common/core/images/wholestemma.png' width='715'></img>"}); 
+		stemmaText.push({"type":"p", "attr":"class=text", "text":"In our analysis these relationships are stable across all sixty witnesses across the whole length of the  <i>Tales</i>. There are exceptions: notably, Ch moves away from the <b>o</b> group for the Cook's Tale, El moves away from <b>o</b> in the first half of the Wife of Bath's Prologue, and manuscripts move irregularly between the <b>o</b>, <b>ungrouped</b> and <b>cd</b> groups. Compare <ref target='ROBI26'>Robinson 2026, p. 26</ref> for the assertion that the world is a messy place, and accordingly stemmata are messy things. However, the broad consistency with which this stemma appears to hold across the whole <i>Tales</i> persuades us that there is a single textual history for the whole text. This runs against <ref target='DEMP46'>Dempster's assertion</ref>, based on her reading of <ref target='MANL40'>Manly and Rickert</ref>,  that each part of the <i>Tales</i> has a separate textual history, some twenty-five histories in all, with each separate history dependent on the existence of multiple distinct exemplars for each part of the <i>Tales</i>, distributed before Chaucer's death. This view requires the existence of over two hundred part-exemplars, not one of which have survived. Our single stemma for the whole <i>Tales</i> makes our task as editors far easier. We do not aim at strict editing by recension, which would require us to hypothesize that every extant manuscripts must descend from separate copies ('hypearchtypes') below the ancestor. Robinson's <ref target='ROBI26'><i>Anglia</i></ref> article argues that in a textual tradition of any size, strict recension is likely impossible, a conclusion which follows also from the editors' \"Manuscripts with Few Significant Introduced Variants\" <i>Ecdotica</i> article (<ref target='BORO18'>2018</ref>.) Like <ref target='PLAT25'>Ralf Plate</ref>, we describe our editing as \"stemmatically informed\"."}); 
+		stemmaText.push({"type":"p", "attr":"class=text", "text":"The five groups into which our stemma divides the manuscripts and pre-1500 print texts of the tales are as follows:"});
+		let groupText=[];
+		groupText.push({"type":"li", "attr":"class=item", "text":"<b>o</b>: in strict stemmatic terms (for example as defined by <ref target='MAAS27'>Maas</ref> and his followers) this is not a \"Genetic Group\". The manuscripts in this group are not defined by mutual possession of errors introduced by a shared ancestor below the archetype but rather by retention of original readings typically replaced by other manuscripts. We identify such readings by a this variant search, using the VBase tool:"});
+		groupText.push({"type":"li", "attr":"class=noBullet", "text":"<p class='stemmaimage'><img width='715' src='../../../common/core/images/osearch.png'></img></p>"});
+		groupText.push({"type":"li", "attr":"class=noBullet", "text":"The logic behind this search is that the three manuscripts Ch El Hg are specially likely to preserve original readings: hence the first line, that we are looking for readings in at least two of those manuscripts. Further, if these readings are typically replaced elsewhere in the tradition, they will appear in less than fifteen manuscripts, and thus the second line. You can do this search for yourself for the General Prologue <a href='../../../vBase.html?name=o&vsite=false&nconds=2&in0=true&spec0=>1&wits0=Ch%20El%20Hg&in1=true&spec1=<15&wits1=\\all'>here</a>. Typically, between one in every six to ten lines contains an <b>o</b> variant. Although theoretically meaningless for recension, for us as editors these are exactly the manuscripts most likely to contain original readings not present elsewhere. As this search implies, the three manuscripts Ch El Hg (see below) are the core of the <b>o</b> manuscripts group. They are typically joined by Bo2 Gg and the pair Ad3-Ha5, by Cx2 when it differs from Cx1, and less often by Ha4 Ht Py To1 Cp Dd Ps."});
+		groupText.push({"type":"li", "attr":"class=item", "text":"<b>ungrouped</b>: The <b>ungrouped</b> manuscripts are, to put it most simply, manuscripts which do not typically retain readings likely present in <b>o</b> (and thus, not <b>o</b>) and do not have the readings characteristic of the <b>a b cd</b> genetic groups (and thus, not <b>a b cd</b>). Several manuscripts appear to move between <b>o</b> and <b>ungrouped</b>, notably Ha4 Py To1; in some tales a few <b>ungrouped</b> manuscripts appear to form affiliations which dissolve in other tales; in others, <b>ungrouped</b> manuscripts join one of the genetic groups <b>a b cd</b>. Typically, Ha4-Ii Ad1-En3  Bo1-Ph2 Fi Mc-Ra1 Hk Py Ps, sometimes with some of Ht To1 Bw Tc1 Ra3 Nl Ra2 Ha3 Ln Si Dl, are <b>ungrouped</b>."});
+		groupText.push({"type":"li", "attr":"class=item", "text":"<b>a b cd</b>: We agree with <ref target='MANL40'>Manly and Rickert</ref> on the existence of the genetic groups (that is, manuscripts which descend from a common ancestor below the original) they label <b>a b c d</b>, with the exception that we see their <b>c d</b> as a single group, <b>cd</b>. The smaller <b>a</b> and <b>b</b> groups are remarkably stable; the larger <b>cd</b> group less so. The members of <b>a</b> are the two pairs Cn-Ma and Ds1-En1 along with Dd, which also retains many <b>o</b> readings not found in the other four. (c. 5-7  mss with El Ch Ln occasionally joining). The members of <b>b</b> are Cx1 He Tc2, with Tc2 a likely copy of Cx1. A second group within <b>b</b> is made up of Cx2 Pn Wy, diverging from Cx1-He-Tc2 by Caxton's corrections of Cx1 from what appears to have been a now lost <b>o</b> manuscript (Bordalejo <ref target='BORD02'>2002</ref> and <ref target='BORD14'>2014</ref>) (c. 6-10 mss). The large <b>cd</b> group  is made up of Cp Mg-Lc Gl-Mm Fi La Ld1 Pw Ry1 Ry2 Se Sl1 Sl2, sometimes with Ln Ld2  Ha3 Tc1 Ra3 Ra1-Mc-Tc1 Ra2 Nl Ha2 Ry1 Ps Bw Dl En2 To1 Ph3. Cp appears nearest to the cd hyparchetype, and frequently retains readings from <b>o</b> lost in other <b>cd</b> manuscripts. (c. 20-30 mss)"});
+		stemmaText.push({"type":"ul", "attr":"class=item", "text": groupText}); 
+		stemmaText.push({"type":"p", "attr":"class=text", "text":"Among all the manuscripts of the <i>Tales</i>, three stand out for the excellent of their text and for their closeness not just in readings but also in fine details of spelling. Two of the three, El and Hg, have been long regarded by scholars as key to the tradition. We agree with this assessment and argue that their excellence derives from both manuscripts being direct copies from the <b>o</b> materials made by a single scribe known as \"Scribe B\" (Parkes and Doyle <ref target='PADO78'>1978</ref>). Scribe B appears to have been specially close to Chaucer (thus Mooney on <ref target='MOON06'>Adam Pynkhurst</ref>; cf. Warner <ref target='WARN18'>2018</ref>). Ch has been long known to share many good readings with Hg and El. Our work has confirmed that this closeness extends to precise detail of wording and spelling, with analysis of the spelling of all three manuscripts showing that they are so close that it appears that Ch is a copy of a third manuscript, alongside El and Hg, also written by Scribe B (<ref target='BOROF0'>Forthcoming</ref> and <ref target='ROBI25'>2025</ref>). Accordingly we regard Ch as deserving the same regard among editors as has been traditionally given to El Hg. This figure summarizes the relationship between Ch El Hg and <b>o</b>:"});
+		stemmaText.push({"type":"p", "attr":"class=stemmaimage", "text":"<img src='../../../common/core/images/chelhgstemma.png' width='500'></img>"}); 
+		editorial.push({"title":"Stemma and Manuscript Groups","key":"stemma","text": stemmaText});		
+		let titleText=[];
+		titleText.push({"type":"p", "attr":"class=author", "text": self.config.author});
+		titleText.push({"type":"p", "attr":"class=pubname", "text": self.config.pubname});
+		titleText.push({"type":"p", "attr":"class=edstatus", "text":"A Critical Edition"});	
+		titleText.push({"type":"p", "attr":"class=genEds", "text": "<i>Edited by</i> "+self.config.editor});
+		titleText.push({"type":"p", "attr":"class=pubpart", "text": self.config.pubpart});
+		if (self.config.hasPartEditor) titleText.push({"type":"p", "attr":"class=editor3", "text":"<i>Edited by</i>"});
+		if (self.config.hasPartEditor) titleText.push({"type":"p", "attr":"class=editor", "text":self.config.partEditor});	
+		if (self.config.dedication!="") titleText.push({"type":"p", "attr":"class=dedication", "text":self.config.dedication});
+		titleText.push({"type":"p", "attr":"class=editor3", "text":"<hr></hr>"});
+		titleText.push({"type":"p", "attr":"class=pubLogo", "text":"<img src='../../../common/core/images/inkless.png' width='256px'/>"});
+		titleText.push({"type":"p", "attr":"class=pubstatement", "text":self.config.publisher+", "+self.config.pubPlace+". "+self.config.pubDate});	
+//		titleText.push({"type":"p", "attr":"class=edThanks", "text":"The editors are grateful for the support of the "+self.config.edThanks});	
+		editorial.push({"title":"Title Page", "key":"TitlePage", "text":titleText});
+		let origTitle=[];
+		origTitle.push({"type":"h2", "text": 'The  Book of the Tales of Canterbury'});
+		origTitle.push({"type":"p", "attr":"class=text", "text": "The first words at the top of the first page of the Hengwrt manuscript (Hg), accepted as the most important single manuscript of Chaucer’s work, are:"});
+		origTitle.push({"type":"p", "attr":"class=quote", "text": "Here bygynneth the Book of the tales of Caunterbury"});
+		origTitle.push({"type":"p", "attr":"class=stemmaimage", "text":"<img src='../../../common/core/images/hgtitle.png' width='700'></img>"}); 
+		origTitle.push({"type":"p", "attr":"class=text", "text":"These words are written by the main hand of the manuscript, in the same yellowish ink used by this scribe for what seems to be the last parts of the manuscript he wrote, notably the links between the tales of the Squire Merchant and Franklin. It is as if the last act of the scribe was to write the title of the whole work at its very beginning."}); 
+		origTitle.push({"type":"p", "attr":"class=text", "text":"Indeed, the testimony of every manuscript which gives a title agrees with this wording. It is \“the book of the Tales of Canterbury\” in the fifteen manuscripts (and two incunables) which give the title in the explicit to the whole collection,  at the very end of the text:"});
+		origTitle.push({"type":"p", "attr":"class=quote", "text": "Heere is ended the book of the tales of Caunterbury"});
+		origTitle.push({"type":"p", "attr":"class=text", "text":"Thus, the Ellesmere manuscript (El)"});
+		origTitle.push({"type":"p", "attr":"class=stemmaimage", "text":"<img src='../../../common/core/images/elendtitle.png' width='700'></img>"}); 
+		origTitle.push({"type":"p", "attr":"class=text", "text":"Caxton’s \"prohemye\" to his second edition (c.1483) also names the work as \"the book of the tales of cauntyrburye\".  At some places, the initial \"The book of\" is elided. The list of Chaucer’s works in the Retraction (1012)  names \"the book of Troilus\" and other books, \"of seint Valentynes day\", then \"the Tales of Caunterbury\" and \"the book of the Leon\". The copy of John Shirley’s introduction to the text, preserved in Harleian 7333, describes the work as \"þe tales of Caunterburye wiche beon Compilid in þis boke\". In no manuscript is the work described as \"The Canterbury Tales\”."});
+		origTitle.push({"type":"p", "attr":"class=text", "text":"The first appearance of the phrase \"Canterbury Tales\" is in Richard Pynson’s c. 1492 print edition, as a title placed before the first lines of the General Prologue:"});
+		origTitle.push({"type":"p", "attr":"class=stemmaimage", "text":"<img src='../../../common/core/images/pntitle.png' width='700'></img>"}); 
+		origTitle.push({"type":"p", "attr":"class=text", "text":"Here, the phrase \"Canterbury Tales\" is linked with \"boke\". Wynkyn de Worde modifies the wording to the \"boke of Chaucer named Caunterbury Tales\" in his 1497 printing, and makes the title more prominent by having it appear alone on a page before the start of the main text:"});
+		origTitle.push({"type":"p", "attr":"class=stemmaimage", "text":"<img src='../../../common/core/images/wytitle.png' width='700'></img>"});
+		origTitle.push({"type":"p", "attr":"class=text", "text":"The first appearance of the modern form of the title \"Canterbury Tales\", without the qualifying \"Book of\", is in William Thynne’s 1532 edition of \"The Workes of Geffray Chaucer\"."});
+		origTitle.push({"type":"p", "attr":"class=stemmaimage", "text":"<img src='../../../common/core/images/thtitle.png' width='700'></img>"});
+		origTitle.push({"type":"p", "attr":"class=text", "text":"\"The Caunterbury Tales\" is listed first in a table of contents on page a iii r for the whole volume, following Thynne’s \"Preface\", with entries for the \"Romant of the Rose\", \"Troylus and Creseyde\" and others following in this table of contents. The next page lists the parts of the <i>Tales</i> in a further table of contents, beginning with \"The P[ro]logues of the Canterbury tales.\" Thynne’s edition was reprinted in 1542, and both Stow’s 1561 and Speght’s 1598 edition follow the same formula, of \"Preface\", then a table of contents for the whole volume with \"The Canterburie Tales\" appearing first, and a second table of contents just for the Tales following, beginning with \"The Prologues of the Canterberie Tales\".  None of these three –  Thynne, Stow or Speght -- reprint Caxton’s \"Prohemye\". These three editions defined how Chaucer was read during the renaissance in England. All three editions and their reprints, both in their various tables of contents and \"Prefaces\" refer to the Tales as \"the Canterburie Tales\" (thus, Speght on f. c.i.r). That title has persisted into the modern day, despite it appearing in no document until over a hundred years after Chaucer’s death. Accordingly, we restore the title to that known throughout the first century and longer of the <i>Tales</i>."});
+		editorial.push({"title":"The Title", "key":"origtitle", "text":origTitle});
+		let sigils=[];
+		sigils.push({"type":"h2", "text": 'Manuscript and Incunable Sigils'});
+		Object.entries(self.edition.witnessInf).forEach(([key, value]) => {
+		 let sigtext="<span class='sigilId'>"+key+"</span><span class='sigil'>"+value.id+"</span>";
+ 		 sigils.push({"type":"p", "attr":"class=sigilP", "text":sigtext});
+		});
+		editorial.push({"title":"Sigils", "key":"sigils", "text":sigils});
+		let technology=[];
+		technology.push({"type":"h2", "text": 'Technologies Used in this Edition'});
+		technology.push({"type":"p", "attr":"class=text", "text":"The technologies used in this edition changed as the digital world changed. The Canterbury Tales Project underlying this edition began in the early days of personal computing, using mainframe computers for data creation and handline. It continues in the age of social media and smart phones."});
+		technology.push({"type":"p", "attr":"class=text", "text":" One may distinguish three stages in the project's changing technologies. In the first stage, lasting roughly from 1989 to 2006, the project transitioned from the use of a mainframe computer housed at Oxford University Computing Services for data storage and manipulation to use of Macintosh personal computers for transcription. Transcription files were originally prepared on terminals to a VAX system. Robinson wrote a computer program in SNOBAL (then SPITBOL) to collate the transcriptions, to create a record of the collation and then to export that record into various forms. Two articles by Robinson describe this early work, on computer-assisted <ref target=\"ROBI89a\">collation</ref> and <ref target=\"ROBI89b\">analysis</ref>. As personal computers become more widespread and more capable transcriptions came to be done on Macintosh computers and stored on floppy and hard discs. Robinson wrote a computer-assisted collation program <i><ref target='ROBI94'>Collate</ref></i> for the Macintosh, now best remembered as the predecessor of two far more capable programs, <ref target='DEKK20'>CollateX</ref> and the <ref target=\"SMIT20\">Collation Editor</ref>. Cambridge University Press, through Kevin Taylor and Andy Brown, enabled the first project publications (<ref target=\"ROBI96\">1996</ref> and <ref target=\"SOLO00\">2000</ref>), both on CD-ROM, both using the now-defunct DynaText publishing system."});
+		technology.push({"type":"p", "attr":"class=text", "text":"As early as the mid-90s, as the World Wide Web arrived, it became clear that the models which had supported us though the first phase of the project would not scale to sustain the project in the long-term. Transcription creation and storage needed to move to the web away from stand-alone computers. Most pressing, we needed to replace the DynaText system used in our publications. By 1998 the defects in DynaText made it clear that it could not be used for our future publications, and Cambridge had decided not to renew their license for its use. Cambridge also decided to withdraw as our publisher. So we needed a new publisher and a new publication system. Robinson (later joined by Bordalejo) created the publisher: Scholarly Digital Editions (at <a href=\"https://www.sd-editions.com\">www.sd-editions.com</a>). In those years, from around 1998 through to 2006, Robinson and others developed the <ref target=\"ROBI04\">Anastasia</ref> publishing system to replace DynaText. The first publication to emerge from the combination of Scholarly Digital Editions and Anastasia was Estelle Stubbs' edition of the <i><ref target=\"STUB00\">Hengwrt Chaucer Digital Facsimile</ref></i>. More publications followed: the <ref target=\"ROBI04\">Miller's Tale</ref>, <ref target=\"THOM06\">Nun's Priest's Tale</ref>, <ref target=\"BORD03\">Caxton's Canterbury Tales,</ref> and Dan Mosser's <i><ref target=\"MOSS10\">Catalogue</ref></i>. This combination of publisher and publication represents the second technology phase of our work, running from around 1999 through to 2020."});
+		technology.push({"type":"p", "attr":"class=text", "text":"A key aim of this second phase was that every stage of our making our editions should be done online through a web interface. Our original intention was that Anastasia would not be just a publication system, but would also be a \"Virtual Research Environment\", permitting project collaborators (numbering, eventually, more than 200 people) to carry out and check every phase of the project's work, and especially transcriptions and collations. Our first plan, dating from 2005 when Bordalejo and Robinson joined David Parker and other New Testament scholars in the newly established Institute for Textual Scholarship and Electronic Editing (ITSEE) at the University of Birmingham, was to create a single research platform for digital editing which would serve all our needs, and those of many others. In the event that did not happen. Funding pressure led the project leaders -- the New Testament Scholars -- to concentrate on the needs of their users in what became, eventually, the \"Virtual Manuscript Room.\" Accordingly they went ahead without us, to create what is indeed a superb scholarly resource highly-tuned to their needs. Another factor is that by around 2008 it was clear that the members of the wider University of Birmingham community (not members of ITSEE itself) did not see the advantages to ourselves and to other scholars at Birmingham of our continued collaboration. Once more, we would need to develop ourselves what we needed: in this case, a virtual research environment to house all our work. In 2010 Robinson took up a post at the University of Saskatchewan. A reason for this was that the prospects for sufficient funding for such a complex piece of research infrastructure were higher in Canada than in England. Further, the concentration of digital humanists in Saskatchewan and elsewhere in Western Canada offered a fertile intellectual environment. "});
+		technology.push({"type":"p", "attr":"class=text", "text":"We were not disappointed in these hopes. Substantial funding from the Canada Foundation for Innovation, the Social Sciences and Humanities Research Council and the University of Saskatchewan enabled the making of the Textual Communities system, now the daily foundation of all our work. Among other matters, this funding permitted Bordalejo to move to Canada to continue with the project. We needed a system which would both contral access to our work and allow our collaborators to see, in real time, the results of their work. It must enable acquisition and management of page images (including IIIF formats); link transcripts ot images and permit real-time creation of transcripts; carry out computer-assisted collation; generate output in multiple formats and translate between multiple formats. Of these, the real-time requirement was the most demanding. First, around 2008, we attempted to use Django as a front-end managing interactions with users and Oracle XML-DB as a back-end database. Beside the problem that Oracle XML-DB is propietary software, we found problems with updates being slow. After moving to Canada in 2010 and receiving funding from 2011 on we moved away from both Django and Oracle XML-DB. At first, we attempted to use long-established relational database technology, in the form of MySQL, as our back-end system. However the complex data joins needed to move data between XML and relational tables proved slow and difficult to manage. The breakthrough came in 2014 when a talented student programmer, Xiaohan Zhang, suggested moving to the then-new JSON document database technology, in the form of Mongo-DB. The advantages of this move far outweighed the overhead conversions between JSON and XML. Xiaohan also moved the development and front-end software environment to NodeJS, a change which made it possible for one person alone, initially Xiaohan and later Robinson, to manage the whole system."});
+		technology.push({"type":"p", "attr":"class=text", "text":"By 2018 Textual Communities was fully functional and providing all we needed for the making of our editions. This completed the second phase of technological development. Our initial plan was to use Textual Communities as our publication platform, in the same way we had used Anastasia earlier. However, in 2020 Robinson joined a partnership with Lino Leonardi of SISMEL and Prue Shaw, a distinguished Dante editor with whom Robinson had long worked, to update the <ref target=\"SHAW10\">2010</ref> edition of the <i>Commedia</i> on which all three had worked in time for the 2021 700th anniversary of Dante's death. Leonardi had one stringent requirement: the online published edition must not rely on a database, of any kind. Robinson made the edition now at <a href=\"https://www.dantecommedia.it\">www.dantecommedia.it</a> according to this requirement and came to see that for any digital edition to survive it must not depend on database technology for its delivery. Robinson had already had an experience with the fragility of database technology, when in 2023 the University of Saskatchewan declared they could not maintain the NodeJS and MongoDB systems used by Textual Communities. For the work of the project to survive, the final project webpages -- the edition you are now looking at -- must be delivered without a database."});
+		technology.push({"type":"p", "attr":"class=text", "text":"Indeed, the <a href=\"https://endings.uvic.ca/\">Endings Project</a> had come to the same conclusion, and issued guidelines for digital projects to follow if they wanted to survive on the web. Our attempts, since 2020, to restructure our editions to give them the best chance we can to survive on the web, constitute the third phase of our technological development. Accordingly, this edition is constructed from thousands of static html files, managed by standard css presentation and javascript software tools. The search tool used is the staticSearch system developed by Martin Holmes and Joey Takeda of the Endings Project. The one divergence from Endings in our editions is that we use the JQuery software library extensively. We will progressively remove this dependency. A particular concern of ours is the availability of manuscript images. We have packaged with this edition images of all the manuscript and incunable pages transcribed and collated in the edition, all held in the \"iiifimages\" folder, all in iiif form. In many cases, superior images are provided by libraries direct from their servers. In all such cases, we provide a link to those images rather than to the form held in the iiifimages folder. However, where the library server images are not available (as is too frequently the case) we automatically redirect to the version held in the iiifimages folder. Note that the file \"images.js\" at the toot folder of this edition (thus, <a href=\"../../../images.js\">here</a>) provides a means of updating the images in this edition as they become available."});
+		technology.push({"type":"p", "attr":"class=text", "text":"This summary was written in July 2026. That you are reading these words now indicates that our edition has survived that long."});
+		editorial.push({"title":"Technology", "key":"technology", "text":technology});
+/* 		zip.file('edition/common/local/js/editorial.js', 'var editorial='+JSON.stringify(editorial));
+		zip.file('edition/output/editorial.js', 'var editorial='+JSON.stringify(editorial));
+		return(callback(null));   */
+
 		async.mapSeries(self.edition.pageEntities, function (witness, cbPE) {
 		   async.mapSeries(witness.entities, function(myEntity, cbWitness) {
 		   		$("#MEProgress").html("Checking for commentary on "+myEntity.entity);
@@ -1523,38 +1770,35 @@ function makeEditorial(self, zip, callback) {
 //					myEntity.topMatch=myEntity.match.split("_")[0]; //do we need this??/
 					async.waterfall([
 						function (cb) {
-							if (/* !myEntity.hasCommentary || */ commEntities.includes(myEntity.entity) ) { 
+							if (commEntities.includes(myEntity.entity) ) { 
 								cb(null, []);
 							} else {
-								$.get(self.edition.TCUrl+'/api/getApprovedCommentaries?entity='+searchEnt, function (json){
-									if (json.results.length>0) {
+								$.post(self.edition.TCUrl+'/api/getCommentaries?entity='+searchEnt+"&entityTo=", function (json){
+									if (json.success && json.commentaries.length>0 && json.commentaries[json.commentaries.length-1].status=="APPROVED" ) {
 										commEntities.push(myEntity.entity);
-										//add this to our commentary file...
-										//group by top level entitities, to enable menu building
-										for (let i=0; i<json.results.length; i++) {
-											if (json.results[i].text.indexOf("<br>")>-1) { //go through this one paragraph at a time
-												let myText=json.results[i].text, myFixed=[];
-												myText=myText.replace(/(\r\n|\n|\r)/gm, "");
-												while (myText.indexOf("<br>")>-1) {
-													myFixed.push({"type":"p", "text":myText.slice(0, myText.indexOf("<br>"))});
-													myText=myText.slice(myText.indexOf("<br>")+4);
-												}
-												myFixed.push({"type":"p", "text":myText});
-												//readin alias at this point
-												let aliases=[];
-												if (self.config.hasOwnProperty("aliases")) {
-													aliases=applyAliases(self.config.aliases, myEntity.entity);
-												}
-												editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":myFixed, "date": json.results[i].date, "approver": json.results[i].approver});
-											} else {
-												let aliases=[];
-												if (self.config.hasOwnProperty("aliases")) {
-													aliases=applyAliases(self.config.aliases, myEntity.entity);
-												}
-												//check for alias
-												editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":[{"type":"p", "text":json.results[i].text}], "date": json.results[i].date, "approver": json.results[i].approver});
+										let appComm=json.commentaries[json.commentaries.length-1]
+										if (appComm.text.indexOf("<br>")>-1) {
+											let myText=appComm.text, myFixed=[];
+											myText=myText.replace(/(\r\n|\n|\r)/gm, "");
+											while (myText.indexOf("<br>")>-1) {
+												myFixed.push({"type":"p", "text":myText.slice(0, myText.indexOf("<br>"))});
+												myText=myText.slice(myText.indexOf("<br>")+4);
 											}
-										} 
+											myFixed.push({"type":"p", "text":myText});
+											//readin alias at this point
+											let aliases=[];
+											if (self.config.hasOwnProperty("aliases")) {
+												aliases=applyAliases(self.config.aliases, myEntity.entity);
+											}
+											editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":myFixed, "date": appComm.date, "approver": appComm.user});
+										} else {
+											let aliases=[];
+											if (self.config.hasOwnProperty("aliases")) {
+												aliases=applyAliases(self.config.aliases, myEntity.entity);
+											}
+											//check for alias
+											editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":[{"type":"p", "text":appComm.text}], "date": appComm.date, "approver": appComm.user});
+										}
 									} 
 									cb(null, []);	
 								});
@@ -1727,11 +1971,11 @@ function makeEditorial(self, zip, callback) {
 							$("#MEProgress").html("Processing emendation for "+emendation1);
 							let fetchEnt="CTP2/"+emendation1;
 							//now we have the emendation ...process it..
-							$.get(self.edition.TCUrl+'/api/getApprovedCommentaries?entity='+fetchEnt, function (json){
-								var boo=1;
-								for (let i=0; i<json.results.length; i++) {
-									if (json.results[i].text.indexOf("<br>")>-1) { //go through this one paragraph at a time
-										let myText=json.results[i].text, myFixed=[];
+							$.post(self.edition.TCUrl+'/api/getCommentaries?entity='+fetchEnt+"&entityTo=", function (json){
+								if (json.success && json.commentaries.length>0 && json.commentaries[json.commentaries.length-1].status=="APPROVED" ) {
+									let appComm=json.commentaries[json.commentaries.length-1];
+									if (appComm.text.indexOf("<br>")>-1) { //go through this one paragraph at a time
+										let myText=appComm.text, myFixed=[];
 										myText=myText.replace(/(\r\n|\n|\r)/gm, "");
 										while (myText.indexOf("<br>")>-1) {
 											myFixed.push({"type":"p", "text":myText.slice(0, myText.indexOf("<br>"))});
@@ -1743,7 +1987,7 @@ function makeEditorial(self, zip, callback) {
 										if (self.config.hasOwnProperty("aliases")) {
 											aliases=applyAliases(self.config.aliases, emendation1);
 										}
-										thisEmendationLine[0].lines.push({"title":emendation1, "aliases": JSON.stringify(aliases), "title":aliases[0], "key":emendation1.slice(7), "text":myFixed, "date": json.results[i].date, "approver": json.results[i].approver});
+										thisEmendationLine[0].lines.push({"title":emendation1, "aliases": JSON.stringify(aliases), "title":aliases[0], "key":emendation1.slice(7), "text":myFixed, "date": appComm.date, "approver": appComm.user});
 								//		editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":myFixed, "date": json.results[i].date, "approver": json.results[i].approver});
 									} else {
 										let aliases=[];
@@ -1751,8 +1995,7 @@ function makeEditorial(self, zip, callback) {
 											aliases=applyAliases(self.config.aliases, emendation1);
 										}
 										//check for alias
-										thisEmendationLine[0].lines.push({"key":emendation1.slice(7),"title":aliases[0], "text":[{"type":"p", "text":json.results[i].text}], "date": json.results[i].date, "approver": json.results[i].approver}); //add here text of related commentary
-
+										thisEmendationLine[0].lines.push({"key":emendation1.slice(7),"title":aliases[0], "text":[{"type":"p", "text":appComm.text}], "date": appComm.date, "approver": appComm.user}); //add here text of related commentary
 //										editorial.push({"title":myEntity.match[1], "aliases": JSON.stringify(aliases), "key":myEntity.entity.slice(myEntity.entity.indexOf("entity=")+7), "text":[{"type":"p", "text":json.results[i].text}], "date": json.results[i].date, "approver": json.results[i].approver});
 									}
 								} 
@@ -1766,6 +2009,10 @@ function makeEditorial(self, zip, callback) {
 						editorial.push({"title":"Emendations", "key":"emendations", "lines":emendationGroups});
 						cb1(null,"");
 					}); 	
+		    	},
+		    	function (args, cb1) {   //bibligoraphic entries
+		    		editorial.push({"title":"Bibliography", "key":"bibliography", "items":self.config.bibliography});
+		    		cb1(null,"");
 		    	}
 		    ], function (err){
 				self.edition.editorial=editorial;
@@ -1909,7 +2156,7 @@ function doMakeEditorialPages(self, zip, callback) { //ready to roll!
 		async.mapSeries(myEditorial, function (thisEditorial, cbedmat){ 
 			let mydata=data;
 			if (self.config.standalone) {
-				mydata=BrowserFunctionService.customTemplates(mydata, [{key:"isstandalone", value:true, isobject: true}, {key:"shortTitle", value:self.config.shortTitle, isobject: false}, {key:"TCcommunity", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key:"currMS", value: self.config.currMS, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value: self.config.ssSearch, isobject:true}, {key:"item", value:JSON.stringify(thisEditorial), isobject: true},{key: "view", value:"editorial", isobject:false}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}], [self.config.editorialDriverJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile, self.config.collutilsJs]);
+				mydata=BrowserFunctionService.customTemplates(mydata, [{key:"isstandalone", value:true, isobject: true}, {key:"gTag", value:self.config.gTag, isobject: false}, {key:"shortTitle", value:self.config.shortTitle, isobject: false}, {key:"TCcommunity", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key:"currMS", value: self.config.currMS, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value: self.config.ssSearch, isobject:true}, {key:"item", value:JSON.stringify(thisEditorial), isobject: true},{key: "view", value:"editorial", isobject:false}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}], [self.config.editorialDriverJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile, self.config.collutilsJs, self.config.bibliographyFile]);
 			} else {
 				let banner= clean(self.edition.universalbanner);
 				mydata=BrowserFunctionService.customTemplates(mydata, [{key:"isstandalone", value:false, isobject: true}, {key:"currMS", value: self.config.currMS, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value: self.config.ssSearch, isobject:true}, {key:"item", value:JSON.stringify(thisEditorial), isobject: true},{key: "view", value:"editorial", isobject:false}, {key:"universalBanner", value: banner, isobject:false}], [self.config.editorialDriverJs, self.config.entityPagesFile, self.config.aliasesFile]);
@@ -1920,7 +2167,7 @@ function doMakeEditorialPages(self, zip, callback) { //ready to roll!
 					let ssSearch=true;
 					if (typeof self.config.ssSearch=="undefined") ssSearch=false;
 					let str=BrowserFunctionService.adjustResult(self, event.data, false, [{key:"ssSearch", value:ssSearch, isobject: true},{key:"currMS", value: self.config.currMS, isobject:false}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key: "currEntity", value:self.config.firstEntity, isobject:false}, {key: "view", value:"editorial", isobject:false}],[self.config.editorialJs, self.config.entityPagesFile, self.config.aliasesFile]);	
-					if (thisEditorial.hasOwnProperty("key") && (thisEditorial.key=="Scribal" || thisEditorial.key=="OnotHg")) {
+					if (thisEditorial.hasOwnProperty("key") && (thisEditorial.key=="Scribal" || thisEditorial.key=="OnotHg" )) {
 						zip.file('edition/html/editorial/menu/'+thisEditorial.key+".html", str);
 					} else {
 						if (!Array.isArray(thisEditorial)) {
@@ -2119,6 +2366,52 @@ function updateImages(self, zip, documents, callback) {
 	}
 }
 
+function makeImagesFile(self, zip, documents, callback) {
+	if (!self.config.makeImagesFile) {
+		return(callback(null));
+	} else {
+		let record=[];
+		async.mapSeries(documents, function (doc, cbdocs){
+				record.push({"ms":doc.name[0], "id":self.edition.witnessInf[doc.name[0]].id, "permission":self.edition.witnessInf[doc.name[0]].permission,"pages":[]});
+			async.mapSeries(doc.pages, function(tpage, cbpage){
+				$("#MEProgress").html("processing "+doc.name+"/"+tpage);
+				if (doc.name[0]=="Edition") {
+					record.filter(msRec=>msRec.ms==doc.name[0])[0].pages.push({"page":tpage[0], "iiif":""});
+					cbpage(null);
+				} else {
+				//do shit here
+				let IIIFstring=self.config.TCimagesUrl+"/uri/urn:det:tc:usask:"+self.config.imagesCommunity+"/document="+doc.name+":folio="+tpage+"?type=IIIF&format=url";
+				$.get(IIIFstring, function(iiif){
+					//we have the page url now
+					if (iiif.length==0) {
+						record.filter(msRec=>msRec.ms==doc.name[0])[0].pages.push({"page":tpage[0], "iiif":""});
+					} else {
+						//filter out references to IIIF files on the tc public server, or to undefined and corrupter permissions
+						if (iiif[0].url.indexOf("undefined")>-1) {
+							record.filter(msRec=>msRec.ms==doc.name[0])[0].pages.push({"page":tpage[0], "iiif":""});
+						} else if (iiif[0].url.indexOf("textualcommunities")>-1) {
+							record.filter(msRec=>msRec.ms==doc.name[0])[0].pages.push({"page":tpage[0], "iiif":""});
+						} else {
+							record.filter(msRec=>msRec.ms==doc.name[0])[0].pages.push({"page":tpage[0], "iiif":iiif[0].url});
+						}
+					}
+					cbpage(null);
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					console.log("Error getting "+doc.name[0]+", "+tpage[0]);
+					record.filter(msRec=>msRec.ms==doc.name[0])[0].pages.push({"page":tpage[0], "iiif":""});
+					cbpage(null);
+				});
+			  }
+			}, function (err) {
+				cbdocs(null);
+			});
+		}, function (err) {
+			zip.file('edition/output/images.js', self.edition.openFile+"\nconst witnesses="+JSON.stringify(record, null, 2));					
+			callback(null);
+		});
+	}
+}
+
 function makeHTMLPages(self, zip, documents, pageEntities, callback) {
     if (self.config.shortTitle=="Commedia") { return(callback(null));}
 	if (!self.config.makePagesHtml) {
@@ -2149,7 +2442,7 @@ function makeHTMLPages(self, zip, documents, pageEntities, callback) {
 					let ssSearch=true;
 					if (typeof self.config.ssSearch=="undefined") ssSearch=false;
 					if (self.config.standalone) {
-						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:true, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"scribal", value: JSON.stringify(self.config.scribal), isobject:true}, {key:"concorder", value: JSON.stringify(self.config.concorder), isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false}, {key: "view", value:"transcript", isobject:false}, {key: "TCurl", value: self.config.TCUrl, isobject:false}, {key: "TCimages", value: self.config.TCimagesUrl, isobject:false}, {key: "currMS", value: doc.name, isobject:false},{key: "currPage", value: tpage, isobject:false}, {key: "imagesCommunity", value:self.config.imagesCommunity, isobject:false}, {key: "TCcommunity", value:self.config.TCCommunity, isobject:false}, {key: "currEntity", value:myEntity, isobject:false}, {key: "currEntities", value:JSON.stringify(self.config.entities), isobject:true}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.pagesDriverJs, self.config.collutilsJs, self.config.witnessInfFile, self.config.pageEntitiesMinFile, self.config.entityPagesFile, self.config.aliasesFile,self.config.indexCompareFile]);
+						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:true, isobject: true}, {key:"gTag", value:self.config.gTag, isobject: false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"scribal", value: JSON.stringify(self.config.scribal), isobject:true}, {key:"concorder", value: JSON.stringify(self.config.concorder), isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"prevPage", value:prevPage, isobject: false}, {key:"nextPage", value:nextPage, isobject: false}, {key: "view", value:"transcript", isobject:false}, {key: "TCurl", value: self.config.TCUrl, isobject:false}, {key: "TCimages", value: self.config.TCimagesUrl, isobject:false}, {key: "currMS", value: doc.name, isobject:false},{key: "currPage", value: tpage, isobject:false}, {key: "imagesCommunity", value:self.config.imagesCommunity, isobject:false}, {key: "TCcommunity", value:self.config.TCCommunity, isobject:false}, {key: "currEntity", value:myEntity, isobject:false}, {key: "currEntities", value:JSON.stringify(self.config.entities), isobject:true}, {key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.pagesDriverJs, self.config.collutilsJs, self.config.witnessInfFile, self.config.pageEntitiesMinFile, self.config.entityPagesFile, self.config.aliasesFile,self.config.indexCompareFile]);
 					} else {
 						let banner= clean(self.edition.universalbanner);
 						myData=BrowserFunctionService.customTemplates(myData, [{key:"isstandalone", value:false, isobject: true}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"item", value:JSON.stringify(thisEditorial), isobject: true},{key: "view", value:"editorial", isobject:false}, {key:"universalBanner", value: banner, isobject:false}], [self.config.editorialDriverJs, self.config.entityPagesFile, self.config.aliasesFile]);
@@ -2160,7 +2453,7 @@ function makeHTMLPages(self, zip, documents, pageEntities, callback) {
 						if (typeof event.data === "string") {
 							let ssSearch=true;
 							if (typeof self.config.ssSearch=="undefined") ssSearch=false;
-							let str=BrowserFunctionService.adjustResult(self, event.data, false, [{key:"ssSearch", value:ssSearch, isobject: true},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},{key: "view", value:"transcript", isobject:false}, {key: "currMS", value: doc.name, isobject:false},  {key: "currEntity", value:myEntity, isobject:false},{key: "currPage", value: tpage, isobject:false}],[self.config.pagesJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile]);	
+							let str=BrowserFunctionService.adjustResult(self, event.data, false, [{key:"ssSearch", value:ssSearch, isobject: true},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},{key: "view", value:"transcript", isobject:false}, {key: "currMS", value: doc.name, isobject:false},  {key: "currEntity", value:myEntity, isobject:false},{key: "currPage", value: tpage, isobject:false}],[self.config.pagesJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.indexCompareFile, self.config.imagesJS]);	
 							zip.file('edition/html/transcripts/'+doc.name+'/'+tpage+".html", str);
 							$.get(self.edition.TCUrl+"/uri/urn:det:tc:usask:"+self.edition.TCCommunity+"/document="+doc.name+":folio="+tpage+"?type=transcript&format=xml", function(xml) {
 								zip.file('edition/xml/transcripts/'+doc.name+'/'+tpage+".xml", xml);
@@ -2347,7 +2640,7 @@ function makeCompare (self, zip, entities, callback) {
 							for (let i=index; i<index+self.config.makeCompareElements && i<entitiesArray.length; i++) {
 								currEntities.push(entitiesArray[i]);
 							}
-							mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:true, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"TCcommunity", value:self.config.TCCommunity, isobject: false}, {key:"imagesCommunity", value:self.config.imagesCommunity, isobject: false},  {key:"currPage", value:self.config.currPage, isobject: false}, {key:"TCimagesUrl", value:self.config.TCimagesUrl, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"compare", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCompare", value: prevCompare, isobject:false}, {key:"nextCompare", value: nextCompare, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.compareDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.entityPagesFile, self.config.aliasesFile, self.config.pageEntitiesMinFile,self.config.indexCompareFile]); 
+							mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:true, isobject: true}, {key:"gTag", value:self.config.gTag, isobject: false}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"TCcommunity", value:self.config.TCCommunity, isobject: false}, {key:"imagesCommunity", value:self.config.imagesCommunity, isobject: false},  {key:"currPage", value:self.config.currPage, isobject: false}, {key:"TCimagesUrl", value:self.config.TCimagesUrl, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"compare", isobject:false},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},  {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCompare", value: prevCompare, isobject:false}, {key:"nextCompare", value: nextCompare, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}, {key:"shortTitle", value: self.config.shortTitle, isobject:false}], [self.config.compareDriverJs, self.config.collutilsJs, self.config.entityPagesFile, self.config.entityPagesFile, self.config.aliasesFile, self.config.pageEntitiesMinFile,self.config.indexCompareFile]); 
 						} else {
 							let banner = clean(self.edition.universalbanner);
 							mydata=BrowserFunctionService.customTemplates(srcdoc, [{key:"isstandalone", value:false, isobject: true}, {key:"ssSearch", value:ssSearch, isobject: true}, {key:"community", value:self.config.TCCommunity, isobject: false}, {key: "TCurl", value:self.config.TCUrl, isobject:false}, {key: "view", value:"compare", isobject:false}, {key:"universalBanner", value: banner, isobject:false}, {key:"hasVBase", value: self.config.hasVBase, isobject:true}, {key:"currEntity", value: currEntity, isobject:false},  {key:"currMS", value: currMS, isobject:false}, {key:"prevCompare", value: prevCompare, isobject:false}, {key:"nextCompare", value: nextCompare, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}], [self.config.collationDriverJs, self.config.collutilsJs,  self.config.entityPagesFile, self.config.aliasesFile]);
@@ -2359,7 +2652,7 @@ function makeCompare (self, zip, entities, callback) {
 							if (typeof event.data === "string") {
 								let ssSearch=true;
 								if (typeof self.config.ssSearch=="undefined") ssSearch=false;
-								let str=BrowserFunctionService.adjustResult(self, event.data, false, [{key:"community", value:self.config.TCCommunity, isobject: false}, {key:"ssSearch", value:ssSearch, isobject: true},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},{key: "view", value:"compare", isobject:false}, {key: "currMS", value: currMS, isobject:false},  {key: "currEntity", value:currEntity, isobject:false},{key: "currPage", value: self.config.currPage, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}],[self.config.compareJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.pageEntitiesMinFile, self.config.collutilsJs, self.config.indexCompareFile]);	
+								let str=BrowserFunctionService.adjustResult(self, event.data, false, [{key:"community", value:self.config.TCCommunity, isobject: false}, {key:"ssSearch", value:ssSearch, isobject: true},{key:"universalBannerLocation", value: self.config.universalBannerLocation, isobject:false},{key: "view", value:"compare", isobject:false}, {key: "currMS", value: currMS, isobject:false},  {key: "currEntity", value:currEntity, isobject:false},{key: "currPage", value: self.config.currPage, isobject:false}, {key:"currEntities", value: JSON.stringify(currEntities), isobject:true}],[self.config.compareJs, self.config.entityPagesFile, self.config.aliasesFile, self.config.pageEntitiesMinFile, self.config.collutilsJs, self.config.indexCompareFile, self.config.imagesJS]);	
 								zip.file('edition/html/compare/'+folder+'/'+filename+".html", str);
 								eaCB(null);
 							}

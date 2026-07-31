@@ -18,6 +18,12 @@ function fireSearch1() {
 	window.location.href = "html/transcripts/"+ms+"/"+page+".html?q="+$("#fireQuery").val();
 }
 
+function openTranscript() { //just send us to whatever shows in menu
+	let entity=getEntityFromMenu()
+	let ms=$("#MS").val();
+	let page=getMSPage(entity, ms);
+	window.location.href = "../../../html/transcripts/"+ms+"/"+page+".html";
+}
 
 function fireSearch2() {
 //	window.location.href = window.location.href+"?q="+$("#fireQuery").val();

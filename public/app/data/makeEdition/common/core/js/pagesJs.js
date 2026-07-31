@@ -12,8 +12,8 @@ function initTranscript () {
 		} else {
 			$("#entityMenu").html(initializeEntityChoice(currEntity, currMS));
 		} 
-		if (iiifURL) {
-			openImage();
+		if (currMS!="Edition") {
+			openImage(currMS, currPage);
 			initializeSplitView();
 		} else {
 			$("#panel-left").hide();
@@ -31,6 +31,20 @@ function initTranscript () {
 		} else {
 			isPopUpOrigSpelling=false;
 		}
+		if (currMS=="Edition") 	{
+			$('#showScribal').prop('checked', false);
+		}
+		$("div.line").on({
+  			mouseenter: function() {
+ 			   $("#tipDiv").width(250);
+ 		 },
+  			mouseleave: function() {
+ 			   $("#tipDiv").width(300);
+		  }
+		});
+		let myMs=witnesses.filter(ms=>ms.ms==currMS)[0];
+		$("#imageDetail").html("Image of folio "+currPage+" in "+myMs.id +" "+myMs.permission)
+		resizeRTable();
 	});
 }
 
@@ -38,6 +52,14 @@ function initComm () {
 	$("#tipDiv").attr("onmousedown", "");
 	 $("#tipDiv").attr("onmouseup", "");
 	 $("#tipDiv").css('cursor', 'text');
+}
+
+function showScribal() {
+	if ($("#showScribal").prop( "checked")) {
+		$(".scribal").show();
+	} else {
+		$(".scribal").hide();
+	}
 }
 
 function showPopUps () {

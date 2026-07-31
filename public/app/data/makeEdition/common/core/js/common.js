@@ -28,23 +28,6 @@ $(window).bind('resize', resizeRTable);
 
 
 
-  
- //TCimages, etc, declared in master HTML file for each page
-function openImage () {
-	if (iiifURL) {
-		viewer = OpenSeadragon({
-			id: "panel-left",
-			maxZoomPixelRatio: 3,  //0.5 for stemmata
-			minZoomImageRatio: 0.7,
-			homeFillsViewer: true,
-			prefixUrl: "https://openseadragon.github.io/openseadragon/images/"
-		});	
-		$.get(iiifURL, function(source) {
-					if (viewer) viewer.open([source]);
-		});
-	}
-}
-
 
 function resizeRTable() {
 		if ($("#panel-left").is(":visible") && $("#panel-right").is(":visible")) {
@@ -104,7 +87,13 @@ function resizeRTable() {
 		var newHeight=$(window).height()-$("#page-head").height()-6;
 		if ($("#transcriptFrame").is(":visible")) {
 			var newHeight=$(window).height()-$("#page-head").height()-6;
-			if ($(".gutter-horizontal").length) $("#transcript").height(newHeight-$("#p-r-top").height()-18);
+			if ($(".gutter-horizontal").length) {
+				$("#transcript").height(newHeight-$("#p-r-top").height()-18);
+				if ($("#panel-left").is(":visible")) {
+					let newWidth=$("body").width()-$("#panel-left").width()-10;
+					$("#panel-right").width(newWidth);	
+				}
+			}
 			if (!$("#panel-left").is(":visible")) {
 				$("#panel-right").width("100%");
 				$("#transcript").height($("#panel-right").height()-$("#p-r-top").height());
@@ -122,11 +111,15 @@ function resizeRTable() {
 			$("#rTable").height($("#panel-left").height());
 //			$("#rTable").height(newHeight-$("#footer").height()-3);
 		} 
-		if ($("#collationFrame").is(":visible")) {
+		if ($("#collationFrame").is(":visible")) { //if we are splitting vertically
 			$("#panel-left").height(newHeight-10);
 			$("#panel-right").height(newHeight-10);
 			$("#rTable").height(newHeight-10);
-			$("#collation").height(newHeight-10-$("#c-r-top").height());
+			$("#collation").height(newHeight-30-$("#c-r-top").height());
+			if ($(".gutter-horizontal").length) {
+				let newWidth=$("body").width()-$("#panel-left").width()-10;
+				$("#panel-right").width(newWidth);	
+			}
 		}
 		if ($("#searchContainer").is(":visible")) {
 			$("#searchContainer").height(newHeight-10);

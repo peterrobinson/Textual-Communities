@@ -62,9 +62,10 @@ var BrowserFunctionService = {
 	source=source.replace(/src='[^']+\/common\//g, "src='../../../common/");
 	source=source.replace(/href="[^"]+\/common\//g,'href="../../../common/');
 	source=source.replace(/href='[^']+\/common\//g, "href='../../../common/");
+	source=source.replaceAll("/app/data/makeEdition/staticSearch", "../../../staticSearch");
 	source=source.replace(/universalBannerLocation = "[^"]+\/common\//g, 'universalBannerLocation="../../../common/');
 	source=source.replace(/splash = "[^"]+\/common\//g, 'splash = "../../../common/');
-
+	source=source.replaceAll("/app/data/makeEdition/images.js", "../../../images.js");
 //	source=source.replace(/url\(&quot;.*?\/common\//g, "url(&quot;../../../common/");
 	if (isIndex) source=source.replaceAll("../../../", "");
 	return(source);
@@ -74,12 +75,16 @@ var BrowserFunctionService = {
 	if (drivervalues.length>0) {
 		let driverscript="<script class='driverScript'>const ";
 		for (let i=0; i<drivervalues.length; i++) {
-			if (!drivervalues[i].isobject) {
-				driverscript+=drivervalues[i].key+" = "+'"'+drivervalues[i].value+'"';
+			if (drivervalues[i].key=="gTag") {
+				$(myDOM).contents().find("head")[0].insertAdjacentHTML('afterbegin', drivervalues[i].value);
 			} else {
-				driverscript+=drivervalues[i].key+" = "+drivervalues[i].value;
+				if (!drivervalues[i].isobject) {
+					driverscript+=drivervalues[i].key+" = "+'"'+drivervalues[i].value+'"';
+				} else {
+					driverscript+=drivervalues[i].key+" = "+drivervalues[i].value;
+				}
+				if (i<drivervalues.length-1) driverscript+=", ";
 			}
-			if (i<drivervalues.length-1) driverscript+=", ";
 		}
 		driverscript+="<";
 		driverscript+="/script>\n";

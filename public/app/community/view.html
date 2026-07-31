@@ -225,6 +225,7 @@
                 <a (click)="selectEntity(subEntity)">
                   {{subEntity.name}}
                 </a></span><span data-toggle="tooltip" title="Collation recorded" style="font-weight: bold; color: red" *ngIf="subEntity.hasCollation">C</span>
+                <span> <a title="Download collation for debugging" (click)="downloadEntity(subEntity)"><img class="menuimg" height="18" onmouseout="this.width='24'; this.height='24'" onmouseover="this.width='36';this.height='36'" src="../../images/download.png" width="24" height="24"></a></span>
               </div>
               <ul>
                 <li *ngFor="#subSubEntity of subEntity.entities"

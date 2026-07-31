@@ -500,21 +500,21 @@ function doMargins(column, isTwoColumns) {
 				$(notes[i]).detach().appendTo("#t-c1-left"); break;  //we deprecate use of this;  replace by margin left or right
 			case "margin-right":
 				$(notes[i]).attr("n", "LL"+column+"-"+book+lineNum);
-				let rtop=$($(notes[i]).parents("l")[0]).position().top-$($(notes[i]).parents("div")[0]).position().top;  //doesnt put it in the right place, but ee dont care	
+//				let rtop=$($(notes[i]).parents("l")[0]).position().top-$($(notes[i]).parents("div")[0]).position().top;  //doesnt put it in the right place, but ee dont care	
 				let myLine2=$(notes[i]).parent("l");
 				let myElement2=$("note[n=LL"+column+"-"+book+lineNum+"]").clone();
 				if (column==1 && isTwoColumns) {
 					$(notes[i]).attr("n", "RG"+column+"-"+book+lineNum);
 					$(notes[i]).detach().appendTo("#t-c1c2-gutter"); 
 					let rnumtop=$("note[n='RG"+column+"-"+book+lineNum+"']")[0].offsetTop;
-					$($("note[n='RG"+column+"-"+book+lineNum+"']")[0]).css({position:"relative", top:""+(rtop-rnumtop+3)+"px"});
+	//				$($("note[n='RG"+column+"-"+book+lineNum+"']")[0]).css({position:"relative", top:""+(rtop-rnumtop+3)+"px"});
 				} else {
 //					let rnumtop=$("note[n='RN"+column+"-"+book+lineNum+"']")[0].offsetTop;
 					$(notes[i]).remove();
 				//if the note containd line breaks put it in the right column
 					if ($(myElement2[0]).has("br").length>0) {
 						$(myElement2[0]).appendTo("#t-c2-text");
-						$(myElement2[0]).css({position:"relative", top:rtop+"px","display":"inline-block", "font-size":"80%", "white-space":"nowrap"});
+//						$(myElement2[0]).css({position:"relative", top:rtop+"px","display":"inline-block", "font-size":"80%", "white-space":"nowrap"});
 					} else {
 						$(myLine2)[0].prepend(myElement2[0]);
 						$(myElement2[0]).css({position:"relative", left:$("#t-c1-text").width()+20+"px","display":"inline-block", "font-size":"80%", "white-space":"nowrap", width:"0px"});
@@ -661,18 +661,31 @@ function doLineNumbers(column, cbmain) {
 				if (isOrncp) leftOffset=-61;
 				$($("div[n='"+DivN+"-"+LineN+"']")[0]).css({"position":"relative", "left": leftOffset+"px","display":"inline-block", "white-space":"nowrap", width:"0px"});
 			}
-			let searchUrl="https://textualcommunities.com/api/getCommentaries?entity="+TCcommunity+"/entity="+DivN+":line="+LineN+"&entityTo=";
+			let searchUrl=TCurl+"/api/getCommentaries?entity="+TCcommunity+"/entity="+DivN+":line="+LineN+"&entityTo=";
 			 $.post(searchUrl, function(res) {
 				if (res.success) {
 					let commentary=selectCommentary(res.commentaries);
 					if (!isNaN(LineN) && (parseInt(LineN) % 5==0)) {
 						let concordLine=makeConcord(DivN, LineN);
-						$($("div[n='"+DivN+"-"+LineN+"']")[0]).html(concordLine+" <span class='showTip Comm-"+DivN+"-"+LineN+" commRef'>C</span>");
-						$("#popUps").append("<div id=\"Comm-"+DivN+"-"+LineN+"\">"+commentary+"</div>");
+						if (commentary) {
+							$($("div[n='"+DivN+"-"+LineN+"']")[0]).html(concordLine+" <span class='showTip Comm-"+DivN+"-"+LineN+" commRef'>C</span>");
+							$("#popUps").append("<div id=\"Comm-"+DivN+"-"+LineN+"\">"+commentary+"</div>");
+						} else {
+							$($("div[n='"+DivN+"-"+LineN+"']")[0]).html(concordLine);
+						}
 						callback(null,[]);
 					} else {
-						$($("div[n='"+DivN+"-"+LineN+"']")[0]).html("<span class='showTip Comm-"+DivN+"-"+LineN+" commRef'>C</span>");
-						$("#popUps").append("<div id=\"Comm-"+DivN+"-"+LineN+"\">"+commentary+"</div>");
+						var myDiv = $("<div class='line' n='"+DivN+"-"+LineN+"'></div>"); 
+						var myLine= $("div[n="+DivN+"]").find("l[n="+LineN+"]");
+						$(myLine)[0].prepend(myDiv[0]);
+						if (commentary) {
+							$($("div[n='"+DivN+"-"+LineN+"']")[0]).html("<span class='showTip Comm-"+DivN+"-"+LineN+" commRef'>C</span>");
+							$($("div[n='"+DivN+"-"+LineN+"']")[0]).css({"position":"relative","left":"-20px"});
+							$(myLine[0]).css({"position":"relative","left":"-10px"});
+							$("#popUps").append("<div id=\"Comm-"+DivN+"-"+LineN+"\">"+commentary+"</div>");
+						} else {
+							//no approved commentary
+						}
 						callback(null,[]);
 					}
 				} else {
@@ -693,12 +706,16 @@ function doLineNumbers(column, cbmain) {
 
 function selectCommentary(commentaries) {
 	commentaries=commentaries.reverse();
-	for (let i=0; i<commentaries.length; i++) {
+	if (commentaries[0].status=="APPROVED") {
+		return(commentaries[0].text+" ("+commentaries[0].user+", "+formatDate(commentaries[0].date)+")");
+	} else {
+		return null;
+	}
+/*	for (let i=0; i<commentaries.length; i++) {
 		if (commentaries[i].status=="APPROVED") {
 			return(commentaries[i].text+" ("+commentaries[i].user+", "+formatDate(commentaries[i].date)+")");			
 		}
-	}
-	return (commentaries[0].text+" ("+commentaries[0].user+", "+formatDate(commentaries[0].date)+") NO APPROVED COMMENTARY");
+	} */
 }
 
 function doExtraLineNumbers(column) {

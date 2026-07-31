@@ -53,6 +53,9 @@ var WriteCommentaryComponent = ng.core.Component({
 		}
 	})
   },
+  delete: function(){
+  
+  },
   approve: function(){
   	if (this.commentaries.length==0) {
   		this.error="Save the commentary before approving it";

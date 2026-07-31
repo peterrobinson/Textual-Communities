@@ -7,6 +7,9 @@ var CommunityService = require('../services/community')
   , config = require('../config')
   , async = require('async')
   , $ = require('jquery')
+  , JSZip = require('jszip')
+  , JSZipUtils = require('jszip-utils')
+  , FileSaver = require ('file-saver')
   , BrowserFunctionService = require('../services/functions')
 ;
 
@@ -526,6 +529,40 @@ var ViewComponent = ng.core.Component({
         docEntity.entities=res.foundTEIS;
       });
     }
+  },
+  downloadEntity: function(entity) {  //to convert the collation to stand alone
+  	var self=this;
+    this.collationEditor=true;
+    if (self.role=="CREATOR" || self.role=="LEADER" ) {
+		self.collationEditor=true;
+		//add settings for viewing supplied text etc etc
+		//be sure there are properties for collation..
+		if (!this.state.community.attrs.hasOwnProperty('viewsuppliedtext')) this.state.attrs.community.viewsuppliedtext=true;   	
+		if (!this.state.community.attrs.hasOwnProperty('viewuncleartext')) this.state.attrs.community.viewuncleartext=true;   	
+		if (!this.state.community.attrs.hasOwnProperty('viewcapitalization')) this.state.attrs.community.viewcapitalization=false;   	
+		if (!this.state.community.attrs.hasOwnProperty('expandabbreviations')) this.state.attrs.community.expandabbreviations=true;   	
+		if (!this.state.community.attrs.hasOwnProperty('showpunctuation')) this.state.attrs.community.showpunctuation=false;   	
+		if (!this.state.community.attrs.hasOwnProperty('showxml')) this.state.attrs.community.showxml=false;   	
+		var src=config.COLLATE_URL+"/collation/?dbUrl="+config.BACKEND_URL+"&entity="+entity.entityName+"&community="+this.state.community.attrs.abbr+"&user="+self.state.authUser.attrs._id+"&mode=reg&download=true";
+		$('#ce_iframe').attr('src', src);
+		window.addEventListener("message", function (event){
+			var myResults=event.data
+			const zip = new JSZip();
+			let myTale=myResults[0].context.slice(12,myResults[0].context.indexOf(":", 13));
+			let myLine=myResults[0].context.slice(myResults[0].context.indexOf("line=")+5);
+			let myLabel=myTale+myLine;
+			for (let i=0; i<myResults.length; i++) {
+				let metadata='{"id":"'+myResults[i].siglum+'","siglum":"'+myResults[i].siglum+'"}'
+				zip.file('textrepo/json/'+myResults[i].siglum+'/metadata.json', metadata);
+				zip.file('textrepo/json/'+myResults[i].siglum+'/'+myLabel+'.json', JSON.stringify(myResults[i]));
+			}
+			zip.generateAsync({ type: 'blob' }).then(function (content) {
+				FileSaver.saveAs(content, 'textrepo.zip'); 
+			});
+		});
+	  } else {
+		alert("Only project leaders or creators can download the collations.");
+	  }
   },
   selectEntity: function(entity) {
     //go get the different versions; collate them; yoho!

@@ -99,7 +99,7 @@ router.get('**', function(req, res, next) {
 //        console.log(authparts[4]);
 //      currently every community API is open...
         Community.findOne({abbr:authparts[4]}).then (function(community){
-//          console.log("got here")
+          console.log("got here")
           if (!community) res.status(400).send('The community "'+authparts[4]+'" is not known on this Textual Communities server, or is not publicly available.');
           else { //fun starts! we got a community. Now, what do we have??? are we looking for just entity, just document, or text
             //ok.. we have only entity search, document search, or text search
@@ -128,7 +128,7 @@ router.get('**', function(req, res, next) {
                     Doc.getTexts(foundDoc._id, function(err, texts) {
                       if (err) { next(err)} else {
                         if (req.query.format=="xml") {
-                          console.log("checking xml format");
+                         console.log("checking xml format");
                           res.send(formatXML(texts, true));
                         } else if (req.query.format=="html") {
                           var xml=formatXML(texts, false);
@@ -262,11 +262,16 @@ function formatXML(texts, isXML) {
       root = node;
   //                            console.log(root);
     } else {
-      var children = nodesMap[_.last(node.ancestors)].children;
-      var index = children.indexOf(node._id);
-      if (index > -1) {
-        children.splice(index, 1, node);
-      }
+      if (typeof nodesMap[_.last(node.ancestors)] =="undefined") {
+      	console.log("mysterious error here affecting Ht 45v");
+//      	console.log(node)
+      } else {
+		  var children = nodesMap[_.last(node.ancestors)].children;
+		  var index = children.indexOf(node._id);
+		  if (index > -1) {
+			children.splice(index, 1, node);
+		  }
+	   }
     }
   });
   _.each(nodesMap, function(node) {
@@ -274,8 +279,9 @@ function formatXML(texts, isXML) {
       return !!child._id;
     });
   });
+//  console.log("now jere")
   var myPage= json2xmlDoc(root).children[0].outerHTML.normalize();
-  console.log("no error here")
+//  console.log("no error here")
   myPage=myPage.replace(/\n/g, "");
   if (isXML)  myPage=myPage.replace(/><\/pb>/g, "/>").replace(/><\/lb>/g, "/>").replace(/><\/cb>/g, "/>").replace(/><\/gap>/g, "/>");
   return(myPage);
@@ -541,7 +547,7 @@ function  getDocEntities(community, seekDocument, seekEntity,  entityparts, docp
 //      console.log("doc "+result[result.length-1])
       TEI.find({docs: result[result.length-1]}).then (function (teis){
         async.each(teis, function(teiel, cb2) {
-//            console.log("tei "+teiel);
+  //          console.log("tei s");
             if (teiel.isEntity) {
                 if (!myEntities.some(e => e.entity === teiel.entityName)) myEntities.push({entity: teiel.entityName, collateable:teiel.isTerminal});
                 cb2(null);
@@ -552,16 +558,22 @@ function  getDocEntities(community, seekDocument, seekEntity,  entityparts, docp
                 function test(cb) {cb(null, nextTeiId!=null)},
                 function(cb1) {
                   TEI.findOne({_id: new ObjectId(nextTeiId)}).then (function(ancestorTei){
- //                   console.log("ancestor "+ancestorTei);
-                    if (ancestorTei.isEntity && ancestorTei.name!="text") {
- //                     if (ancestorTei.name!="text") console.log ("ancestor "+ancestorTei);
-                      if (!myEntities.some(e => e.entity === ancestorTei.entityName)) myEntities.push({entity: ancestorTei.entityName, collateable:ancestorTei.isTerminal});
-                      nextTeiId=ancestorTei.ancestors[ancestorTei.ancestors.length-1];
-                      cb1(null, null);
-                    } else {
-                      if (ancestorTei.ancestors.length==0) nextTeiId=null;
-                      else nextTeiId=ancestorTei.ancestors[ancestorTei.ancestors.length-1];
-                      cb1(null, null);
+                  	if (!ancestorTei) { //why does this sometimes happen???
+                  		console.log("aborting");
+                  		nextTeiId=null;
+                  		cb1(null, null);
+                  	} else {
+ //                    console.log("here is my ancestor "+ancestorTei);
+						if (ancestorTei.isEntity && ancestorTei.name!="text") {
+	 //                     if (ancestorTei.name!="text") console.log ("ancestor "+ancestorTei);
+						  if (!myEntities.some(e => e.entity === ancestorTei.entityName)) myEntities.push({entity: ancestorTei.entityName, collateable:ancestorTei.isTerminal});
+						  nextTeiId=ancestorTei.ancestors[ancestorTei.ancestors.length-1];
+						  cb1(null, null);
+						} else {
+						  if (ancestorTei.ancestors.length==0) nextTeiId=null;
+						  else nextTeiId=ancestorTei.ancestors[ancestorTei.ancestors.length-1];
+						  cb1(null, null);
+						}
                     }
                   }, function(err){
  //                 	console.log("search fail "+err)
@@ -713,8 +725,11 @@ function json2xmlDoc(obj) {
       , parentEl = item.parent
       , child = item.child
     ;
+//    console.log("in json2xmlDoc3 parent"+JSON.stringify(parentEl)+" child "+JSON.stringify(child))
     loadObjTree(xmlDoc, parentEl, child, queue);
+//    console.log("in json2xmlDoc4")
   }
+//  console.log("in json2xmlDoc4")
   return xmlDoc;
 }
 

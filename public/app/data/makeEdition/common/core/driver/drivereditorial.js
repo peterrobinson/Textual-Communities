@@ -25,11 +25,12 @@ function createEditorial (){
 	//is it just one item? or a commentary item, where there might be loads of them...
 	let content="";
 	if (!Array.isArray(item)) {
-		content+="<h2>"+item.title+"</h2>\n";
+//		content+="<h2>"+item.title+"</h2>\n";
 		$("title").html(item.title);
 		if (item.key=="Scribal") {
 			content+="<div class='speclines'>\r"
-			content+="<p>We label a line as \"scribal\" if we think it is unlikely that the line was present in <b>o</b>, the collection of materials relating to the <i>Tales</i> left behind by Chaucer at his death. Typically, these lines appear in just one manuscript, and so probably were created by the scribe at the moment of copying. We label these lines as \"1-a\", \"100-b\", indicating that this line appears where lines 1 and 100 occur, and is the first or second scribal line at that place.</p>";
+			content+="<h2>Scribal Lines</h2\r"
+			content+="<p class=\"text\">We label a line as \"scribal\" if we think it is unlikely that the line was present in <b>o</b>, the collection of materials relating to the <i>Tales</i> left behind by Chaucer at his death. Typically, these lines appear in just one manuscript, and so probably were created by the scribe at the moment of copying. We label these lines as \"1-a\", \"100-b\", indicating that this line appears where lines 1 and 100 occur, and is the first or second scribal line at that place.</p>";
 			for (let i=0; i<item.scribalLines.length;i++) {
 				content+="\r<h3>"+item.scribalLines[i][0].title+"</h3>"
 				for (let j=0; j<item.scribalLines[i][0].lines.length;j++) {
@@ -41,7 +42,8 @@ function createEditorial (){
 			content+="\r</div>";
 		} else if (item.key=="OnotHg") {
 			content+="<div class='speclines'>\r"
-			content+="<p>We label a line as \"<b>o</b> not Hg\" if we think it is likely that the line was present in <b>o</b>, the collection of materials relating to the <i>Tales</i> left behind by Chaucer at his death, but not present in Hg. Typically, these lines appear in many manuscripts across the whole tradition but for some reason were not copied into Hg. We label these lines as \"1-1\", \"100-2\", indicating that this line appears where lines 1 and 100 occur in Hg, and is the first or second  line at that place.</p>";
+			content+="<h2>Lines Likely Present in <b>o</b> and not Present in Hg</h2\r"
+			content+="<p class=\"text\">We label a line as \"<b>o</b> not Hg\" if we think it is likely that the line was present in <b>o</b>, the collection of materials relating to the <i>Tales</i> left behind by Chaucer at his death, but not present in Hg. Typically, these lines appear in many manuscripts across the whole tradition but for some reason were not copied into Hg. We label these lines as \"1-1\", \"100-2\", indicating that this line appears where lines 1 and 100 occur in Hg, and is the first or second  line at that place.</p>";
 			for (let i=0; i<item.originalLines.length;i++) {
 				content+="\r<h3>"+item.originalLines[i][0].title+"</h3>"
 				for (let j=0; j<item.originalLines[i][0].lines.length;j++) {
@@ -51,9 +53,17 @@ function createEditorial (){
 				}
 			}
 			content+="\r</div>";
+		} else if (item.key=="bibliography") {
+			content+="<div class='bibliography'>\r"
+			content+="<h2>Bibliography</h2>\r";
+			for (let i=0; i<item.items.length; i++) {
+				content+="\r<p>"+item.items[i].item+" ("+item.items[i].id+")</p>"
+			}
+			content+="\r</div>";
 		} else if (item.key=="emendations") {
 			content+="<div class='emendations'>\r"
-//			content+="<h2>Emendations</h2>\r";
+			content+="<h2>Emendations</h2>\r";
+			content+="<p class=\"text\">We class as an emendation any reading included in our edition which is not present in the Hengwrt manuscript.</p>";
 			for (let i=0; i<item.lines.length; i++) {
 				content+="<h3>"+item.lines[i][0].title+"</h3>\r";
 				for (let j=0; j<item.lines[i].length; j++) {
@@ -90,13 +100,24 @@ function createEditorial (){
 				}
 			}
 		}  else {
+			//more complex if we have a ul item...
 			for (let i=0; i<item.text.length; i++) {
-				if (item.text[i].hasOwnProperty("attr")) {
-					let attr=item.text[i].attr.slice(0,item.text[i].attr.indexOf("="));
-					let value=item.text[i].attr.slice(item.text[i].attr.indexOf("=")+1);
-					content+="<"+item.text[i].type+" "+attr+"='"+value+"'>"+item.text[i].text+"</"+item.text[i].type+">";
+				if (item.text[i].type=="ul")  {
+					content+="<ul>\r"
+					for (let j=0; j<item.text[i].text.length; j++) {
+						let attr=item.text[i].text[j].attr.slice(0,item.text[i].text[j].attr.indexOf("="));
+						let value=item.text[i].text[j].attr.slice(item.text[i].text[j].attr.indexOf("=")+1);
+						content+="<"+item.text[i].text[j].type+" "+attr+"='"+value+"'>"+item.text[i].text[j].text+"</"+item.text[i].text[j].type+">";
+					}
+					content+="</ul>";
 				} else {
-					content+="<"+item.text[i].type+">"+item.text[i].text+"</"+item.text[i].type+">";
+					if (item.text[i].hasOwnProperty("attr")) {
+						let attr=item.text[i].attr.slice(0,item.text[i].attr.indexOf("="));
+						let value=item.text[i].attr.slice(item.text[i].attr.indexOf("=")+1);
+						content+="<"+item.text[i].type+" "+attr+"='"+value+"'>"+item.text[i].text+"</"+item.text[i].type+">";
+					} else {
+						content+="<"+item.text[i].type+">"+item.text[i].text+"</"+item.text[i].type+">";
+					}
 				}
 			} 
 		}
@@ -110,7 +131,11 @@ function createEditorial (){
 			} 
 		}
 		$("title").html(vName+": Textual Commentary");
-		content+="<h2>Textual Commentary for "+vName+"</h2>\n"
+		if (vName[0]=="L") {
+			content+="<h2>Textual Commentary for "+vName+"</h2>\n"
+		} else {
+			content+="<h2>Textual Commentary for the "+vName+"</h2>\n"
+		}
 		for (let i=0; i<item.length; i++) {
 			content+="<div class='edComm' id='"+item[i].key+"' data-entity='"+item[i].key+"'>";
 			content+="<div class='edCommHead'><h3>";
@@ -161,11 +186,24 @@ function createEditorial (){
 	$("#rTable").show();
 	$("#panel-left").hide();
 	$("#editorial").show();
+	//are there any refs here?
 	var panelRight = new Clay('#panel-right');
 	panelRight.on('resize', function(size) {
 		resizeRTable();
 	});
 	resizeRTable();
+	let refs=$("ref");
+	if (refs.length>0) {
+		for (let i=0; i<refs.length; i++) {
+			if (bibliography.filter(bibl=>bibl.id==$(refs[i]).attr("target")).length==0) {
+				console.log("Reference made to non-existing bibliographic item "+$(refs[i]).attr("target")+" at "+$($(refs[i]).parents("div")[0]).attr("id"));
+			} else {
+				let myBiblio=bibliography.filter(bibl=>bibl.id==$(refs[i]).attr("target"))[0].item;
+				$(refs[i]).addClass("showTip "+$(refs[i]).attr("target"));
+				$("#popUps").append("<div id=\""+$(refs[i]).attr("target")+"\">"+myBiblio+"</div>");
+			}
+		}
+	}
 	let commentaries=$(".edComm");
 	if (commentaries.length>0) {
 		makePopUpCollations(function(){ //async, of course
@@ -194,13 +232,19 @@ function makePopUpCollations(callback) { //go get the line and the collations
 			   	let wits=identifyAppWits(collation, mss)
 			   	if (wits.noApps.length>0) {
 					createCollationLine (collation, wits.noApps, 0, entity, "editorial");
+					//now just get the line from edition
 					let line=$("div[data-lineID='"+entity+"-"+thisMS+"']")[0];
 					createWordAppLine(collation,line, entity, json, thisMS, cblines);
 					let puID="#PUColl-"+entity+"-"+thisMS+"_1";
 					puID=puID.replaceAll(":", "-").replaceAll("=", "_");
 					let puHTML=$(puID).html();
 					$("[id='PUEdColl-"+entity+"-"+thisMS+"']").html(puHTML);
-					cblines(null, [])
+					$.get(TCurl+"/uri/urn:det:tc:usask:CTP2/entity="+entity+":document=Edition?type=transcript&format=xml") 
+						.done (function(json){ //a bit dirty. Grabs editorial version and replaces other form of hte line
+						  let boo=1;
+						  $("div[data-lineID='"+entity+"-"+thisMS+"']").html(json[0].text);
+						  cblines(null, [])
+						})
 				} else {
 					getAppLine(TCcommunity, entity, thisMS, 0, "editorial", function() {
 						//make the apparatus here

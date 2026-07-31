@@ -97,12 +97,12 @@ var EditVmapComponent = ng.core.Component({
   },
   submit: function() {
     var self = this;
-    //update wits array
-  /*  for (var i=0; i<this.vMap.wits.length; i++) {
+    //update wits array. For some reason this was commented out...
+    for (var i=0; i<this.vMap.wits.length; i++) {
     	var myEl=document.getElementById(this.vMap.wits[i].name);
     	this.vMap.wits[i].x=parseInt(myEl.style.left, 10);
     	this.vMap.wits[i].y=parseInt(myEl.style.top, 10);
-    } */
+    } 
     //save this sucker!!
      $.ajax({
 		url: config.BACKEND_URL+'saveVMap?community='+self.uiService.state.community.attrs.abbr+'&name='+self.vMap.name,

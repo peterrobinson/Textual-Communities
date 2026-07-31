@@ -208,6 +208,20 @@ router.post('/approveCommentary', function(req, res, next) {
 	});
 });
 
+router.post('/copyFiles', function(req, res, next) {
+	let src=req.query.source;
+	let dest=req.query.dest;	
+//	console.log("Copying "+src+" to "+dest);
+	fs.cp(src, dest, {recursive: true, force:true}, function(err){
+		console.log("result is "+err)
+		if (err) {
+			console.log("something wrong "+err)
+			res.json({success: 0, message: JSON.stringify(err)});
+		} else {
+			res.json({success: 1});
+		} 
+	});
+});
 router.post('/disApproveCommentary', function(req, res, next) {
 	var revisionID= req.query.revision;
 	Revision.updateOne({_id: new ObjectId(revisionID)}, {$set: {status:"IN_PROGRESS", committed: new Date()}}).then  (function(result){
@@ -288,6 +302,7 @@ router.post('/writeCommentary', function(req, res, next) {
 });
 
 //returns array with all approved commentaries for 
+//actually not useful. We only want the last one
 router.get('/getApprovedCommentaries', function(req, res, next) {
 	var entity=req.query.entity;
 //	console.log("looking for "+entity)
@@ -320,6 +335,7 @@ router.get('/getApprovedCommentaries', function(req, res, next) {
 					cb(null, []);
 				});
 			}, function () {
+				console.log("results"+results);
 				res.json({results: results});
 			});
 	 } else {
@@ -422,7 +438,7 @@ router.post('/getVMap',  function(req, res, next) {
 
 router.post('/deleteVMap',  function(req, res, next) {
 	var community=req.query.community, name=req.query.name;
-	VMap.collection.remove({community: community, name: name }).then (function(result) {
+	VMap.collection.deleteOne({community: community, name: name }).then (function(result) {
 		if (!result) res.json({success: 0});
 		else res.json({success:1});
 	});	

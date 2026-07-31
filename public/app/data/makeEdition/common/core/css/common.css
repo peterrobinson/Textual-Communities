@@ -20,8 +20,11 @@ body {
     align-items: start;
     justify-content: center;
     gap:5px;
-    overflow: scroll;
-}
+ }
+ #ancillaries {
+ 	display: none;
+ }
+
 #page-head {
     display: flex;
     flex-direction:row;
@@ -49,7 +52,7 @@ body {
     top: 10px;
 }
 
-.scribal {display:none}
+.scribal {display:none; color:green}
 .speclines note {display:none}
 .speclines p {    
 	margin-left: 15px;
@@ -57,6 +60,20 @@ body {
     text-indent: -30px;
     padding-left: 30px;
 }
+div.line {font-size:80%; z-index:10}
+note[type=gloss] {font-size:80%}
+.concorder {
+	margin-left: 20px;
+	margin-top: 2px;
+	margin-bottom: 2px;
+}
+hi[rend=strike] {
+	text-decoration-line: line-through;
+}
+hi[rend=large] {
+	font-size: larger;
+}
+
 #longTitle {font-size: x-large; margin-bottom: 0px; margin-top: 0px;}
 #page-head a {text-decoration:none}
 #grp1 {display:flex; justify-content: space-between;   padding-left: 10px; align-items: center; flex-grow:1; white-space:no-wrap; padding-right: 5px;}
@@ -130,7 +147,7 @@ body {
 #collationFrame {display:none; overflow:auto}
 #splash {margin:2px; height:100%; display:flex; text-align: center; color: #c58f45}
 a.splash {
-    color: #c49d61;
+    color: #d6bead;
     text-decoration: none;
 }
 
@@ -170,7 +187,7 @@ a.splash {
   width: 100%;
   height: 100%;
 } 
-#collation {overflow:auto; margin-left: 20px; margin-right: 15px; }
+#collation {overflow:auto; margin-left: 20px; margin-right: 15px; margin-bottom: 10px}
 #transcript-tm {
   margin-bottom: 10px;
   width:100%;
@@ -307,6 +324,8 @@ unclear {color:  darkgrey};
 #editorial {background-color: #fff7e8; ; display:none; overflow: auto; width: 98%; margin-left: 20px}
 #editorial p {margin-left: 15px; margin-right: 15px;}
 #editorial p.edRespons {text-align: right; font-style: italic; margin-top:-10px; margin-right: 40px;}
+#editorial p.quote {margin-left: 60px; font-family: Helvetica}
+#editorial p.sigilP {margin-top: 3px; margin-bottom: 3px}
 #editorial h3 {margin-left: 15px; margin-right: 15px;}
 #editorial a {text-decoration:none;}
 #editorial div.edCommHead {display: flex; justify-content: space-between; align-items: center; margin-right: 30px; height: 40px; margin-bottom: 5px}
@@ -316,8 +335,22 @@ unclear {color:  darkgrey};
 #editorial div.edBaseMS::after {content:":";}
 #editorial div.popAppFrame {margin:auto}
 #editorial div.popAppWordCont-orig {display:none}
-#editorial h2{text-align: center; margin-top: 15px; margin-bottom: 0px;}
-
+#editorial h2{text-align:center}
+#partEditor {margin: 0px; font-size:large}
+#editorial hr{margin-top: 40px}
+hi[rend=Edition] {font-style: italic}
+p.author {text-align: center; font-size: large; margin-bottom: 0px;}
+p.pubname {text-align: center; font-size: xx-large; font-style: italic; margin-top:3px; margin-bottom:3px}
+p.pubpart {text-align: center; font-size: x-large; margin-top: 3px; margin-bottom:3px}
+p.editor3 {text-align: center;  margin-bottom: 0px;}
+p.pubLogo {text-align: center;  margin-bottom: 0px; margin-top:40px}
+p.dedication {margin-top: 50px; text-align:center}
+p.editor {text-align: center;  margin-bottom: 0px; margin-top: 0px;}
+p.pubAssistants {text-align: center;  margin-bottom: 0px; margin-top: 0px;}
+p.pubstatement {text-align: center;  margin-bottom: 0px; margin-top: 0px;}
+p.edstatus { text-align: center; margin-top: 0px; margin-bottom: 10px; font-size: large;}
+p.edThanks {text-align: center;  margin-bottom: 0px; margin-top: 36px;}
+p.genEds {text-align: center; margin-top: 0px; margin-bottom: 20px;}
 #splashLogos{margin-top: 25px;
     width: 100%;
     display: flex;
@@ -325,3 +358,10 @@ unclear {color:  darkgrey};
     justify-content: space-around;}
     
 #cfStackwits ex {display: none;}
+#tipDiv ref {color:black}
+li.noBullet {
+    list-style-type: none;
+}
+p.stemmaimage {text-align: center}
+ref {color:blue}
+span.sigilId {display: inline-block; width: 70px}

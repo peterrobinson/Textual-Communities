@@ -39,6 +39,7 @@
       <button type="button" class="btn btn-primary" (click)="submit()">Save Commentary</button>
      <button *ngIf="commentaries.length==0 || commentaries[0].status!='APPROVED'" type="button" class="btn btn-primary" (click)="approve()">Approve Commentary</button>
      <button *ngIf="commentaries.length>0 && commentaries[0].status=='APPROVED'" class="btn btn-primary" style="background-color: red" type="button" (click)="disapprove()">Remove Approval</button>
+     <!-- button *ngIf="commentaries.length>0" class="btn btn-primary" style="background-color: red" type="button" (click)="delete()">Delete Commentary</button -->
     </div>
       <div modal-resizable class="win-size-grip"></div>
 </div>

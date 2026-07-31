@@ -657,9 +657,26 @@ function addImage(which) {
 	nowEntity=entity;
 	let ms=$("#cfTextSigil"+which).html();
 	let myLine=$("[id='CfText-"+entity+"-"+ms+"']");
-	let myURL=$(myLine).attr("data-iiifurl");
+//	let myURL=$(myLine).attr("data-iiifurl");
 	$("#cfImageWords"+which).html("");
-	if (typeof myURL=="string") {
+	let myPage=$(myLine).attr("data-page");
+	if (typeof myPage=="undefined") {
+		let siblings=$(myLine).nextAll("l");
+		for (let i=1; i<siblings.length; i++) {
+			if (typeof $(siblings[i]).attr("data-page")!="undefined") {
+				myPage=$(siblings[i]).attr("data-page");
+				break;
+			}
+		}
+	}
+	let myMS=pageEntitiesMin.filter(witness => witness.witness==ms)[0];
+	let thisPage=myMS.pages.filter(page=>page.page==myPage)[0];
+	let label=makeEntitySpan(thisPage);
+	$("#cfImageSigilSpan"+which).html("<span>"+label+"</span>");
+	openImage(ms, myPage, "cfImageWords"+which);
+	$("#cfImageSigil"+which).html(ms+": "+myPage);
+
+/*	if (typeof myURL=="string") {
 		let myPage=$(myLine).attr("data-page");
 		let myMS=pageEntitiesMin.filter(witness => witness.witness==ms)[0];
 		let thisPage=myMS.pages.filter(page=>page.page==myPage)[0];
@@ -682,7 +699,7 @@ function addImage(which) {
 		$("#cfImage"+which).removeAttr("data-currIIIF");
 		$("#cfImageSigilSpan"+which).html("");
 		$("#cfImageWords"+which).html("<span style='display: block; text-align: center'>"+formatEntityLabel(nowEntity)+" not present in "+ms+"</span>");
-	}
+	} */
 	var myEl=$("#cfImage"+which).detach();
 	if ($("#setView").is(':checked')) {
 		$("#cfStackwits").append(myEl);

@@ -20,18 +20,23 @@ function initIndex () {
 }
 
 function createIndex (){
-	var newTitle=longTitle.replaceAll("&gt;",">").replaceAll("&lt;","<")
-	$("#longTitle").html(newTitle);
+//	var newTitle=longTitle.replaceAll("&gt;",">").replaceAll("&lt;","<")
+	$("#longTitle").html('<span style="font-size: 80%">'+pubname+". Edited by "+generalEditors+" • "+pubYear+"</span><br>"+'<span style="font-size: larger">'+pubpart+"</span>");
+//	$("#pubpart").html('<span style="font-size: larger">'+pubpart+"</span>");
 	$("#imageSplash").attr("src", splash);
 	$("#title").html(shortTitle);
 	$("#shortTitle").html(shortTitle);
+	$("#editionLink").attr("href","html/transcripts/Edition/"+firstEditionPage+".html");
 	$("#transcriptLink").attr("href", "javascript:getTranscriptFromVBase('"+currMS+"', '"+firstTranscript.slice(firstTranscript.indexOf("/")+1)+"', '" +firstEntity+"')");
 	$("#imageLink").attr("href", "html/transcripts/"+firstTranscript+".html");
+	$("#imageSplash").attr("width", $("#longTitle").width()+"px");
 	let directory=firstEntity.slice(0, firstEntity.lastIndexOf(":"));
 	let cFile=firstEntity.slice(firstEntity.lastIndexOf(":")+1);
+	if (hasPartEditor) {
+		$("#partEditor").html("Edited by "+partEditor);
+	}
 	$("#collationLink").attr("href", "html/collationreg/"+directory+"/"+cFile+".html");
-	$("#compareLink").attr("href", "html/compare/"+firstEntity.split(":")[0]+"/"+firstEntity.split(":")[1]+".html");
-	$("#editorialCredit").html(editorialCredit);
+	$("#compareLink").attr("href", "html/compare/"+startCompare.split(":")[0]+"/"+startCompare.split(":")[1]+".html");
 	sendHTML();
 }
 

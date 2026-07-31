@@ -1,4 +1,4 @@
-#t-c1-linenumbers {width: 25px;}
+#t-c1-linenumbers {width: 45px;}
 #t-c2-linenumbers {width: 25px;}
 
 #t-c1-left {font-size: 70%;}
@@ -206,6 +206,18 @@ l[n="FRL"] {
 	font-weight: bold;
 }
 
+hi[rend="orncp9"] {
+  padding-left: 5px;
+  padding-right: 2px;
+  float: left;
+  position: relative;
+  top: -0.18em;
+  color: blue;
+  margin-bottom: -0.5em;
+  margin-left: -18px;
+  margin-right: 2px;
+  font-size: 160px;
+}
 hi[rend="orncp8"] {
   padding-left: 5px;
   padding-right: 2px;
@@ -394,9 +406,6 @@ p.variant {
 	margin-top: 0px;
 }
 
-p.variant:last-child {
-	display: none;
-}
 
 a.cla {position: relative; top: -5px}
 img.cli {position: relative; top: 6px}
