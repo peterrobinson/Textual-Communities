@@ -275,7 +275,7 @@ unclear {color:  darkgrey};
 
 .msInf {background-color: #CBBAA1;}
 
-.commRef {color:red}
+.commRef {color:red; cursor: pointer};
 
 @media all and (max-width : 829px) {
 	#grp1 {max-width: 829px; }

@@ -312,6 +312,10 @@ function changeEntity(){
 			} else if (view=="compare") {
 				//are we still in the same compare? if so just reset nowEntity, rinse and repeat
 				openCompare(entity);
+			} else if (view=="index") {
+				if (errorStr!="") alert(errorStr);
+				setCookie("newPage", entity, 0.0001);
+				window.location.href="html/transcripts/"+ms+"/"+page+".html";
 			}
 		} else { 
 			errorStr+="this should not happen once more";

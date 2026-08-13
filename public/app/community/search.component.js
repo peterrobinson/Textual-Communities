@@ -73,52 +73,128 @@ var CommunitySearchComponent = ng.core.Component({
 				return;
 			}
 		} else if (this.entity!="") { //right! let's  get all the documents that have this entity...
-			$.get(config.BACKEND_URL+'uri/urn:det:tc:usask:CTP2/entity=GP:document=*?type=list', function (doclist) {
-				let dog="boo";
+		   //http://localhost:3000/uri/urn:det:tc:usask:CTP2/entity=GP:document=*?type=list
+//		   $.get("http://localhost:3000/uri/urn:det:tc:usask:CTP2/entity="+this.entity+":document=*?type=list", function (doclist) {
+			$.get(config.host_url+'/uri/urn:det:tc:usask:CTP2/entity='+this.entity+':document=*?type=list', function (doclist) {
+				$("#TCsearchResults").html("");
+				let docIndex=0;
+				$.get(config.BACKEND_URL+'getDocNames/?community='+self.state.community._id, function (res) {
+					//tedious. We have to look up name in doclist then in self.state.documents to get our document id
+					for (let i=0; i<doclist.length; i++) {
+						let myN=res.findIndex(name=>name.name[0]==doclist[i].name[0	])
+						doclist[i]._id=self.community.attrs.documents[myN]._id;
+						doclist[i].attrs=self.community.attrs.documents[myN].attrs;
+					}
+					async.mapSeries(doclist, function(thisDoc, callback1) {
+						docIndex++;
+						if (self.stopSearch) {
+							callback1("stopped");
+							return;
+						}
+						self.docService.refreshDocument(thisDoc).subscribe(function(mydoc) {
+							//but we ONLY want to search pages with this entity! so filter only those pages containing WBP
+							$.get(config.host_url+'/uri/urn:det:tc:usask:CTP2/entity='+self.entity+':document='+mydoc.attrs.name+':pb=*?type=list', function (doclist2) {
+								//edit the children of myDoc to remove those not in doclist2
+								var index=0;
+								for (let i=0;i<mydoc.attrs.children.length; i++) {
+									let present=doclist2.filter(page=>page[0]==mydoc.attrs.children[i].attrs.name);
+									if (present.length==0) {
+										mydoc.attrs.children.splice(i, 1);
+										i--;
+									}
+								}
+								self.nPages=mydoc.attrs.children.length;
+								self.document=mydoc.attrs.name;
+								self.inSearch=true;
+								let pageIndex=0;
+								document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>Searching "+self.nPages+" pages in "+self.document+".");
+								async.mapSeries(mydoc.attrs.children, function(thisPage, callback2){
+									pageIndex++;
+//									document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>Searching "+thisPage.attrs.name[0]+" in "+self.document+", "+pageIndex+" of "+self.nPages);
+									self.nPage=++index;
+									self.pageN=thisPage.attrs.name;
+									var pageId=thisPage._id;
+									$.get(config.BACKEND_URL+'getRevisions/?page='+pageId, function(revisions) {
+										//is the string in the text???
+										let nResults=0;
+										let offset=0;
+										if (revisions.length) {
+											while (revisions[0].text.indexOf(self.searchString, offset)>-1) {
+												nResults++;
+												offset=revisions[0].text.indexOf(self.searchString, offset)+self.searchString.length+1;
+											}
+											if (nResults>0) {
+												document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>"+nResults+" instances of \""+self.searchString.replace("<", "&lt;")+"\" found in <a target='new' href='"+config.host_url+"/app/community/?id="+self.community._id+"&route=view&document="+thisDoc._id+"&page="+thisPage._id+"'>"+thisPage.attrs.name+"</a> in "+self.document+".");
+											}
+											callback2(null);
+										} else {
+											self.docService.getTextTree(thisPage).subscribe(function(teiRoot) {
+												offset=0;
+												var dbRevision = self.docService.json2xml(BrowserFunctionService.prettyTei(teiRoot));
+												while (dbRevision.indexOf(self.searchString, offset)>-1) {
+													nResults++;
+													offset=dbRevision.indexOf(self.searchString, offset)+self.searchString.length+1;
+												}
+												if (nResults>0) {
+													document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>"+nResults+" instances of \""+self.searchString.replace("<", "&lt;")+"\" found in <a target='new' href='"+config.host_url+"/app/community/?id="+self.community._id+"&route=view&document="+thisDoc._id+"&page="+thisPage._id+"'>"+thisPage.attrs.name+"</a> in "+self.document+".");
+												}	
+												callback2(null);
+											});
+										}					
+									}); 
+								}, function (err) {
+									callback1(null);
+								});
+							});
+						});
+					}, function (err) {
+						let boo=1;
+					});
+				});
 			});
 		}
-  	} else {
+  	} else { //I don't think this is used now at all
   		searchDocs=this.community.attrs.documents;
-  	}
-	this.error="";
-	this.stopSearch=false
-	$("#TCsearchResults").html("");
-	async.mapSeries(searchDocs, function(thisDoc, callback1) {
-		self.docService.refreshDocument(thisDoc).subscribe(function(mydoc) {
-			self.nPages=mydoc.attrs.children.length;
-			self.document=mydoc.attrs.name;
-			self.inSearch=true;
-			var index=0;
-			async.mapSeries(mydoc.attrs.children, function(thisPage, callback){
-				if (self.stopSearch) {
-					callback("search stopped");
-					return;
-				}
-				self.nPage=++index;
-				self.pageN=thisPage.attrs.name;
-				var pageId=thisPage._id;
-				$.get(config.BACKEND_URL+'getRevisions/?page='+pageId, function(revisions) {
-					if (revisions.length) {
-						if (revisions[0].text.indexOf(self.searchString)>-1) {
-							document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>"+self.searchString+" found in <a target='new' href='"+config.host_url+"/app/community/?id="+self.community._id+"&route=view&document="+thisDoc._id+"&page="+thisPage._id+"'>"+thisPage.attrs.name+"</a> in "+self.document+". Transcription status is "+revisions[0].status+", last saved on "+self.formatDate(revisions[0].created));
-						}
-						callback(null);
-					} else {
-						self.docService.getTextTree(thisPage).subscribe(function(teiRoot) {
-							var dbRevision = self.docService.json2xml(BrowserFunctionService.prettyTei(teiRoot));
-							if (dbRevision.indexOf(self.searchString)>-1) {
-								document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>"+self.searchString+" found in <a target='new' href='"+config.host_url+"/app/community/?id="+self.community._id+"&route=view&document="+thisDoc._id+"&page="+thisPage._id+"'>"+thisPage.attrs.name+"</a> in "+self.document+". Transcription status is committed, no transcriptions since document loading");
+		this.error="";
+		this.stopSearch=false
+		$("#TCsearchResults").html("");
+		async.mapSeries(searchDocs, function(thisDoc, callback1) {
+			self.docService.refreshDocument(thisDoc).subscribe(function(mydoc) {
+				self.nPages=mydoc.attrs.children.length;
+				self.document=mydoc.attrs.name;
+				self.inSearch=true;
+				var index=0;
+				async.mapSeries(mydoc.attrs.children, function(thisPage, callback){
+					if (self.stopSearch) {
+						callback("search stopped");
+						return;
+					}
+					self.nPage=++index;
+					self.pageN=thisPage.attrs.name;
+					var pageId=thisPage._id;
+					$.get(config.BACKEND_URL+'getRevisions/?page='+pageId, function(revisions) {
+						if (revisions.length) {
+							if (revisions[0].text.indexOf(self.searchString)>-1) {
+								document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>"+self.searchString+" found in <a target='new' href='"+config.host_url+"/app/community/?id="+self.community._id+"&route=view&document="+thisDoc._id+"&page="+thisPage._id+"'>"+thisPage.attrs.name+"</a> in "+self.document+". Transcription status is "+revisions[0].status+", last saved on "+self.formatDate(revisions[0].created));
 							}
 							callback(null);
-						 });
-					}
+						} else {
+							self.docService.getTextTree(thisPage).subscribe(function(teiRoot) {
+								var dbRevision = self.docService.json2xml(BrowserFunctionService.prettyTei(teiRoot));
+								if (dbRevision.indexOf(self.searchString)>-1) {
+									document.getElementById("TCsearchResults").insertAdjacentHTML('beforeend',"<br/>"+self.searchString+" found in <a target='new' href='"+config.host_url+"/app/community/?id="+self.community._id+"&route=view&document="+thisDoc._id+"&page="+thisPage._id+"'>"+thisPage.attrs.name+"</a> in "+self.document+". Transcription status is committed, no transcriptions since document loading");
+								}
+								callback(null);
+							 });
+						}
+					});
+			
+				}, function(err){
+					callback1(null);
 				});
-		
-			}, function(err){
-				callback1(null);
 			});
 		});
-	});
+	 }
   }
 });
 

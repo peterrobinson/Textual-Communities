@@ -45,6 +45,19 @@ function initTranscript () {
 		let myMs=witnesses.filter(ms=>ms.ms==currMS)[0];
 		$("#imageDetail").html("Image of folio "+currPage+" in "+myMs.id +" "+myMs.permission)
 		resizeRTable();
+		//make every C clickable
+		const elements = document.querySelectorAll('.commRef');
+		elements.forEach(element => {
+			 element.addEventListener('click', (event) => {
+//				console.log('Element clicked:', event.target.classList[1]);
+				let start=event.target.classList[1].indexOf("-");
+				let end=event.target.classList[1].indexOf("-", start+1);
+				let group=event.target.classList[1].slice(start+1, end);
+				let line=event.target.classList[1].slice(end+1);
+				window.location.href="../../../html/editorial/commentary/"+group+".html#"+group+":line="+line;
+			// Your click action logic goes here
+		});
+});
 	});
 }
 
