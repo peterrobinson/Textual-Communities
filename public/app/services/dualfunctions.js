@@ -24,7 +24,9 @@ var DualFunctionService = {
  // note that test for place notes will ONLY work if there are NO editorial notes following the complete 
  //<note place=.. </note> This is a greedy match, and will go to the final </note> (we can change this 
  // to a non-greedy match so it stops at the first </note> by altering (.*) to (.*?))
-   	content=content.replace(/<note place="([^>]*)>(.*)<\/note>/gm,'$2');
+   	content=content.replace(/<note place="margin-right" type="gloss">(.*)<\/note>/gm,'$2');
+    content=content.replace(/<note place="margin-left" type="gloss">(.*)<\/note>/gm,'$2');
+  	content=content.replace(/<note place="([^>]*)>(.*)<\/note>/gm,'$2');
     content=content.replace(/(\r\n|\n|\r)/gm,"");
     content=content.replace(/<note(.*?)<\/note>/gm,"");  //cases of embedded editorial or transcribed notes
     content=content.replace(/(\t)/gm," ");
